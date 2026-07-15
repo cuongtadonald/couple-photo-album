@@ -41,9 +41,13 @@ export default function DashboardPage() {
             <span className="text-4xl animate-heartbeat">💕</span>
             <div>
               <h1 className="text-3xl font-bold bg-gradient-to-r from-rose-500 to-pink-500 bg-clip-text text-transparent">
-                Tình Yêu Của Chúng Ta
+                Cuong {'<'}3 Vy{'\''}s Home
               </h1>
-              <p className="text-gray-600 mt-1 text-sm">👋 Xin chào, <span className="font-semibold text-rose-600">{user.fullName}</span></p>
+              <p className="text-gray-600 mt-1 text-sm">
+                👋 {user.role === 'em' 
+                  ? 'Xin chào, em xãa hãy iuu anh xãa nhiều hơn mỗi ngày nhé <3' 
+                  : 'Xin chào, anh xãa hãy iuu em xãa nhiều hơn mỗi ngày nhé <3'}
+              </p>
             </div>
           </div>
           <Button

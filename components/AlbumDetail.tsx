@@ -32,6 +32,8 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
   const [imageUrl, setImageUrl] = useState('');
   const [caption, setCaption] = useState('');
   const [addingPhoto, setAddingPhoto] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchPhotos();
@@ -48,6 +50,73 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
       console.error('Error fetching photos:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const convertFileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleFileUpload = async (file: File) => {
+    try {
+      setAddingPhoto(true);
+      const base64 = await convertFileToBase64(file);
+      
+      const response = await fetch(`/api/albums/${album.id}/photos`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ 
+          imageUrl: base64, 
+          caption: file.name || 'Photo' 
+        }),
+      });
+      const data = await response.json();
+      if (data.photo) {
+        setPhotos([data.photo, ...photos]);
+        onAlbumUpdate();
+      }
+    } catch (error) {
+      console.error('Error uploading photo:', error);
+      alert('Lỗi upload ảnh');
+    } finally {
+      setAddingPhoto(false);
+    }
+  };
+
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === 'dragenter' || e.type === 'dragover') {
+      setDragActive(true);
+    } else if (e.type === 'dragleave') {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      const file = e.dataTransfer.files[0];
+      if (file.type.startsWith('image/')) {
+        handleFileUpload(file);
+      }
+    }
+  };
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      handleFileUpload(e.target.files[0]);
     }
   };
 
@@ -95,44 +164,77 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
       </div>
 
       {/* Add Photo Form */}
-      <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-        <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-          <Plus size={20} /> Thêm Ảnh Mới
+      <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-md p-6 mb-8 border border-rose-100">
+        <h3 className="text-lg font-bold text-rose-600 mb-4 flex items-center gap-2 font-cute">
+          📷 Thêm Ảnh Mới
         </h3>
+        
+        {/* Drag & Drop Area */}
+        <div
+          onDragEnter={handleDrag}
+          onDragLeave={handleDrag}
+          onDragOver={handleDrag}
+          onDrop={handleDrop}
+          className={`w-full px-6 py-8 mb-4 border-2 border-dashed rounded-xl text-center transition-colors cursor-pointer ${
+            dragActive
+              ? 'border-rose-500 bg-rose-50'
+              : 'border-rose-200 bg-rose-50/50 hover:border-rose-300'
+          }`}
+          onClick={() => fileInputRef.current?.click()}
+        >
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleFileInputChange}
+            className="hidden"
+          />
+          <div className="text-4xl mb-2">📸</div>
+          <p className="text-gray-700 font-semibold mb-1 font-cute">Kéo thả ảnh vào đây hoặc nhấp để chọn</p>
+          <p className="text-sm text-gray-500">Hỗ trợ: JPG, PNG, GIF, WebP</p>
+        </div>
+
+        {/* Or separator */}
+        <div className="flex items-center gap-2 my-4">
+          <div className="flex-1 h-px bg-gray-200" />
+          <span className="text-gray-500 text-sm">hoặc</span>
+          <div className="flex-1 h-px bg-gray-200" />
+        </div>
+
+        {/* URL Form */}
         <form onSubmit={handleAddPhoto} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              URL Ảnh
+            <label className="block text-sm font-medium text-gray-700 mb-2 font-cute">
+              Link Ảnh từ URL
             </label>
             <input
               type="url"
               value={imageUrl}
               onChange={(e) => setImageUrl(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
+              className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 font-cute text-gray-700"
               placeholder="https://example.com/photo.jpg"
-              required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-2 font-cute">
               Chú Thích (Tùy Chọn)
             </label>
             <input
               type="text"
               value={caption}
               onChange={(e) => setCaption(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
+              className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 font-cute text-gray-700"
               placeholder="Viết ghi chú cho ảnh..."
             />
           </div>
 
           <Button
             type="submit"
-            disabled={addingPhoto}
-            className="bg-rose-600 hover:bg-rose-700 text-white"
+            disabled={addingPhoto || !imageUrl}
+            className="w-full bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white font-cute shadow-lg"
           >
-            {addingPhoto ? 'Đang tải...' : 'Thêm Ảnh'}
+            {addingPhoto ? '⏳ Đang tải...' : '✨ Thêm Ảnh'}
           </Button>
         </form>
       </div>

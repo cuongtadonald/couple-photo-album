@@ -1,10 +1,13 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import { AuthProvider } from '@/lib/auth-context'
+import { Nunito } from 'next/font/google'
 import './globals.css'
 
+const nunito = Nunito({ subsets: ['latin'] })
+
 export const metadata: Metadata = {
-  title: 'Tình Yêu Của Chúng Ta',
+  title: 'Cuong <3 Vy\'s Home',
   description: 'An app for couples to share memories, letters, and events',
   generator: 'v0.app',
   icons: {
@@ -40,8 +43,8 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
-      <body className="antialiased">
+    <html lang="en" className={nunito.className}>
+      <body className="antialiased font-sans">
         <AuthProvider>
           {children}
           {process.env.NODE_ENV === 'production' && <Analytics />}

@@ -204,3 +204,36 @@
 .animate-heartbeat {
   animation: heartbeat 1.5s ease-in-out infinite;
 }
+
+/* Cute font family */
+.font-cute {
+  font-family: inherit;
+  font-weight: 600;
+}
+
+/* Input styling */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="url"],
+input[type="number"],
+input[type="date"],
+input[type="time"],
+textarea,
+select {
+  font-family: 'Nunito', sans-serif;
+  color: #374151;
+  font-weight: 500;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #9ca3af;
+  font-weight: 400;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  color: #1f2937;
+}

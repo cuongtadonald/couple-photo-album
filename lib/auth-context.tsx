@@ -26,14 +26,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Load from localStorage/cookie on mount
+  // Load from cookie on mount and validate session
   useEffect(() => {
-    const savedToken = Cookies.get('authToken');
-    if (savedToken) {
-      setToken(savedToken);
-      // Optionally validate token here
-    }
-    setLoading(false);
+    const initializeAuth = async () => {
+      try {
+        const savedToken = Cookies.get('authToken');
+        if (savedToken) {
+          // Verify token is still valid
+          const response = await fetch('/api/auth/me', {
+            headers: { 'Authorization': `Bearer ${savedToken}` }
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            setUser(data.user);
+            setToken(savedToken);
+          } else {
+            // Token is invalid, clear it
+            Cookies.remove('authToken');
+          }
+        }
+      } catch (error) {
+        console.error('Session validation error:', error);
+        Cookies.remove('authToken');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    initializeAuth();
   }, []);
 
   const loginWithPasscode = async (passcode: string) => {

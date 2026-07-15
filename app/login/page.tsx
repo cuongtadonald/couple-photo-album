@@ -46,7 +46,7 @@ export default function LoginPage() {
 
     try {
       await loginWithPasscode(fullPasscode);
-      router.push('/dashboard');
+      router.push('/iuuuvophuongvyvaiiihehe');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Mã gán không đúng');
       setShake(true);
@@ -71,7 +71,7 @@ export default function LoginPage() {
             <div className="text-6xl animate-bounce">💕</div>
           </div>
           <h1 className="text-4xl font-bold bg-gradient-to-r from-rose-500 via-pink-500 to-red-500 bg-clip-text text-transparent mb-2">
-            Tình Yêu Của Chúng Ta
+            Cuong {'<'}3 Vy{'\''}s Home
           </h1>
           <p className="text-gray-600 text-sm">Nhập mã riêng của bạn để tiếp tục</p>
         </div>
@@ -110,10 +110,7 @@ export default function LoginPage() {
             </div>
           )}
 
-          {/* Hint */}
-          <div className="text-center text-xs text-gray-500">
-            <p>Anh xãa: 281120 | Em xãa: 090803</p>
-          </div>
+
 
           {/* Submit Button */}
           <button

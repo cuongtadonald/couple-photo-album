@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import pool from '@/lib/db';
-import { verifyToken } from '@/lib/auth';
+import { getConnection } from '@/lib/db';
+import * as jwt from 'jsonwebtoken';
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,22 +10,22 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const decoded = verifyToken(token);
-    if (!decoded) {
+    let decoded: any;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+    } catch {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    const connection = await pool.getConnection();
+    const connection = await getConnection();
     
-    // Get letters sent to this user
+    // Get all letters (shared between both users)
     const [letters] = await connection.execute(
       `SELECT l.*, u.full_name as from_user_name FROM letters l
        JOIN users u ON l.from_user_id = u.id
-       WHERE l.to_user_id = ? 
-       ORDER BY l.created_at DESC`,
-      [decoded.userId]
+       ORDER BY l.created_at DESC`
     );
-    connection.release();
+    await connection.end();
 
     return NextResponse.json({ letters });
   } catch (error) {
@@ -45,24 +45,34 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const decoded = verifyToken(token);
-    if (!decoded) {
+    let decoded: any;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+    } catch {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    const { title, textContent, toUserId, scheduledUnlockDate } = await request.json();
+    const { title, textContent, scheduledUnlockDate } = await request.json();
 
     if (!title) {
       return NextResponse.json({ error: 'Title is required' }, { status: 400 });
     }
 
-    const connection = await pool.getConnection();
+    // Validate date format if provided
+    if (scheduledUnlockDate) {
+      const date = new Date(scheduledUnlockDate);
+      if (isNaN(date.getTime())) {
+        return NextResponse.json({ error: 'Invalid date format' }, { status: 400 });
+      }
+    }
+
+    const connection = await getConnection();
     const [result] = await connection.execute(
-      `INSERT INTO letters (from_user_id, to_user_id, title, text_content, scheduled_unlock_date) 
-       VALUES (?, ?, ?, ?, ?)`,
-      [decoded.userId, toUserId || null, title, textContent || null, scheduledUnlockDate || null]
+      `INSERT INTO letters (from_user_id, title, text_content, scheduled_unlock_date) 
+       VALUES (?, ?, ?, ?)`,
+      [decoded.userId, title, textContent || null, scheduledUnlockDate || null]
     );
-    connection.release();
+    await connection.end();
 
     return NextResponse.json(
       {

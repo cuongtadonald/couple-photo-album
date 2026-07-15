@@ -80,10 +80,10 @@ export async function POST(request: NextRequest) {
         letter: {
           id: (result as any).insertId,
           fromUserId: decoded.userId,
-          toUserId: toUserId || null,
           title,
           textContent,
           scheduledUnlockDate,
+          createdAt: new Date().toISOString(),
         },
       },
       { status: 201 }

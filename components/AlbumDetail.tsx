@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Plus } from 'lucide-react';
 import Image from 'next/image';
@@ -33,7 +33,7 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
   const [caption, setCaption] = useState('');
   const [addingPhoto, setAddingPhoto] = useState(false);
   const [dragActive, setDragActive] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchPhotos();
@@ -66,16 +66,16 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
     try {
       setAddingPhoto(true);
       const base64 = await convertFileToBase64(file);
-
+      
       const response = await fetch(`/api/albums/${album.id}/photos`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          imageUrl: base64,
-          caption: file.name || 'Photo'
+        body: JSON.stringify({ 
+          imageUrl: base64, 
+          caption: file.name || 'Photo' 
         }),
       });
       const data = await response.json();
@@ -105,7 +105,7 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-
+    
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const file = e.dataTransfer.files[0];
       if (file.type.startsWith('image/')) {
@@ -168,17 +168,18 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
         <h3 className="text-lg font-bold text-rose-600 mb-4 flex items-center gap-2 font-cute">
           📷 Thêm Ảnh Mới
         </h3>
-
+        
         {/* Drag & Drop Area */}
         <div
           onDragEnter={handleDrag}
           onDragLeave={handleDrag}
           onDragOver={handleDrag}
           onDrop={handleDrop}
-          className={`w-full px-6 py-8 mb-4 border-2 border-dashed rounded-xl text-center transition-colors cursor-pointer ${dragActive
-            ? 'border-rose-500 bg-rose-50'
-            : 'border-rose-200 bg-rose-50/50 hover:border-rose-300'
-            }`}
+          className={`w-full px-6 py-8 mb-4 border-2 border-dashed rounded-xl text-center transition-colors cursor-pointer ${
+            dragActive
+              ? 'border-rose-500 bg-rose-50'
+              : 'border-rose-200 bg-rose-50/50 hover:border-rose-300'
+          }`}
           onClick={() => fileInputRef.current?.click()}
         >
           <input

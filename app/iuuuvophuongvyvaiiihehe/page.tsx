@@ -36,14 +36,14 @@ export default function DashboardPage() {
 
       {/* Header */}
       <header className="bg-white/80 backdrop-blur-md shadow-md border-b border-rose-100 relative z-10">
-        <div className="max-w-7xl mx-auto px-4 py-5 sm:px-6 lg:px-8 flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <span className="text-4xl animate-heartbeat">💕</span>
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-5 lg:px-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <span className="text-3xl sm:text-4xl animate-heartbeat">💕</span>
             <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-rose-500 to-pink-500 bg-clip-text text-transparent">
+              <h1 className="text-xl sm:text-3xl font-bold bg-gradient-to-r from-rose-500 to-pink-500 bg-clip-text text-transparent">
                 Cuong {'<'}3 Vy{'\''}s Home
               </h1>
-              <p className="text-gray-600 mt-1 text-sm">
+              <p className="text-gray-600 mt-1 text-xs sm:text-sm line-clamp-2">
                 👋 {user.role === 'em' 
                   ? 'Xin chào, em xãa hãy iuu anh xãa nhiều hơn mỗi ngày nhé <3' 
                   : 'Xin chào, anh xãa hãy iuu em xãa nhiều hơn mỗi ngày nhé <3'}
@@ -52,7 +52,7 @@ export default function DashboardPage() {
           </div>
           <Button
             onClick={logout}
-            className="bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white shadow-lg hover:shadow-xl transition-all"
+            className="w-full sm:w-auto bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white shadow-lg hover:shadow-xl transition-all text-sm"
           >
             ↪️ Đăng xuất
           </Button>
@@ -61,26 +61,28 @@ export default function DashboardPage() {
 
       {/* Navigation Tabs */}
       <div className="bg-white/60 backdrop-blur-md border-b border-rose-100 relative z-10 sticky top-0">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <nav className="flex space-x-8" aria-label="Tabs">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
+          <nav className="flex space-x-2 sm:space-x-8 overflow-x-auto" aria-label="Tabs">
             {(['albums', 'letters', 'events'] as Tab[]).map((tab, idx) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`py-4 px-1 border-b-2 font-medium text-sm transition-all duration-300 transform hover:scale-105 ${
+                className={`py-3 sm:py-4 px-2 sm:px-1 border-b-2 font-medium text-xs sm:text-sm transition-all duration-300 transform hover:scale-105 whitespace-nowrap ${
                   activeTab === tab
                     ? 'border-rose-500 text-rose-600 shadow-[0_2px_0_rgba(244,63,94,0.3)]'
                     : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-rose-200'
                 }`}
               >
-                <span className="mr-2">
+                <span className="mr-1 sm:mr-2">
                   {tab === 'albums' && '📷'}
                   {tab === 'letters' && '💌'}
                   {tab === 'events' && '🎉'}
                 </span>
-                {tab === 'albums' && 'Ảnh Kỷ Niệm'}
-                {tab === 'letters' && 'Thư Tay'}
-                {tab === 'events' && 'Sự Kiện'}
+                <span className="hidden sm:inline">
+                  {tab === 'albums' && 'Ảnh Kỷ Niệm'}
+                  {tab === 'letters' && 'Thư Tay'}
+                  {tab === 'events' && 'Sự Kiện'}
+                </span>
               </button>
             ))}
           </nav>
@@ -88,7 +90,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Content */}
-      <main className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8 relative z-10">
+      <main className="max-w-7xl mx-auto px-3 py-6 sm:px-4 sm:py-8 lg:px-8 relative z-10">
         <div className="animate-fade-in">
           {activeTab === 'albums' && <AlbumList token={token} />}
           {activeTab === 'letters' && <LetterList token={token} />}

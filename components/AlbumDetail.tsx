@@ -33,6 +33,7 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
   const [caption, setCaption] = useState('');
   const [addingPhoto, setAddingPhoto] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+  const [preview, setPreview] = useState<string | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -67,6 +68,11 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
       setAddingPhoto(true);
       const base64 = await convertFileToBase64(file);
       
+      // Show preview first
+      setPreview(base64);
+      setCaption(file.name || 'Photo');
+      
+      // Auto-upload after showing preview
       const response = await fetch(`/api/albums/${album.id}/photos`, {
         method: 'POST',
         headers: {
@@ -81,11 +87,14 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
       const data = await response.json();
       if (data.photo) {
         setPhotos([data.photo, ...photos]);
+        setPreview(null);
+        setCaption('');
         onAlbumUpdate();
       }
     } catch (error) {
       console.error('Error uploading photo:', error);
       alert('Lỗi upload ảnh');
+      setPreview(null);
     } finally {
       setAddingPhoto(false);
     }
@@ -168,6 +177,38 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
         <h3 className="text-lg font-bold text-rose-600 mb-4 flex items-center gap-2 font-cute">
           📷 Thêm Ảnh Mới
         </h3>
+
+        {/* Preview Section */}
+        {preview && (
+          <div className="mb-6 p-4 bg-rose-50 rounded-lg border-2 border-rose-200">
+            <div className="relative h-64 mb-3 bg-gray-100 rounded-lg overflow-hidden">
+              <img 
+                src={preview} 
+                alt="Preview" 
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setPreview(null);
+                  setCaption('');
+                }}
+                className="flex-1 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg font-cute text-sm transition-colors"
+              >
+                ✕ Hủy
+              </button>
+              <button
+                type="button"
+                disabled={addingPhoto}
+                className="flex-1 px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-lg font-cute text-sm disabled:opacity-50 transition-colors"
+              >
+                {addingPhoto ? '⏳ Đang tải...' : '✨ Xác nhận'}
+              </button>
+            </div>
+          </div>
+        )}
         
         {/* Drag & Drop Area */}
         <div
@@ -243,17 +284,17 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
       {loading ? (
         <p className="text-gray-600">Đang tải...</p>
       ) : photos.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-lg border-2 border-dashed border-rose-200">
-          <p className="text-gray-600">Chưa có ảnh nào</p>
+        <div className="text-center py-8 sm:py-12 bg-white rounded-lg border-2 border-dashed border-rose-200">
+          <p className="text-gray-600 text-sm sm:text-base">Chưa có ảnh nào</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {photos.map((photo) => (
             <div
               key={photo.id}
               className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition"
             >
-              <div className="relative h-64 bg-gray-100">
+              <div className="relative h-48 sm:h-64 bg-gray-100">
                 <img
                   src={photo.image_url}
                   alt={photo.caption || 'Photo'}
@@ -261,8 +302,8 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
                 />
               </div>
               {photo.caption && (
-                <div className="p-4">
-                  <p className="text-gray-700">{photo.caption}</p>
+                <div className="p-3 sm:p-4">
+                  <p className="text-gray-700 text-sm sm:text-base">{photo.caption}</p>
                   <p className="text-xs text-gray-500 mt-2">
                     {new Date(photo.created_at).toLocaleDateString('vi-VN')}
                   </p>

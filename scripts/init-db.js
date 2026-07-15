@@ -49,7 +49,7 @@ const initDatabase = async () => {
       CREATE TABLE IF NOT EXISTS photos (
         id INT AUTO_INCREMENT PRIMARY KEY,
         album_id INT NOT NULL,
-        image_url VARCHAR(500) NOT NULL,
+        image_url TEXT,
         caption VARCHAR(255),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (album_id) REFERENCES albums(id) ON DELETE CASCADE
@@ -123,18 +123,18 @@ const initDatabase = async () => {
 
     // Check if users already exist
     const [existingUsers] = await connection.execute('SELECT COUNT(*) as count FROM users');
-    
+
     if (existingUsers[0].count === 0) {
       await connection.execute(
         'INSERT INTO users (email, password, full_name, role) VALUES (?, ?, ?, ?)',
         ['cuongtadonald@gmail.com', hashedPass1, 'anh xãa', 'anh']
       );
-      
+
       await connection.execute(
         'INSERT INTO users (email, password, full_name, role) VALUES (?, ?, ?, ?)',
         ['phuongvy01st@gmail.com', hashedPass2, 'em xãa', 'em']
       );
-      
+
       console.log('Pre-created accounts added successfully!');
     }
 

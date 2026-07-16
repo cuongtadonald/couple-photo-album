@@ -50,11 +50,18 @@ const initDatabase = async () => {
         id INT AUTO_INCREMENT PRIMARY KEY,
         album_id INT NOT NULL,
         image_url VARCHAR(500) NOT NULL,
-        caption VARCHAR(255),
+        caption TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (album_id) REFERENCES albums(id) ON DELETE CASCADE
       )
     `);
+
+    // Migration: widen caption column for existing databases (VARCHAR(255) -> TEXT)
+    try {
+      await connection.execute('ALTER TABLE photos MODIFY COLUMN caption TEXT');
+    } catch (migrationError) {
+      console.warn('Skipping photos.caption migration:', migrationError.message);
+    }
 
     // Create letters table
     await connection.execute(`

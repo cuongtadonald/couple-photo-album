@@ -1,9 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { ArrowLeft, Plus } from 'lucide-react';
-import Image from 'next/image';
+import { useEffect, useRef, useState } from 'react';
+import type { ChangeEvent, DragEvent } from 'react';
+import { ArrowLeft } from 'lucide-react';
 
 interface Album {
   id: number;
@@ -19,6 +18,13 @@ interface Photo {
   created_at: string;
 }
 
+interface PreviewItem {
+  id: string;
+  file: File;
+  url: string;
+  name: string;
+}
+
 interface AlbumDetailProps {
   album: Album;
   token: string | null;
@@ -31,13 +37,21 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
   const [loading, setLoading] = useState(true);
   const [addingPhoto, setAddingPhoto] = useState(false);
   const [dragActive, setDragActive] = useState(false);
-  const [previews, setPreviews] = useState<Array<{ base64: string; name: string }>>([]);
+  const [previews, setPreviews] = useState<PreviewItem[]>([]);
   const [captions, setCaptions] = useState<Record<string, string>>({});
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchPhotos();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, album.id]);
+
+  useEffect(() => {
+    return () => {
+      previews.forEach((p) => URL.revokeObjectURL(p.url));
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const fetchPhotos = async () => {
     try {
@@ -53,72 +67,99 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
     }
   };
 
-  const convertFileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
+  const handleMultipleFiles = (files: FileList) => {
+    const newPreviews: PreviewItem[] = [];
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (file.type.startsWith('image/')) {
+        newPreviews.push({
+          id: `${Date.now()}-${i}-${file.name}`,
+          file,
+          url: URL.createObjectURL(file),
+          name: file.name,
+        });
+      }
+    }
+    setPreviews((prev) => [...prev, ...newPreviews]);
+  };
+
+  const removePreview = (id: string) => {
+    setPreviews((prev) => {
+      const target = prev.find((p) => p.id === id);
+      if (target) URL.revokeObjectURL(target.url);
+      return prev.filter((p) => p.id !== id);
+    });
+    setCaptions((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
     });
   };
 
-  const handleMultipleFiles = async (files: FileList) => {
-    try {
-      const newPreviews: Array<{ base64: string; name: string }> = [];
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        if (file.type.startsWith('image/')) {
-          const base64 = await convertFileToBase64(file);
-          newPreviews.push({ base64, name: file.name });
-        }
-      }
-      setPreviews([...previews, ...newPreviews]);
-    } catch (error) {
-      console.error('Error processing files:', error);
-      alert('Lỗi xử lý ảnh');
-    }
+  const clearPreviews = () => {
+    previews.forEach((p) => URL.revokeObjectURL(p.url));
+    setPreviews([]);
+    setCaptions({});
   };
 
   const uploadPhotos = async () => {
+    if (previews.length === 0) return;
     try {
       setAddingPhoto(true);
-      let uploadedCount = 0;
-      const newPhotos: Photo[] = [];
 
-      for (const preview of previews) {
-        const caption = captions[preview.name] || '';
+      // 1) Upload all files to /public/uploads and get back their paths
+      const formData = new FormData();
+      previews.forEach((p) => formData.append('files', p.file));
+
+      const uploadRes = await fetch('/api/upload', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+
+      if (!uploadRes.ok) {
+        alert('Lỗi tải ảnh lên máy chủ');
+        return;
+      }
+
+      const { urls } = await uploadRes.json();
+
+      // 2) Save each photo path + caption into the album
+      const newPhotos: Photo[] = [];
+      for (let i = 0; i < previews.length; i++) {
+        const imageUrl = urls[i];
+        if (!imageUrl) continue;
+        const caption = captions[previews[i].id] || '';
+
         const response = await fetch(`/api/albums/${album.id}/photos`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ 
-            imageUrl: preview.base64, 
-            caption: caption 
-          }),
+          body: JSON.stringify({ imageUrl, caption }),
         });
 
         if (response.ok) {
           const data = await response.json();
           if (data.photo) {
-            newPhotos.push(data.photo);
-            uploadedCount++;
+            newPhotos.push({
+              id: data.photo.id,
+              image_url: imageUrl,
+              caption,
+              created_at: new Date().toISOString(),
+            });
           }
         }
       }
 
-      if (uploadedCount > 0) {
-        setPhotos([...newPhotos, ...photos]);
-        setPreviews([]);
-        setCaptions({});
+      if (newPhotos.length > 0) {
+        setPhotos((prev) => [...newPhotos, ...prev]);
+        clearPreviews();
         onAlbumUpdate();
-      }
-
-      if (uploadedCount < previews.length) {
-        alert(`Đã tải ${uploadedCount}/${previews.length} ảnh. Vui lòng thử lại.`);
-      } else if (uploadedCount > 0) {
-        alert(`Đã tải thành công ${uploadedCount} ảnh!`);
+        alert(`Đã thêm thành công ${newPhotos.length} ảnh!`);
+      } else {
+        alert('Không lưu được ảnh. Vui lòng thử lại.');
       }
     } catch (error) {
       console.error('Error uploading photos:', error);
@@ -128,7 +169,7 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
     }
   };
 
-  const handleDrag = (e: React.DragEvent) => {
+  const handleDrag = (e: DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (e.type === 'dragenter' || e.type === 'dragover') {
@@ -138,23 +179,21 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
     }
   };
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = (e: DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    
     if (e.dataTransfer.files) {
       handleMultipleFiles(e.dataTransfer.files);
     }
   };
 
-  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       handleMultipleFiles(e.target.files);
+      e.target.value = '';
     }
   };
-
-
 
   return (
     <div>
@@ -176,71 +215,64 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
       {/* Add Photo Form */}
       <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-md p-6 mb-8 border border-rose-100">
         <h3 className="text-lg font-bold text-rose-600 mb-4 flex items-center gap-2 font-cute">
-          📷 Thêm Ảnh Mới
+          Thêm Ảnh Mới
         </h3>
 
         {/* Preview Section - Multiple Images */}
         {previews.length > 0 && (
           <div className="mb-6 p-4 bg-rose-50 rounded-lg border-2 border-rose-200">
-            <h4 className="font-semibold text-rose-700 mb-4">Các ảnh đã chọn ({previews.length})</h4>
-            
-            {/* Scrollable preview grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4 max-h-80 overflow-y-auto">
+            <h4 className="font-semibold text-rose-700 mb-4">
+              Các ảnh đã chọn ({previews.length})
+            </h4>
+
+            <div className="space-y-4 max-h-[28rem] overflow-y-auto pr-1">
               {previews.map((preview, idx) => (
-                <div key={idx} className="relative">
-                  <div className="relative h-32 bg-gray-100 rounded-lg overflow-hidden">
-                    <img 
-                      src={preview.base64} 
-                      alt={`Preview ${idx + 1}`} 
+                <div
+                  key={preview.id}
+                  className="flex gap-3 bg-white rounded-lg p-3 border border-rose-100"
+                >
+                  <div className="relative h-28 w-28 flex-shrink-0 bg-gray-100 rounded-lg overflow-hidden">
+                    <img
+                      src={preview.url || '/placeholder.svg'}
+                      alt={`Xem trước ${idx + 1}`}
                       className="w-full h-full object-cover"
                     />
+                    <button
+                      type="button"
+                      onClick={() => removePreview(preview.id)}
+                      className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold transition-colors"
+                      aria-label="Xóa ảnh"
+                    >
+                      ✕
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const newPreviews = previews.filter((_, i) => i !== idx);
-                      setPreviews(newPreviews);
-                      const newCaptions = { ...captions };
-                      delete newCaptions[preview.name];
-                      setCaptions(newCaptions);
-                    }}
-                    className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold transition-colors"
-                  >
-                    ✕
-                  </button>
-                </div>
-              ))}
-            </div>
-
-            {/* Captions Section */}
-            <div className="mb-4 max-h-48 overflow-y-auto space-y-3">
-              {previews.map((preview, idx) => (
-                <div key={idx}>
-                  <label className="text-xs font-semibold text-gray-700 mb-1 block">
-                    Chú thích ảnh {idx + 1}: {preview.name}
-                  </label>
-                  <textarea
-                    value={captions[preview.name] || ''}
-                    onChange={(e) => setCaptions({ ...captions, [preview.name]: e.target.value })}
-                    placeholder="Mô tả ảnh này (có thể để trống)..."
-                    className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 font-cute text-sm text-gray-700 resize-none"
-                    rows={2}
-                  />
+                  <div className="flex-1">
+                    <label className="text-xs font-semibold text-gray-700 mb-1 block">
+                      Chú thích (có thể để trống)
+                    </label>
+                    <textarea
+                      value={captions[preview.id] || ''}
+                      onChange={(e) =>
+                        setCaptions({ ...captions, [preview.id]: e.target.value })
+                      }
+                      placeholder="Viết mô tả cho ảnh này... có thể xuống dòng thoải mái."
+                      className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 font-cute text-sm text-gray-700 resize-y min-h-[5rem]"
+                      rows={4}
+                    />
+                  </div>
                 </div>
               ))}
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-2">
+            <div className="flex gap-2 mt-4">
               <button
                 type="button"
-                onClick={() => {
-                  setPreviews([]);
-                  setCaptions({});
-                }}
-                className="flex-1 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg font-cute text-sm transition-colors"
+                onClick={clearPreviews}
+                disabled={addingPhoto}
+                className="flex-1 px-4 py-2 bg-gray-200 hover:bg-gray-300 disabled:opacity-50 text-gray-800 rounded-lg font-cute text-sm transition-colors"
               >
-                ✕ Hủy Tất Cả
+                Hủy Tất Cả
               </button>
               <button
                 type="button"
@@ -248,19 +280,19 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
                 disabled={addingPhoto || previews.length === 0}
                 className="flex-1 px-4 py-2 bg-rose-500 hover:bg-rose-600 disabled:opacity-50 text-white rounded-lg font-cute text-sm transition-colors"
               >
-                {addingPhoto ? '⏳ Đang tải...' : `✨ Thêm ${previews.length} Ảnh`}
+                {addingPhoto ? 'Đang tải...' : `Thêm ${previews.length} Ảnh`}
               </button>
             </div>
           </div>
         )}
-        
+
         {/* Drag & Drop Area - Multiple Files Support */}
         <div
           onDragEnter={handleDrag}
           onDragLeave={handleDrag}
           onDragOver={handleDrag}
           onDrop={handleDrop}
-          className={`w-full px-6 py-8 mb-4 border-2 border-dashed rounded-xl text-center transition-colors cursor-pointer ${
+          className={`w-full px-6 py-8 mb-2 border-2 border-dashed rounded-xl text-center transition-colors cursor-pointer ${
             dragActive
               ? 'border-rose-500 bg-rose-50'
               : 'border-rose-200 bg-rose-50/50 hover:border-rose-300'
@@ -275,9 +307,12 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
             onChange={handleFileInputChange}
             className="hidden"
           />
-          <div className="text-4xl mb-2">📸</div>
-          <p className="text-gray-700 font-semibold mb-1 font-cute">Kéo thả ảnh vào đây hoặc nhấp để chọn</p>
-          <p className="text-sm text-gray-500">Hỗ trợ: JPG, PNG, GIF, WebP (có thể chọn nhiều ảnh cùng lúc)</p>
+          <p className="text-gray-700 font-semibold mb-1 font-cute">
+            Kéo thả ảnh vào đây hoặc nhấp để chọn
+          </p>
+          <p className="text-sm text-gray-500">
+            Hỗ trợ: JPG, PNG, GIF, WebP (có thể chọn nhiều ảnh cùng lúc)
+          </p>
         </div>
       </div>
 
@@ -297,14 +332,16 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
             >
               <div className="relative h-48 sm:h-64 bg-gray-100">
                 <img
-                  src={photo.image_url}
-                  alt={photo.caption || 'Photo'}
+                  src={photo.image_url || '/placeholder.svg'}
+                  alt={photo.caption || 'Ảnh'}
                   className="w-full h-full object-cover"
                 />
               </div>
               {photo.caption && (
                 <div className="p-3 sm:p-4">
-                  <p className="text-gray-700 text-sm sm:text-base">{photo.caption}</p>
+                  <p className="text-gray-700 text-sm sm:text-base whitespace-pre-line">
+                    {photo.caption}
+                  </p>
                   <p className="text-xs text-gray-500 mt-2">
                     {new Date(photo.created_at).toLocaleDateString('vi-VN')}
                   </p>

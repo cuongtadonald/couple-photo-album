@@ -51,10 +51,10 @@ export async function POST(
 
     const connection = await pool.getConnection();
 
-    // Verify album belongs to user
+    // Verify album exists (shared content - no user restriction)
     const [albums] = await connection.execute(
-      'SELECT id FROM albums WHERE id = ? AND user_id = ?',
-      [albumId, decoded.userId]
+      'SELECT id FROM albums WHERE id = ?',
+      [albumId]
     );
 
     if ((albums as any[]).length === 0) {

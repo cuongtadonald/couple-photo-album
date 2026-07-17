@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Upload, Music, Image as ImageIcon } from 'lucide-react';
+import { ArrowLeft, Music, Image as ImageIcon, Pencil, Trash2 } from 'lucide-react';
+import { formatDateVN, formatTimeVN } from '@/lib/datetime';
 
 interface Letter {
   id: number;
+  from_user_id: number;
   title: string;
   text_content: string;
   from_user_name: string;
@@ -24,10 +26,14 @@ interface Attachment {
 interface LetterDetailProps {
   letter: Letter;
   token: string | null;
+  currentUserId: number;
   onBack: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
 }
 
-export default function LetterDetail({ letter, token, onBack }: LetterDetailProps) {
+export default function LetterDetail({ letter, token, currentUserId, onBack, onEdit, onDelete }: LetterDetailProps) {
+  const isOwner = letter.from_user_id === currentUserId;
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -126,25 +132,44 @@ export default function LetterDetail({ letter, token, onBack }: LetterDetailProp
 
       <div className="bg-white rounded-lg shadow-lg p-8 max-w-3xl">
         <div className="mb-6">
-          <div className="flex items-start justify-between mb-4">
+          <div className="flex items-start justify-between mb-4 gap-3">
             <div>
               <h1 className="text-4xl font-bold text-gray-900">{letter.title}</h1>
               <p className="text-gray-600 mt-2">Từ: {letter.from_user_name}</p>
               <p className="text-gray-500 text-sm mt-1">
-                {new Date(letter.created_at).toLocaleDateString('vi-VN', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                })}
+                {formatDateVN(letter.created_at, { year: 'numeric', month: 'long', day: 'numeric' })}
               </p>
             </div>
+            {/* Chỉ chính chủ mới có quyền sửa/xóa thư */}
+            {isOwner && (
+              <div className="flex gap-2 shrink-0">
+                {onEdit && (
+                  <button
+                    onClick={onEdit}
+                    aria-label="Sửa thư"
+                    className="grid place-items-center w-9 h-9 rounded-full text-gray-400 hover:text-rose-500 hover:bg-rose-50 transition-colors"
+                  >
+                    <Pencil size={18} />
+                  </button>
+                )}
+                {onDelete && (
+                  <button
+                    onClick={onDelete}
+                    aria-label="Xóa thư"
+                    className="grid place-items-center w-9 h-9 rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
           {letter.scheduled_unlock_date && (
             <div className="bg-rose-50 border border-rose-200 rounded-lg p-3 mb-4">
               <p className="text-sm text-rose-700">
-                Thư được hẹn mở lúc: {new Date(letter.scheduled_unlock_date).toLocaleDateString('vi-VN')} lúc{' '}
-                {new Date(letter.scheduled_unlock_date).toLocaleTimeString('vi-VN')}
+                Thư được hẹn mở lúc: {formatDateVN(letter.scheduled_unlock_date)} lúc{' '}
+                {formatTimeVN(letter.scheduled_unlock_date)}
               </p>
             </div>
           )}

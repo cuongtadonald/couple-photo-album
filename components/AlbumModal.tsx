@@ -1,27 +1,46 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { X } from 'lucide-react';
+import { X, Lock, Globe } from 'lucide-react';
+
+type Visibility = 'private' | 'public';
+
+interface AlbumInitial {
+  title: string;
+  description: string;
+  visibility: Visibility;
+}
 
 interface AlbumModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreate: (title: string, description: string) => void;
+  onSubmit: (title: string, description: string, visibility: Visibility) => Promise<void> | void;
+  /** Nếu truyền vào => chế độ chỉnh sửa, ngược lại là tạo mới */
+  initial?: AlbumInitial | null;
 }
 
-export default function AlbumModal({ isOpen, onClose, onCreate }: AlbumModalProps) {
+export default function AlbumModal({ isOpen, onClose, onSubmit, initial }: AlbumModalProps) {
+  const isEdit = !!initial;
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [visibility, setVisibility] = useState<Visibility>('private');
   const [loading, setLoading] = useState(false);
+
+  // Đồng bộ dữ liệu khi mở modal (tạo mới hoặc sửa)
+  useEffect(() => {
+    if (isOpen) {
+      setTitle(initial?.title ?? '');
+      setDescription(initial?.description ?? '');
+      setVisibility(initial?.visibility ?? 'private');
+    }
+  }, [isOpen, initial]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      await onCreate(title, description);
-      setTitle('');
-      setDescription('');
+      await onSubmit(title, description, visibility);
     } finally {
       setLoading(false);
     }
@@ -34,11 +53,12 @@ export default function AlbumModal({ isOpen, onClose, onCreate }: AlbumModalProp
       <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl w-full max-w-md border-2 border-rose-100">
         <div className="flex justify-between items-center p-6 border-b border-rose-100">
           <h2 className="text-xl font-bold bg-gradient-to-r from-rose-500 to-pink-500 bg-clip-text text-transparent font-cute">
-            📷 Tạo Album Mới
+            {isEdit ? '✏️ Sửa Album' : '📷 Tạo Album Mới'}
           </h2>
           <button
             onClick={onClose}
             className="text-gray-500 hover:text-rose-500 transition-colors"
+            aria-label="Đóng"
           >
             <X size={24} />
           </button>
@@ -72,6 +92,44 @@ export default function AlbumModal({ isOpen, onClose, onCreate }: AlbumModalProp
             />
           </div>
 
+          {/* Chế độ hiển thị */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2 font-cute">
+              🔐 Chế Độ Hiển Thị
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setVisibility('private')}
+                className={`flex items-center gap-2 justify-center px-4 py-3 rounded-cute border-2 text-sm font-semibold transition-all ${
+                  visibility === 'private'
+                    ? 'border-rose-500 bg-rose-50 text-rose-600'
+                    : 'border-gray-200 text-gray-500 hover:border-rose-200'
+                }`}
+              >
+                <Lock size={16} />
+                Riêng tư
+              </button>
+              <button
+                type="button"
+                onClick={() => setVisibility('public')}
+                className={`flex items-center gap-2 justify-center px-4 py-3 rounded-cute border-2 text-sm font-semibold transition-all ${
+                  visibility === 'public'
+                    ? 'border-rose-500 bg-rose-50 text-rose-600'
+                    : 'border-gray-200 text-gray-500 hover:border-rose-200'
+                }`}
+              >
+                <Globe size={16} />
+                Công khai
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 mt-2">
+              {visibility === 'private'
+                ? 'Chỉ mình bạn nhìn thấy album này.'
+                : 'Cả hai đứa đều nhìn thấy trong tab Công khai.'}
+            </p>
+          </div>
+
           <div className="flex gap-3 pt-2">
             <Button
               type="button"
@@ -85,7 +143,7 @@ export default function AlbumModal({ isOpen, onClose, onCreate }: AlbumModalProp
               disabled={loading}
               className="flex-1 bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white font-cute shadow-lg"
             >
-              {loading ? '⏳ Đang tạo...' : '✨ Tạo'}
+              {loading ? '⏳ Đang lưu...' : isEdit ? '💾 Lưu' : '✨ Tạo'}
             </Button>
           </div>
         </form>

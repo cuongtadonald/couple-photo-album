@@ -11,15 +11,27 @@ import EventList from '@/components/EventList';
 type Tab = 'albums' | 'letters' | 'events';
 
 export default function DashboardPage() {
-  const { user, token, logout } = useAuth();
+  const { user, token, loading, logout } = useAuth();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>('albums');
 
   useEffect(() => {
-    if (!user) {
-      router.push('/login');
+    // Chỉ chuyển về login khi đã xác thực xong (loading=false) mà vẫn không có user.
+    // Tránh việc F5/back bị văng ra login trong lúc còn đang kiểm tra token.
+    if (!loading && !user) {
+      router.replace('/login');
     }
-  }, [user, router]);
+  }, [user, loading, router]);
+
+  // Màn hình chờ trong lúc xác thực phiên đăng nhập
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-rose-50 via-pink-50 to-rose-50">
+        <span className="text-6xl animate-heartbeat">💕</span>
+        <p className="mt-4 text-rose-500 font-semibold animate-pulse">Đang mở cửa nhà mình...</p>
+      </div>
+    );
+  }
 
   if (!user) {
     return null;
@@ -91,7 +103,7 @@ export default function DashboardPage() {
       <main className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8 relative z-10">
         <div className="animate-fade-in">
           {activeTab === 'albums' && <AlbumList token={token} />}
-          {activeTab === 'letters' && <LetterList token={token} />}
+          {activeTab === 'letters' && <LetterList token={token} currentUserId={user.id} />}
           {activeTab === 'events' && <EventList token={token} />}
         </div>
       </main>

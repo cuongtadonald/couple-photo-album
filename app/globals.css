@@ -211,6 +211,11 @@
   font-weight: 600;
 }
 
+/* Cute rounded corners */
+.rounded-cute {
+  border-radius: 0.875rem;
+}
+
 /* Input styling */
 input[type="text"],
 input[type="email"],

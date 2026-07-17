@@ -4,10 +4,12 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import LetterModal from './LetterModal';
 import LetterDetail from './LetterDetail';
-import { Plus, Lock } from 'lucide-react';
+import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { parseDate, formatDateVN } from '@/lib/datetime';
 
 interface Letter {
   id: number;
+  from_user_id: number;
   title: string;
   text_content: string;
   from_user_name: string;
@@ -16,14 +18,21 @@ interface Letter {
   created_at: string;
 }
 
-export default function LetterList({ token }: { token: string | null }) {
+interface LetterListProps {
+  token: string | null;
+  currentUserId: number;
+}
+
+export default function LetterList({ token, currentUserId }: LetterListProps) {
   const [letters, setLetters] = useState<Letter[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [editing, setEditing] = useState<Letter | null>(null);
   const [selectedLetter, setSelectedLetter] = useState<Letter | null>(null);
 
   useEffect(() => {
     fetchLetters();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   const fetchLetters = async () => {
@@ -40,49 +49,110 @@ export default function LetterList({ token }: { token: string | null }) {
     }
   };
 
-  const handleCreateLetter = async (title: string, textContent: string, scheduledUnlockDate: string | null) => {
+  const handleSubmit = async (
+    title: string,
+    textContent: string,
+    scheduledUnlockDate: string | null
+  ) => {
     try {
-      const response = await fetch('/api/letters', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ title, textContent, scheduledUnlockDate }),
+      if (editing) {
+        const response = await fetch(`/api/letters/${editing.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ title, textContent, scheduledUnlockDate }),
+        });
+        if (response.ok) {
+          await fetchLetters();
+        } else {
+          const err = await response.json();
+          alert(err.error || 'Không thể sửa thư');
+          return;
+        }
+      } else {
+        const response = await fetch('/api/letters', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ title, textContent, scheduledUnlockDate }),
+        });
+        const data = await response.json();
+        if (data.letter) {
+          setLetters((prev) => [data.letter, ...prev]);
+        }
+      }
+      closeModal();
+    } catch (error) {
+      console.error('Error saving letter:', error);
+    }
+  };
+
+  const handleDelete = async (letter: Letter) => {
+    if (!confirm(`Xóa thư "${letter.title}"?`)) return;
+    try {
+      const response = await fetch(`/api/letters/${letter.id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
       });
-      const data = await response.json();
-      if (data.letter) {
-        setLetters([data.letter, ...letters]);
-        setShowModal(false);
+      if (response.ok) {
+        setLetters((prev) => prev.filter((l) => l.id !== letter.id));
+      } else {
+        const err = await response.json();
+        alert(err.error || 'Không thể xóa thư');
       }
     } catch (error) {
-      console.error('Error creating letter:', error);
+      console.error('Error deleting letter:', error);
     }
+  };
+
+  const openCreate = () => {
+    setEditing(null);
+    setShowModal(true);
+  };
+
+  const openEdit = (letter: Letter) => {
+    setEditing(letter);
+    setShowModal(true);
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setEditing(null);
   };
 
   const canOpenLetter = (letter: Letter): boolean => {
     if (!letter.scheduled_unlock_date) return true;
-    return new Date() >= new Date(letter.scheduled_unlock_date);
+    const d = parseDate(letter.scheduled_unlock_date);
+    return d ? new Date() >= d : true;
   };
+
+  const isOwner = (letter: Letter) => letter.from_user_id === currentUserId;
 
   if (selectedLetter) {
     return (
       <LetterDetail
         letter={selectedLetter}
         token={token}
+        currentUserId={currentUserId}
         onBack={() => setSelectedLetter(null)}
+        onEdit={() => {
+          setSelectedLetter(null);
+          openEdit(selectedLetter);
+        }}
+        onDelete={async () => {
+          await handleDelete(selectedLetter);
+          setSelectedLetter(null);
+        }}
       />
     );
   }
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex justify-between items-center mb-8 gap-3 flex-wrap">
         <h2 className="text-3xl font-bold bg-gradient-to-r from-rose-500 to-pink-500 bg-clip-text text-transparent">
           💌 Thư Tay
         </h2>
         <Button
-          onClick={() => setShowModal(true)}
+          onClick={openCreate}
           className="bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white flex items-center gap-2 shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
         >
           <Plus size={20} />
@@ -92,16 +162,14 @@ export default function LetterList({ token }: { token: string | null }) {
 
       {loading ? (
         <div className="flex justify-center py-12">
-          <div className="inline-block">
-            <div className="w-8 h-8 border-4 border-rose-200 border-t-rose-500 rounded-full animate-spin" />
-          </div>
+          <div className="w-8 h-8 border-4 border-rose-200 border-t-rose-500 rounded-full animate-spin" />
         </div>
       ) : letters.length === 0 ? (
         <div className="text-center py-16 bg-white/70 backdrop-blur-sm rounded-2xl border-2 border-dashed border-rose-200 transform transition-all hover:bg-white/80">
           <div className="text-6xl mb-4">💕</div>
           <p className="text-gray-600 mb-6 text-lg">Chưa có thư tay nào</p>
           <Button
-            onClick={() => setShowModal(true)}
+            onClick={openCreate}
             className="bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white shadow-lg hover:shadow-xl transition-all"
           >
             ✍️ Viết Thư Đầu Tiên
@@ -109,21 +177,21 @@ export default function LetterList({ token }: { token: string | null }) {
         </div>
       ) : (
         <div className="space-y-4">
-          {letters.map((letter, idx) => {
+          {letters.map((letter) => {
             const canOpen = canOpenLetter(letter);
+            const owner = isOwner(letter);
             return (
               <div
                 key={letter.id}
-                onClick={() => canOpen && setSelectedLetter(letter)}
                 className={`group bg-white/80 backdrop-blur-sm rounded-2xl shadow-md p-6 border-l-4 transition-all duration-300 transform hover:-translate-y-1 ${
-                  canOpen
-                    ? 'cursor-pointer hover:shadow-2xl border-rose-400 hover:border-pink-400'
-                    : 'border-yellow-300 opacity-80'
+                  canOpen ? 'hover:shadow-2xl border-rose-400 hover:border-pink-400' : 'border-yellow-300 opacity-80'
                 }`}
-                style={{ animationDelay: `${idx * 100}ms` }}
               >
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
+                <div className="flex justify-between items-start gap-3">
+                  <div
+                    className={`flex-1 min-w-0 ${canOpen ? 'cursor-pointer' : ''}`}
+                    onClick={() => canOpen && setSelectedLetter(letter)}
+                  >
                     <div className="flex items-center gap-3 flex-wrap">
                       <h3 className="text-lg font-bold bg-gradient-to-r from-rose-500 to-pink-500 bg-clip-text text-transparent">
                         {letter.title}
@@ -138,6 +206,11 @@ export default function LetterList({ token }: { token: string | null }) {
                           ✓ Đã mở
                         </span>
                       )}
+                      {owner && (
+                        <span className="text-xs font-semibold text-pink-600 bg-pink-50 px-3 py-1 rounded-full">
+                          Của bạn
+                        </span>
+                      )}
                     </div>
                     <p className="text-gray-600 mt-2 text-sm">
                       <span className="font-semibold">📮 Từ:</span> {letter.from_user_name}
@@ -146,15 +219,32 @@ export default function LetterList({ token }: { token: string | null }) {
                       {letter.text_content || '(Chỉ có tệp đính kèm)'}
                     </p>
                   </div>
-                  <div className="text-right ml-4">
+                  <div className="text-right ml-2 shrink-0">
+                    {/* Chỉ chính chủ mới có nút sửa/xóa */}
+                    {owner && (
+                      <div className="flex gap-1 justify-end mb-2">
+                        <button
+                          onClick={() => openEdit(letter)}
+                          aria-label="Sửa thư"
+                          className="grid place-items-center w-8 h-8 rounded-full text-gray-400 hover:text-rose-500 hover:bg-rose-50 transition-colors"
+                        >
+                          <Pencil size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(letter)}
+                          aria-label="Xóa thư"
+                          className="grid place-items-center w-8 h-8 rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    )}
                     {letter.scheduled_unlock_date && (
                       <p className="text-xs text-amber-600 font-semibold mb-1">
-                        📅 {new Date(letter.scheduled_unlock_date).toLocaleDateString('vi-VN')}
+                        📅 {formatDateVN(letter.scheduled_unlock_date)}
                       </p>
                     )}
-                    <p className="text-xs text-gray-500">
-                      {new Date(letter.created_at).toLocaleDateString('vi-VN')}
-                    </p>
+                    <p className="text-xs text-gray-500">{formatDateVN(letter.created_at)}</p>
                   </div>
                 </div>
               </div>
@@ -165,8 +255,17 @@ export default function LetterList({ token }: { token: string | null }) {
 
       <LetterModal
         isOpen={showModal}
-        onClose={() => setShowModal(false)}
-        onCreate={handleCreateLetter}
+        onClose={closeModal}
+        onSubmit={handleSubmit}
+        initial={
+          editing
+            ? {
+                title: editing.title,
+                text_content: editing.text_content || '',
+                scheduled_unlock_date: editing.scheduled_unlock_date,
+              }
+            : null
+        }
       />
     </div>
   );

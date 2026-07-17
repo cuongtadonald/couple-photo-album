@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Upload, MapPin, Calendar as CalendarIcon } from 'lucide-react';
+import { ArrowLeft, Upload, MapPin, Calendar as CalendarIcon, Pencil, Trash2, Lock, Globe } from 'lucide-react';
+import { parseDate, formatDateVN, formatTimeVN } from '@/lib/datetime';
 
 interface Event {
   id: number;
@@ -10,6 +11,7 @@ interface Event {
   description: string;
   event_date: string;
   location: string;
+  visibility?: 'private' | 'public';
   created_by_name: string;
   created_at: string;
 }
@@ -25,9 +27,11 @@ interface EventDetailProps {
   event: Event;
   token: string | null;
   onBack: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
 }
 
-export default function EventDetail({ event, token, onBack }: EventDetailProps) {
+export default function EventDetail({ event, token, onBack, onEdit, onDelete }: EventDetailProps) {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -82,8 +86,8 @@ export default function EventDetail({ event, token, onBack }: EventDetailProps) 
     }
   };
 
-  const eventDateTime = new Date(event.event_date);
-  const isUpcoming = eventDateTime > new Date();
+  const eventDateTime = parseDate(event.event_date);
+  const isUpcoming = eventDateTime ? eventDateTime > new Date() : false;
 
   return (
     <div>
@@ -97,11 +101,37 @@ export default function EventDetail({ event, token, onBack }: EventDetailProps) 
 
       <div className="bg-white rounded-lg shadow-lg p-8 max-w-3xl">
         <div className="mb-8">
-          <div className="flex items-start justify-between mb-4">
+          <div className="flex items-start justify-between mb-4 gap-3">
             <div>
-              <h1 className="text-4xl font-bold text-gray-900">{event.title}</h1>
-              {!isUpcoming && (
-                <p className="text-gray-500 text-sm mt-1">Sự kiện đã qua</p>
+              <div className="flex items-center gap-3 flex-wrap">
+                <h1 className="text-4xl font-bold text-gray-900">{event.title}</h1>
+                {event.visibility && (
+                  <span className="flex items-center gap-1 text-xs font-semibold text-rose-600 bg-rose-50 px-3 py-1 rounded-full">
+                    {event.visibility === 'private' ? <Lock size={12} /> : <Globe size={12} />}
+                    {event.visibility === 'private' ? 'Riêng tư' : 'Công khai'}
+                  </span>
+                )}
+              </div>
+              {!isUpcoming && <p className="text-gray-500 text-sm mt-1">Sự kiện đã qua</p>}
+            </div>
+            <div className="flex gap-2 shrink-0">
+              {onEdit && (
+                <button
+                  onClick={onEdit}
+                  aria-label="Sửa sự kiện"
+                  className="grid place-items-center w-9 h-9 rounded-full text-gray-400 hover:text-rose-500 hover:bg-rose-50 transition-colors"
+                >
+                  <Pencil size={18} />
+                </button>
+              )}
+              {onDelete && (
+                <button
+                  onClick={onDelete}
+                  aria-label="Xóa sự kiện"
+                  className="grid place-items-center w-9 h-9 rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                >
+                  <Trash2 size={18} />
+                </button>
               )}
             </div>
           </div>
@@ -114,13 +144,13 @@ export default function EventDetail({ event, token, onBack }: EventDetailProps) 
             <div className="flex items-center gap-3">
               <CalendarIcon size={20} className="text-rose-600" />
               <span className="text-gray-900">
-                {eventDateTime.toLocaleDateString('vi-VN', {
+                {formatDateVN(event.event_date, {
                   weekday: 'long',
                   year: 'numeric',
                   month: 'long',
                   day: 'numeric',
                 })}{' '}
-                lúc {eventDateTime.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                lúc {formatTimeVN(event.event_date)}
               </span>
             </div>
             {event.location && (
@@ -130,8 +160,7 @@ export default function EventDetail({ event, token, onBack }: EventDetailProps) 
               </div>
             )}
             <p className="text-xs text-gray-600 pt-2">
-              Được tạo bởi: {event.created_by_name} vào{' '}
-              {new Date(event.created_at).toLocaleDateString('vi-VN')}
+              Được tạo bởi: {event.created_by_name} vào {formatDateVN(event.created_at)}
             </p>
           </div>
         </div>

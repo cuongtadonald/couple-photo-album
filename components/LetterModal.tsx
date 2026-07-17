@@ -1,21 +1,53 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
+import { parseDate } from '@/lib/datetime';
+
+interface LetterInitial {
+  title: string;
+  text_content: string;
+  scheduled_unlock_date: string | null;
+}
 
 interface LetterModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreate: (title: string, textContent: string, scheduledUnlockDate: string | null) => void;
+  onSubmit: (title: string, textContent: string, scheduledUnlockDate: string | null) => Promise<void> | void;
+  initial?: LetterInitial | null;
 }
 
-export default function LetterModal({ isOpen, onClose, onCreate }: LetterModalProps) {
+const pad = (n: number) => String(n).padStart(2, '0');
+
+export default function LetterModal({ isOpen, onClose, onSubmit, initial }: LetterModalProps) {
+  const isEdit = !!initial;
   const [title, setTitle] = useState('');
   const [textContent, setTextContent] = useState('');
   const [scheduledDate, setScheduledDate] = useState('');
   const [scheduledTime, setScheduledTime] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    if (initial) {
+      setTitle(initial.title);
+      setTextContent(initial.text_content || '');
+      const d = parseDate(initial.scheduled_unlock_date);
+      if (d) {
+        setScheduledDate(`${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`);
+        setScheduledTime(`${pad(d.getHours())}:${pad(d.getMinutes())}`);
+      } else {
+        setScheduledDate('');
+        setScheduledTime('');
+      }
+    } else {
+      setTitle('');
+      setTextContent('');
+      setScheduledDate('');
+      setScheduledTime('');
+    }
+  }, [isOpen, initial]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,17 +57,12 @@ export default function LetterModal({ isOpen, onClose, onCreate }: LetterModalPr
     }
     setLoading(true);
     try {
-      let scheduledUnlockDate = null;
+      let scheduledUnlockDate: string | null = null;
       if (scheduledDate) {
-        // Nếu có ngày nhưng không có giờ, mặc định là 00:00
         const time = scheduledTime || '00:00';
         scheduledUnlockDate = `${scheduledDate}T${time}`;
       }
-      await onCreate(title, textContent, scheduledUnlockDate);
-      setTitle('');
-      setTextContent('');
-      setScheduledDate('');
-      setScheduledTime('');
+      await onSubmit(title, textContent, scheduledUnlockDate);
     } finally {
       setLoading(false);
     }
@@ -48,21 +75,16 @@ export default function LetterModal({ isOpen, onClose, onCreate }: LetterModalPr
       <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto border-2 border-rose-100">
         <div className="p-6 sticky top-0 bg-white/80 backdrop-blur-sm border-b border-rose-100 flex justify-between items-center">
           <h2 className="text-xl font-bold bg-gradient-to-r from-rose-500 to-pink-500 bg-clip-text text-transparent font-cute">
-            💌 Viết Thư Tay
+            {isEdit ? '✏️ Sửa Thư Tay' : '💌 Viết Thư Tay'}
           </h2>
-          <button
-            onClick={onClose}
-            className="text-gray-500 hover:text-rose-500 transition-colors"
-          >
+          <button onClick={onClose} className="text-gray-500 hover:text-rose-500 transition-colors" aria-label="Đóng">
             <X size={24} />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2 font-cute">
-              ✍️ Tiêu Đề
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2 font-cute">✍️ Tiêu Đề</label>
             <input
               type="text"
               value={title}
@@ -74,9 +96,7 @@ export default function LetterModal({ isOpen, onClose, onCreate }: LetterModalPr
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2 font-cute">
-              💝 Nội Dung Thư
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2 font-cute">💝 Nội Dung Thư</label>
             <textarea
               value={textContent}
               onChange={(e) => setTextContent(e.target.value)}
@@ -105,7 +125,6 @@ export default function LetterModal({ isOpen, onClose, onCreate }: LetterModalPr
                 value={scheduledTime}
                 onChange={(e) => setScheduledTime(e.target.value)}
                 className="flex-1 px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 font-cute text-gray-700"
-                placeholder="Tùy chọn"
               />
             </div>
           </div>
@@ -123,7 +142,7 @@ export default function LetterModal({ isOpen, onClose, onCreate }: LetterModalPr
               disabled={loading}
               className="flex-1 bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white font-cute shadow-lg"
             >
-              {loading ? '⏳ Đang gửi...' : '💌 Gửi Thư'}
+              {loading ? '⏳ Đang lưu...' : isEdit ? '💾 Lưu' : '💌 Gửi Thư'}
             </Button>
           </div>
         </form>

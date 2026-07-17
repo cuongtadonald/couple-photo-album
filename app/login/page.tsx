@@ -11,8 +11,15 @@ export default function LoginPage() {
   const [shake, setShake] = useState(false);
   const [showPasscode, setShowPasscode] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
-  const { loginWithPasscode } = useAuth();
+  const { user, loading: authLoading, loginWithPasscode } = useAuth();
   const router = useRouter();
+
+  // Nếu đã đăng nhập rồi (vd: bấm back về trang login) thì đưa về trang nhà.
+  useEffect(() => {
+    if (!authLoading && user) {
+      router.replace('/iuuuvophuongvyvaiiihehe');
+    }
+  }, [authLoading, user, router]);
 
   const handleInputChange = (index: number, value: string) => {
     if (!/^\d*$/.test(value)) return;

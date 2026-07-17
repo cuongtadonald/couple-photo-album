@@ -4,7 +4,10 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import EventModal from './EventModal';
 import EventDetail from './EventDetail';
-import { Plus, Calendar } from 'lucide-react';
+import { Plus, Lock, Globe, Pencil, Trash2 } from 'lucide-react';
+import { parseDate, formatDateVN, formatTimeVN } from '@/lib/datetime';
+
+type Visibility = 'private' | 'public';
 
 interface Event {
   id: number;
@@ -12,6 +15,8 @@ interface Event {
   description: string;
   event_date: string;
   location: string;
+  visibility: Visibility;
+  created_by_user_id: number;
   created_by_name: string;
   created_at: string;
 }
@@ -20,10 +25,13 @@ export default function EventList({ token }: { token: string | null }) {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [editing, setEditing] = useState<Event | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [tab, setTab] = useState<Visibility>('private');
 
   useEffect(() => {
     fetchEvents();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   const fetchEvents = async () => {
@@ -40,33 +48,75 @@ export default function EventList({ token }: { token: string | null }) {
     }
   };
 
-  const handleCreateEvent = async (
+  const handleSubmit = async (
     title: string,
     description: string,
     eventDate: string,
-    location: string
+    location: string,
+    visibility: Visibility
   ) => {
     try {
-      const response = await fetch('/api/events', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ title, description, eventDate, location }),
-      });
-      const data = await response.json();
-      if (data.event) {
-        setEvents([...events, data.event]);
-        setShowModal(false);
+      if (editing) {
+        const response = await fetch(`/api/events/${editing.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ title, description, eventDate, location, visibility }),
+        });
+        if (response.ok) {
+          setTab(visibility);
+          await fetchEvents();
+        }
+      } else {
+        const response = await fetch('/api/events', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ title, description, eventDate, location, visibility }),
+        });
+        const data = await response.json();
+        if (data.event) {
+          setEvents((prev) => [...prev, data.event]);
+          setTab(visibility);
+        }
       }
+      closeModal();
     } catch (error) {
-      console.error('Error creating event:', error);
+      console.error('Error saving event:', error);
     }
   };
 
+  const handleDelete = async (event: Event) => {
+    if (!confirm(`Xóa sự kiện "${event.title}"?`)) return;
+    try {
+      const response = await fetch(`/api/events/${event.id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.ok) {
+        setEvents((prev) => prev.filter((e) => e.id !== event.id));
+      }
+    } catch (error) {
+      console.error('Error deleting event:', error);
+    }
+  };
+
+  const openCreate = () => {
+    setEditing(null);
+    setShowModal(true);
+  };
+
+  const openEdit = (event: Event) => {
+    setEditing(event);
+    setShowModal(true);
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setEditing(null);
+  };
+
   const isUpcoming = (eventDate: string): boolean => {
-    return new Date(eventDate) > new Date();
+    const d = parseDate(eventDate);
+    return d ? d > new Date() : false;
   };
 
   if (selectedEvent) {
@@ -75,21 +125,93 @@ export default function EventList({ token }: { token: string | null }) {
         event={selectedEvent}
         token={token}
         onBack={() => setSelectedEvent(null)}
+        onEdit={() => {
+          setSelectedEvent(null);
+          openEdit(selectedEvent);
+        }}
+        onDelete={async () => {
+          await handleDelete(selectedEvent);
+          setSelectedEvent(null);
+        }}
       />
     );
   }
 
-  const upcomingEvents = events.filter((e) => isUpcoming(e.event_date));
-  const pastEvents = events.filter((e) => !isUpcoming(e.event_date));
+  const visibleEvents = events.filter((e) => e.visibility === tab);
+  const upcomingEvents = visibleEvents.filter((e) => isUpcoming(e.event_date));
+  const pastEvents = visibleEvents.filter((e) => !isUpcoming(e.event_date));
+
+  const tabs: { key: Visibility; label: string; icon: typeof Lock }[] = [
+    { key: 'private', label: 'Riêng tư', icon: Lock },
+    { key: 'public', label: 'Công khai', icon: Globe },
+  ];
+
+  const renderCard = (event: Event, past: boolean) => (
+    <div
+      key={event.id}
+      className={`group bg-white/80 backdrop-blur-sm rounded-2xl shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden border-l-4 transform hover:-translate-y-1 ${
+        past ? 'border-gray-300' : 'border-rose-400'
+      }`}
+    >
+      <div
+        onClick={() => setSelectedEvent(event)}
+        className={`h-20 flex items-center justify-center relative overflow-hidden cursor-pointer ${
+          past ? 'bg-gradient-to-r from-gray-100 to-gray-50' : 'bg-gradient-to-r from-rose-200 via-pink-100 to-rose-100'
+        }`}
+      >
+        <div className="text-4xl group-hover:scale-110 transition-transform duration-300">
+          {past ? '📸' : '🎉'}
+        </div>
+      </div>
+      <div className="p-5">
+        <div className="flex items-start justify-between gap-2">
+          <h4
+            onClick={() => setSelectedEvent(event)}
+            className={`text-lg font-bold cursor-pointer line-clamp-1 ${
+              past ? 'text-gray-700' : 'bg-gradient-to-r from-rose-500 to-pink-500 bg-clip-text text-transparent'
+            }`}
+          >
+            {event.title}
+          </h4>
+          <div className="flex gap-1 shrink-0">
+            <button
+              onClick={() => openEdit(event)}
+              aria-label="Sửa sự kiện"
+              className="grid place-items-center w-8 h-8 rounded-full text-gray-400 hover:text-rose-500 hover:bg-rose-50 transition-colors"
+            >
+              <Pencil size={16} />
+            </button>
+            <button
+              onClick={() => handleDelete(event)}
+              aria-label="Xóa sự kiện"
+              className="grid place-items-center w-8 h-8 rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+            >
+              <Trash2 size={16} />
+            </button>
+          </div>
+        </div>
+        {event.description && (
+          <p className="text-gray-500 mt-2 line-clamp-2 text-sm">{event.description}</p>
+        )}
+        <div className="mt-3 space-y-1 text-sm text-gray-600">
+          <p className={past ? '' : 'font-semibold text-rose-600'}>
+            📅 {formatDateVN(event.event_date, { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
+          </p>
+          {!past && <p>🕐 {formatTimeVN(event.event_date)}</p>}
+          {event.location && <p>📍 {event.location}</p>}
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex justify-between items-center mb-6 gap-3 flex-wrap">
         <h2 className="text-3xl font-bold bg-gradient-to-r from-rose-500 to-pink-500 bg-clip-text text-transparent">
           🎉 Sự Kiện
         </h2>
         <Button
-          onClick={() => setShowModal(true)}
+          onClick={openCreate}
           className="bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white flex items-center gap-2 shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
         >
           <Plus size={20} />
@@ -97,123 +219,77 @@ export default function EventList({ token }: { token: string | null }) {
         </Button>
       </div>
 
+      {/* Private / Public tabs */}
+      <div className="flex gap-2 mb-8">
+        {tabs.map(({ key, label, icon: Icon }) => {
+          const count = events.filter((e) => e.visibility === key).length;
+          return (
+            <button
+              key={key}
+              onClick={() => setTab(key)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-cute text-sm font-semibold border-2 transition-all ${
+                tab === key
+                  ? 'bg-gradient-to-r from-rose-500 to-pink-500 text-white border-transparent shadow-md'
+                  : 'bg-white/70 text-gray-600 border-rose-100 hover:border-rose-300 hover:text-rose-600'
+              }`}
+            >
+              <Icon size={16} />
+              {label}
+              <span
+                className={`text-xs px-2 py-0.5 rounded-full ${
+                  tab === key ? 'bg-white/25' : 'bg-rose-50 text-rose-500'
+                }`}
+              >
+                {count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
       {loading ? (
         <div className="flex justify-center py-12">
-          <div className="inline-block">
-            <div className="w-8 h-8 border-4 border-rose-200 border-t-rose-500 rounded-full animate-spin" />
-          </div>
+          <div className="w-8 h-8 border-4 border-rose-200 border-t-rose-500 rounded-full animate-spin" />
+        </div>
+      ) : visibleEvents.length === 0 ? (
+        <div className="text-center py-16 bg-white/70 backdrop-blur-sm rounded-2xl border-2 border-dashed border-rose-200 transform transition-all hover:bg-white/80">
+          <div className="text-6xl mb-4">✨</div>
+          <p className="text-gray-600 mb-6 text-lg">
+            {tab === 'private' ? 'Chưa có sự kiện riêng tư nào' : 'Chưa có sự kiện công khai nào'}
+          </p>
+          <Button
+            onClick={openCreate}
+            className="bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white shadow-lg hover:shadow-xl transition-all"
+          >
+            🎊 Tạo Sự Kiện Đầu Tiên
+          </Button>
         </div>
       ) : (
         <div className="space-y-10">
-          {/* Upcoming Events */}
           <div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
+            <h3 className="text-2xl font-bold mb-6 flex items-center gap-3">
               <span className="text-4xl">📅</span>
               <span className="bg-gradient-to-r from-rose-500 to-pink-500 bg-clip-text text-transparent">
                 Sự Kiện Sắp Tới
               </span>
             </h3>
             {upcomingEvents.length === 0 ? (
-              <div className="text-center py-16 bg-white/70 backdrop-blur-sm rounded-2xl border-2 border-dashed border-rose-200 transform transition-all hover:bg-white/80">
-                <div className="text-6xl mb-4">✨</div>
-                <p className="text-gray-600 mb-6 text-lg">Chưa có sự kiện nào</p>
-                <Button
-                  onClick={() => setShowModal(true)}
-                  className="bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white shadow-lg hover:shadow-xl transition-all"
-                >
-                  🎊 Tạo Sự Kiện Đầu Tiên
-                </Button>
-              </div>
+              <p className="text-gray-500 italic">Chưa có sự kiện sắp tới</p>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {upcomingEvents.map((event, idx) => (
-                  <div
-                    key={event.id}
-                    onClick={() => setSelectedEvent(event)}
-                    className="group bg-white/80 backdrop-blur-sm rounded-2xl shadow-md hover:shadow-2xl transition-all duration-300 cursor-pointer overflow-hidden border-l-4 border-rose-400 transform hover:scale-105 hover:-translate-y-1"
-                    style={{ animationDelay: `${idx * 100}ms` }}
-                  >
-                    <div className="h-24 bg-gradient-to-r from-rose-200 via-pink-100 to-rose-100 flex items-center justify-center relative overflow-hidden">
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                      <div className="text-5xl group-hover:scale-110 transition-transform duration-300 relative z-10">
-                        🎉
-                      </div>
-                    </div>
-                    <div className="p-6">
-                      <h4 className="text-lg font-bold bg-gradient-to-r from-rose-500 to-pink-500 bg-clip-text text-transparent group-hover:from-pink-500 group-hover:to-red-500">
-                        {event.title}
-                      </h4>
-                      {event.description && (
-                        <p className="text-gray-600 mt-2 line-clamp-2 text-sm">
-                          {event.description}
-                        </p>
-                      )}
-                      <div className="mt-4 space-y-2 text-sm text-gray-600">
-                        <p className="font-semibold text-rose-600">
-                          📅{' '}
-                          {new Date(event.event_date).toLocaleDateString('vi-VN', {
-                            weekday: 'short',
-                            year: 'numeric',
-                            month: 'short',
-                            day: 'numeric',
-                          })}
-                        </p>
-                        <p>
-                          🕐{' '}
-                          {new Date(event.event_date).toLocaleTimeString('vi-VN', {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
-                        </p>
-                        {event.location && <p>📍 {event.location}</p>}
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                {upcomingEvents.map((event) => renderCard(event, false))}
               </div>
             )}
           </div>
 
-          {/* Past Events */}
           {pastEvents.length > 0 && (
             <div>
               <h3 className="text-xl font-bold text-gray-600 mb-6 flex items-center gap-3 opacity-70">
                 <span className="text-3xl">💭</span>
                 Sự Kiện Đã Qua
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 opacity-60 hover:opacity-80 transition-opacity">
-                {pastEvents.map((event, idx) => (
-                  <div
-                    key={event.id}
-                    onClick={() => setSelectedEvent(event)}
-                    className="group bg-white/70 backdrop-blur-sm rounded-2xl shadow-md hover:shadow-lg cursor-pointer overflow-hidden border-l-4 border-gray-300 transform hover:scale-105 hover:-translate-y-1 transition-all duration-300"
-                    style={{ animationDelay: `${(upcomingEvents.length + idx) * 100}ms` }}
-                  >
-                    <div className="h-20 bg-gradient-to-r from-gray-100 to-gray-50 flex items-center justify-center">
-                      <div className="text-4xl">📸</div>
-                    </div>
-                    <div className="p-6">
-                      <h4 className="text-lg font-bold text-gray-700">{event.title}</h4>
-                      {event.description && (
-                        <p className="text-gray-500 mt-2 line-clamp-2 text-sm">
-                          {event.description}
-                        </p>
-                      )}
-                      <div className="mt-4 space-y-2 text-sm text-gray-500">
-                        <p>
-                          📅{' '}
-                          {new Date(event.event_date).toLocaleDateString('vi-VN', {
-                            weekday: 'short',
-                            year: 'numeric',
-                            month: 'short',
-                            day: 'numeric',
-                          })}
-                        </p>
-                        {event.location && <p>📍 {event.location}</p>}
-                      </div>
-                    </div>
-                  </div>
-                ))}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {pastEvents.map((event) => renderCard(event, true))}
               </div>
             </div>
           )}
@@ -222,8 +298,19 @@ export default function EventList({ token }: { token: string | null }) {
 
       <EventModal
         isOpen={showModal}
-        onClose={() => setShowModal(false)}
-        onCreate={handleCreateEvent}
+        onClose={closeModal}
+        onSubmit={handleSubmit}
+        initial={
+          editing
+            ? {
+                title: editing.title,
+                description: editing.description || '',
+                event_date: editing.event_date,
+                location: editing.location || '',
+                visibility: editing.visibility,
+              }
+            : null
+        }
       />
     </div>
   );

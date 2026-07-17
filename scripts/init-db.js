@@ -38,11 +38,23 @@ const initDatabase = async () => {
         user_id INT NOT NULL,
         title VARCHAR(255) NOT NULL,
         description TEXT,
+        visibility ENUM('private', 'public') NOT NULL DEFAULT 'private',
+        cover_photo_id INT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       )
     `);
+
+    // Migration: thêm cột visibility & cover_photo_id cho DB đã tồn tại
+    try {
+      await connection.execute(
+        "ALTER TABLE albums ADD COLUMN visibility ENUM('private', 'public') NOT NULL DEFAULT 'private'"
+      );
+    } catch (e) { /* cột đã tồn tại */ }
+    try {
+      await connection.execute('ALTER TABLE albums ADD COLUMN cover_photo_id INT');
+    } catch (e) { /* cột đã tồn tại */ }
 
     // Create photos table
     await connection.execute(`
@@ -81,6 +93,29 @@ const initDatabase = async () => {
       )
     `);
 
+    // Create events table (phải tạo TRƯỚC attachments vì attachments tham chiếu events)
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS events (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        description TEXT,
+        event_date DATETIME NOT NULL,
+        location VARCHAR(255),
+        visibility ENUM('private', 'public') NOT NULL DEFAULT 'private',
+        created_by_user_id INT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (created_by_user_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    `);
+
+    // Migration: thêm cột visibility cho events đã tồn tại
+    try {
+      await connection.execute(
+        "ALTER TABLE events ADD COLUMN visibility ENUM('private', 'public') NOT NULL DEFAULT 'private'"
+      );
+    } catch (e) { /* cột đã tồn tại */ }
+
     // Create attachments table
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS attachments (
@@ -93,21 +128,6 @@ const initDatabase = async () => {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (letter_id) REFERENCES letters(id) ON DELETE CASCADE,
         FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
-      )
-    `);
-
-    // Create events table
-    await connection.execute(`
-      CREATE TABLE IF NOT EXISTS events (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        title VARCHAR(255) NOT NULL,
-        description TEXT,
-        event_date DATETIME NOT NULL,
-        location VARCHAR(255),
-        created_by_user_id INT NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        FOREIGN KEY (created_by_user_id) REFERENCES users(id) ON DELETE CASCADE
       )
     `);
 

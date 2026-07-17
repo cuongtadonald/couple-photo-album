@@ -8,15 +8,32 @@ export async function GET(
 ) {
   try {
     const { albumId } = await params;
+
+    // Phân trang: ?limit=..&offset=.. (mặc định 24 ảnh mỗi trang)
+    const { searchParams } = request.nextUrl;
+    const limit = Math.min(Math.max(parseInt(searchParams.get('limit') || '24', 10), 1), 100);
+    const offset = Math.max(parseInt(searchParams.get('offset') || '0', 10), 0);
+
     const connection = await pool.getConnection();
-    
+
+    const [countRows] = await connection.execute(
+      'SELECT COUNT(*) as total FROM photos WHERE album_id = ?',
+      [albumId]
+    );
+    const total = (countRows as any[])[0]?.total ?? 0;
+
+    // LIMIT/OFFSET nội suy trực tiếp (đã ép kiểu số nguyên an toàn ở trên)
     const [photos] = await connection.execute(
-      'SELECT * FROM photos WHERE album_id = ? ORDER BY created_at DESC',
+      `SELECT * FROM photos WHERE album_id = ? ORDER BY created_at DESC LIMIT ${limit} OFFSET ${offset}`,
       [albumId]
     );
     connection.release();
 
-    return NextResponse.json({ photos });
+    return NextResponse.json({
+      photos,
+      total,
+      hasMore: offset + (photos as any[]).length < total,
+    });
   } catch (error) {
     console.error('Error fetching photos:', error);
     return NextResponse.json(
@@ -32,7 +49,7 @@ export async function POST(
 ) {
   try {
     const token = request.headers.get('authorization')?.replace('Bearer ', '');
-    
+
     if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -51,7 +68,6 @@ export async function POST(
 
     const connection = await pool.getConnection();
 
-    // Verify album exists (shared content - no user restriction)
     const [albums] = await connection.execute(
       'SELECT id FROM albums WHERE id = ?',
       [albumId]
@@ -73,9 +89,10 @@ export async function POST(
         success: true,
         photo: {
           id: (result as any).insertId,
-          albumId,
-          imageUrl,
-          caption,
+          album_id: Number(albumId),
+          image_url: imageUrl,
+          caption: caption || '',
+          created_at: new Date().toISOString(),
         },
       },
       { status: 201 }

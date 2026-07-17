@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!user) {
-      await connection.end();
+      connection.release();
       return NextResponse.json(
         { error: 'Mã gán không đúng' },
         { status: 401 }
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
       profileImageUrl: user.profile_image_url,
     };
 
-    await connection.end();
+    connection.release();
 
     return NextResponse.json({
       user: userData,

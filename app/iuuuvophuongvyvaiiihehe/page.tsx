@@ -3,27 +3,45 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
-import { Button } from '@/components/ui/button';
 import AlbumList from '@/components/AlbumList';
 import LetterList from '@/components/LetterList';
 import EventList from '@/components/EventList';
+import { LogOut, Camera, Mail, PartyPopper } from 'lucide-react';
 
 type Tab = 'albums' | 'letters' | 'events';
 
 export default function DashboardPage() {
-  const { user, token, logout } = useAuth();
+  const { user, token, loading, logout } = useAuth();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>('albums');
 
   useEffect(() => {
-    if (!user) {
-      router.push('/login');
+    // Chỉ chuyển về login khi đã xác thực xong (loading=false) mà vẫn không có user.
+    // Tránh việc F5/back bị văng ra login trong lúc còn đang kiểm tra token.
+    if (!loading && !user) {
+      router.replace('/login');
     }
-  }, [user, router]);
+  }, [user, loading, router]);
+
+  // Màn hình chờ dễ thương trong lúc xác thực phiên đăng nhập
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-rose-50 via-pink-50 to-rose-50">
+        <span className="text-6xl animate-heartbeat">💕</span>
+        <p className="mt-4 text-rose-500 font-semibold animate-pulse">Đang mở cửa nhà mình...</p>
+      </div>
+    );
+  }
 
   if (!user) {
     return null;
   }
+
+  const tabs: { key: Tab; label: string; icon: typeof Camera }[] = [
+    { key: 'albums', label: 'Ảnh Kỷ Niệm', icon: Camera },
+    { key: 'letters', label: 'Thư Tay', icon: Mail },
+    { key: 'events', label: 'Sự Kiện', icon: PartyPopper },
+  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-rose-50 via-pink-50 to-rose-50 relative overflow-hidden">
@@ -36,53 +54,47 @@ export default function DashboardPage() {
 
       {/* Header */}
       <header className="bg-white/80 backdrop-blur-md shadow-md border-b border-rose-100 relative z-10">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-5 lg:px-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
-          <div className="flex items-center gap-2 sm:gap-3">
-            <span className="text-3xl sm:text-4xl animate-heartbeat">💕</span>
-            <div>
-              <h1 className="text-xl sm:text-3xl font-bold bg-gradient-to-r from-rose-500 to-pink-500 bg-clip-text text-transparent">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-5 lg:px-8 flex justify-between items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <span className="text-3xl sm:text-4xl animate-heartbeat shrink-0">💕</span>
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-3xl font-bold bg-gradient-to-r from-rose-500 to-pink-500 bg-clip-text text-transparent truncate">
                 Cuong {'<'}3 Vy{'\''}s Home
               </h1>
               <p className="text-gray-600 mt-1 text-xs sm:text-sm line-clamp-2">
-                👋 {user.role === 'em' 
-                  ? 'Xin chào, em xãa hãy iuu anh xãa nhiều hơn mỗi ngày nhé <3' 
+                👋 {user.role === 'em'
+                  ? 'Xin chào, em xãa hãy iuu anh xãa nhiều hơn mỗi ngày nhé <3'
                   : 'Xin chào, anh xãa hãy iuu em xãa nhiều hơn mỗi ngày nhé <3'}
               </p>
             </div>
           </div>
-          <Button
+          <button
             onClick={logout}
-            className="w-full sm:w-auto bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white shadow-lg hover:shadow-xl transition-all text-sm"
+            title="Đăng xuất"
+            aria-label="Đăng xuất"
+            className="group shrink-0 grid place-items-center w-11 h-11 rounded-cute bg-white text-rose-500 border-2 border-rose-200 shadow-sm hover:bg-rose-500 hover:text-white hover:border-rose-500 hover:shadow-lg transition-all duration-300 hover:-rotate-12 active:scale-90"
           >
-            ↪️ Đăng xuất
-          </Button>
+            <LogOut size={20} className="transition-transform group-hover:scale-110" />
+          </button>
         </div>
       </header>
 
       {/* Navigation Tabs */}
       <div className="bg-white/60 backdrop-blur-md border-b border-rose-100 relative z-10 sticky top-0">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
-          <nav className="flex space-x-2 sm:space-x-8 overflow-x-auto" aria-label="Tabs">
-            {(['albums', 'letters', 'events'] as Tab[]).map((tab, idx) => (
+          <nav className="flex gap-2 sm:gap-4 overflow-x-auto py-2" aria-label="Tabs">
+            {tabs.map(({ key, label, icon: Icon }) => (
               <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`py-3 sm:py-4 px-2 sm:px-1 border-b-2 font-medium text-xs sm:text-sm transition-all duration-300 transform hover:scale-105 whitespace-nowrap ${
-                  activeTab === tab
-                    ? 'border-rose-500 text-rose-600 shadow-[0_2px_0_rgba(244,63,94,0.3)]'
-                    : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-rose-200'
+                key={key}
+                onClick={() => setActiveTab(key)}
+                className={`flex items-center gap-2 py-2 px-4 rounded-cute font-semibold text-xs sm:text-sm transition-all duration-300 transform hover:scale-105 whitespace-nowrap border-2 ${
+                  activeTab === key
+                    ? 'bg-gradient-to-r from-rose-500 to-pink-500 text-white border-transparent shadow-md'
+                    : 'bg-white/70 text-gray-600 border-rose-100 hover:border-rose-300 hover:text-rose-600'
                 }`}
               >
-                <span className="mr-1 sm:mr-2">
-                  {tab === 'albums' && '📷'}
-                  {tab === 'letters' && '💌'}
-                  {tab === 'events' && '🎉'}
-                </span>
-                <span className="hidden sm:inline">
-                  {tab === 'albums' && 'Ảnh Kỷ Niệm'}
-                  {tab === 'letters' && 'Thư Tay'}
-                  {tab === 'events' && 'Sự Kiện'}
-                </span>
+                <Icon size={18} />
+                <span className="hidden xs:inline sm:inline">{label}</span>
               </button>
             ))}
           </nav>
@@ -93,7 +105,7 @@ export default function DashboardPage() {
       <main className="max-w-7xl mx-auto px-3 py-6 sm:px-4 sm:py-8 lg:px-8 relative z-10">
         <div className="animate-fade-in">
           {activeTab === 'albums' && <AlbumList token={token} />}
-          {activeTab === 'letters' && <LetterList token={token} />}
+          {activeTab === 'letters' && <LetterList token={token} currentUserId={user.id} />}
           {activeTab === 'events' && <EventList token={token} />}
         </div>
       </main>

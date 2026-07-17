@@ -5,7 +5,7 @@ import { verifyToken } from '@/lib/auth';
 export async function GET(request: NextRequest) {
   try {
     const token = request.headers.get('authorization')?.replace('Bearer ', '');
-    
+
     if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -16,10 +16,21 @@ export async function GET(request: NextRequest) {
     }
 
     const connection = await pool.getConnection();
+    // Hiển thị album public của mọi người + album private của chính mình.
+    // cover_image_url: ưu tiên ảnh bìa đã chọn, nếu không thì lấy ảnh đầu tiên.
     const [albums] = await connection.execute(
-      `SELECT a.*, COUNT(p.id) as photo_count FROM albums a 
+      `SELECT a.*,
+        COUNT(p.id) as photo_count,
+        COALESCE(
+          cover.image_url,
+          (SELECT image_url FROM photos WHERE album_id = a.id ORDER BY created_at ASC LIMIT 1)
+        ) as cover_image_url
+       FROM albums a
        LEFT JOIN photos p ON a.id = p.album_id
-       WHERE a.user_id = ? GROUP BY a.id`,
+       LEFT JOIN photos cover ON cover.id = a.cover_photo_id
+       WHERE a.visibility = 'public' OR a.user_id = ?
+       GROUP BY a.id
+       ORDER BY a.created_at DESC`,
       [decoded.userId]
     );
     connection.release();
@@ -37,7 +48,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const token = request.headers.get('authorization')?.replace('Bearer ', '');
-    
+
     if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -47,16 +58,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    const { title, description } = await request.json();
+    const { title, description, visibility } = await request.json();
 
     if (!title) {
       return NextResponse.json({ error: 'Title is required' }, { status: 400 });
     }
 
+    const vis = visibility === 'public' ? 'public' : 'private';
+
     const connection = await pool.getConnection();
     const [result] = await connection.execute(
-      'INSERT INTO albums (user_id, title, description) VALUES (?, ?, ?)',
-      [decoded.userId, title, description || null]
+      'INSERT INTO albums (user_id, title, description, visibility) VALUES (?, ?, ?, ?)',
+      [decoded.userId, title, description || null, vis]
     );
     connection.release();
 
@@ -65,9 +78,13 @@ export async function POST(request: NextRequest) {
         success: true,
         album: {
           id: (result as any).insertId,
-          userId: decoded.userId,
+          user_id: decoded.userId,
           title,
           description,
+          visibility: vis,
+          photo_count: 0,
+          cover_image_url: null,
+          created_at: new Date().toISOString(),
         },
       },
       { status: 201 }

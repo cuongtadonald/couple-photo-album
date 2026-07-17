@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
     );
 
     if (!Array.isArray(users) || users.length === 0) {
-      await connection.end();
+      connection.release();
       return NextResponse.json(
         { error: 'User not found' },
         { status: 404 }
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
     }
 
     const user = (users as any[])[0];
-    await connection.end();
+    connection.release();
 
     return NextResponse.json({
       user: {

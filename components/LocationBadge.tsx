@@ -1,0 +1,60 @@
+'use client';
+
+import { MapPin } from 'lucide-react';
+
+interface LocationBadgeProps {
+  locationName?: string | null;
+  locationUrl?: string | null;
+  /** Text shown when there is no location_name but there is a URL */
+  fallbackLabel?: string;
+  className?: string;
+}
+
+/**
+ * Displays a location badge.
+ * - If locationUrl is present, the badge is a clickable link that opens Google Maps.
+ * - If only locationName is present (no URL), it renders as plain text.
+ * - Returns null when both are empty/null.
+ */
+export default function LocationBadge({
+  locationName,
+  locationUrl,
+  fallbackLabel = 'Xem ban do',
+  className = '',
+}: LocationBadgeProps) {
+  if (!locationName && !locationUrl) return null;
+
+  const label = locationName || fallbackLabel;
+
+  const inner = (
+    <span className="flex items-center gap-1">
+      <MapPin size={11} className="shrink-0" />
+      <span className="truncate max-w-[180px]">{label}</span>
+    </span>
+  );
+
+  const base =
+    'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ' + className;
+
+  if (locationUrl) {
+    return (
+      <a
+        href={locationUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={(e) => e.stopPropagation()}
+        className={base + ' bg-primary/10 text-primary hover:bg-primary/20 transition-colors cursor-pointer'}
+        title="Mo Google Maps"
+        aria-label={`Mo Google Maps: ${label}`}
+      >
+        {inner}
+      </a>
+    );
+  }
+
+  return (
+    <span className={base + ' bg-muted text-muted-foreground'}>
+      {inner}
+    </span>
+  );
+}

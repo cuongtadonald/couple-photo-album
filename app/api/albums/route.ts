@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    const { title, description, visibility } = await request.json();
+    const { title, description, visibility, locationName, locationUrl } = await request.json();
 
     if (!title) {
       return NextResponse.json({ error: 'Title is required' }, { status: 400 });
@@ -68,8 +68,8 @@ export async function POST(request: NextRequest) {
 
     const connection = await pool.getConnection();
     const [result] = await connection.execute(
-      'INSERT INTO albums (user_id, title, description, visibility) VALUES (?, ?, ?, ?)',
-      [decoded.userId, title, description || null, vis]
+      'INSERT INTO albums (user_id, title, description, visibility, location_name, location_url) VALUES (?, ?, ?, ?, ?, ?)',
+      [decoded.userId, title, description || null, vis, locationName || null, locationUrl || null]
     );
     connection.release();
 
@@ -82,6 +82,8 @@ export async function POST(request: NextRequest) {
           title,
           description,
           visibility: vis,
+          location_name: locationName || null,
+          location_url: locationUrl || null,
           photo_count: 0,
           cover_image_url: null,
           created_at: new Date().toISOString(),

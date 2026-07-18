@@ -6,6 +6,7 @@ import EventModal from './EventModal';
 import EventDetail from './EventDetail';
 import { Plus, Lock, Globe, Pencil, Trash2 } from 'lucide-react';
 import { parseDate, formatDateVN, formatTimeVN } from '@/lib/datetime';
+import LocationBadge from './LocationBadge';
 
 type Visibility = 'private' | 'public';
 
@@ -15,6 +16,7 @@ interface Event {
   description: string;
   event_date: string;
   location: string;
+  location_url?: string;
   visibility: Visibility;
   created_by_user_id: number;
   created_by_name: string;
@@ -53,14 +55,15 @@ export default function EventList({ token }: { token: string | null }) {
     description: string,
     eventDate: string,
     location: string,
-    visibility: Visibility
+    visibility: Visibility,
+    locationUrl: string
   ) => {
     try {
       if (editing) {
         const response = await fetch(`/api/events/${editing.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ title, description, eventDate, location, visibility }),
+          body: JSON.stringify({ title, description, eventDate, location, locationUrl, visibility }),
         });
         if (response.ok) {
           setTab(visibility);
@@ -70,7 +73,7 @@ export default function EventList({ token }: { token: string | null }) {
         const response = await fetch('/api/events', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ title, description, eventDate, location, visibility }),
+          body: JSON.stringify({ title, description, eventDate, location, locationUrl, visibility }),
         });
         const data = await response.json();
         if (data.event) {
@@ -198,7 +201,15 @@ export default function EventList({ token }: { token: string | null }) {
             📅 {formatDateVN(event.event_date, { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
           </p>
           {!past && <p>🕐 {formatTimeVN(event.event_date)}</p>}
-          {event.location && <p>📍 {event.location}</p>}
+          {(event.location || event.location_url) && (
+            <div className="flex items-center gap-1">
+              <span>📍</span>
+              <LocationBadge
+                locationName={event.location}
+                locationUrl={event.location_url}
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -307,6 +318,7 @@ export default function EventList({ token }: { token: string | null }) {
                 description: editing.description || '',
                 event_date: editing.event_date,
                 location: editing.location || '',
+                location_url: editing.location_url || '',
                 visibility: editing.visibility,
               }
             : null

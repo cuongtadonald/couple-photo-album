@@ -5,12 +5,16 @@ import type { ChangeEvent, DragEvent } from 'react';
 import { ArrowLeft, Star, Pencil, Trash2, Check, X, Lock, Globe } from 'lucide-react';
 import PhotoViewer from './PhotoViewer';
 import { formatDateVN } from '@/lib/datetime';
+import LocationPicker from './LocationPicker';
+import LocationBadge from './LocationBadge';
 
 interface Album {
   id: number;
   title: string;
   description: string;
   visibility?: 'private' | 'public';
+  location_name?: string | null;
+  location_url?: string | null;
   cover_photo_id?: number | null;
   photo_count?: number;
 }
@@ -19,6 +23,8 @@ interface Photo {
   id: number;
   image_url: string;
   caption: string;
+  location_name?: string | null;
+  location_url?: string | null;
   created_at: string;
 }
 
@@ -50,11 +56,15 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
   const [dragActive, setDragActive] = useState(false);
   const [previews, setPreviews] = useState<PreviewItem[]>([]);
   const [captions, setCaptions] = useState<Record<string, string>>({});
+  const [locationNames, setLocationNames] = useState<Record<string, string>>({});
+  const [locationUrls, setLocationUrls] = useState<Record<string, string>>({});
 
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
   const [coverPhotoId, setCoverPhotoId] = useState<number | null>(album.cover_photo_id ?? null);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editCaption, setEditCaption] = useState('');
+  const [editLocationName, setEditLocationName] = useState('');
+  const [editLocationUrl, setEditLocationUrl] = useState('');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -137,17 +147,17 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
       if (target) URL.revokeObjectURL(target.url);
       return prev.filter((p) => p.id !== id);
     });
-    setCaptions((prev) => {
-      const next = { ...prev };
-      delete next[id];
-      return next;
-    });
+    setCaptions((prev) => { const next = { ...prev }; delete next[id]; return next; });
+    setLocationNames((prev) => { const next = { ...prev }; delete next[id]; return next; });
+    setLocationUrls((prev) => { const next = { ...prev }; delete next[id]; return next; });
   };
 
   const clearPreviews = () => {
     previews.forEach((p) => URL.revokeObjectURL(p.url));
     setPreviews([]);
     setCaptions({});
+    setLocationNames({});
+    setLocationUrls({});
   };
 
   // Upload files với thanh tiến trình thật (XHR)
@@ -194,10 +204,12 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
         const imageUrl = urls[i];
         if (!imageUrl) continue;
         const caption = captions[previews[i].id] || '';
+        const locationName = locationNames[previews[i].id] || '';
+        const locationUrl = locationUrls[previews[i].id] || '';
         const response = await fetch(`/api/albums/${album.id}/photos`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ imageUrl, caption }),
+          body: JSON.stringify({ imageUrl, caption, locationName, locationUrl }),
         });
         if (response.ok) {
           const data = await response.json();
@@ -206,6 +218,8 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
               id: data.photo.id,
               image_url: imageUrl,
               caption,
+              location_name: locationName || null,
+              location_url: locationUrl || null,
               created_at: new Date().toISOString(),
             });
           }
@@ -253,6 +267,8 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
   const startEdit = (photo: Photo) => {
     setEditingId(photo.id);
     setEditCaption(photo.caption || '');
+    setEditLocationName(photo.location_name || '');
+    setEditLocationUrl(photo.location_url || '');
   };
 
   const saveCaption = async (photoId: number) => {
@@ -260,11 +276,15 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
       const response = await fetch(`/api/albums/${album.id}/photos/${photoId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ caption: editCaption }),
+        body: JSON.stringify({ caption: editCaption, locationName: editLocationName, locationUrl: editLocationUrl }),
       });
       if (response.ok) {
         setPhotos((prev) =>
-          prev.map((p) => (p.id === photoId ? { ...p, caption: editCaption } : p))
+          prev.map((p) =>
+            p.id === photoId
+              ? { ...p, caption: editCaption, location_name: editLocationName || null, location_url: editLocationUrl || null }
+              : p
+          )
         );
         setEditingId(null);
       }
@@ -330,6 +350,11 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
           <span className="text-sm text-gray-500">{total} ảnh</span>
         </div>
         {album.description && <p className="text-gray-600 mt-2">{album.description}</p>}
+        {(album.location_name || album.location_url) && (
+          <div className="mt-2">
+            <LocationBadge locationName={album.location_name} locationUrl={album.location_url} />
+          </div>
+        )}
       </div>
 
       {/* Add Photo Form */}
@@ -357,16 +382,24 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
                       ✕
                     </button>
                   </div>
-                  <div className="flex-1">
-                    <label className="text-xs font-semibold text-gray-700 mb-1 block">
-                      Chú thích (có thể để trống)
-                    </label>
-                    <textarea
-                      value={captions[preview.id] || ''}
-                      onChange={(e) => setCaptions({ ...captions, [preview.id]: e.target.value })}
-                      placeholder="Viết mô tả cho ảnh này... có thể xuống dòng thoải mái."
-                      className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 font-cute text-sm text-gray-700 resize-y min-h-[5rem]"
-                      rows={4}
+                  <div className="flex-1 space-y-2">
+                    <div>
+                      <label className="text-xs font-semibold text-gray-700 mb-1 block">
+                        Chú thích (có thể để trống)
+                      </label>
+                      <textarea
+                        value={captions[preview.id] || ''}
+                        onChange={(e) => setCaptions({ ...captions, [preview.id]: e.target.value })}
+                        placeholder="Viết mô tả cho ảnh này..."
+                        className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 font-cute text-sm text-gray-700 resize-y min-h-[4rem]"
+                        rows={3}
+                      />
+                    </div>
+                    <LocationPicker
+                      locationName={locationNames[preview.id] || ''}
+                      locationUrl={locationUrls[preview.id] || ''}
+                      onLocationNameChange={(v) => setLocationNames((prev) => ({ ...prev, [preview.id]: v }))}
+                      onLocationUrlChange={(v) => setLocationUrls((prev) => ({ ...prev, [preview.id]: v }))}
                     />
                   </div>
                 </div>
@@ -500,13 +533,19 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
 
                 <div className="p-3 sm:p-4">
                   {editingId === photo.id ? (
-                    <div>
+                    <div className="space-y-2">
                       <textarea
                         value={editCaption}
                         onChange={(e) => setEditCaption(e.target.value)}
                         rows={3}
                         className="w-full px-3 py-2 border-2 border-rose-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 text-sm text-gray-700 resize-y"
                         placeholder="Chú thích cho ảnh..."
+                      />
+                      <LocationPicker
+                        locationName={editLocationName}
+                        locationUrl={editLocationUrl}
+                        onLocationNameChange={setEditLocationName}
+                        onLocationUrlChange={setEditLocationUrl}
                       />
                       <div className="flex gap-2 mt-2">
                         <button
@@ -531,6 +570,14 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
                         </p>
                       ) : (
                         <p className="text-gray-400 text-sm italic">Chưa có chú thích</p>
+                      )}
+                      {(photo.location_name || photo.location_url) && (
+                        <div className="mt-1.5">
+                          <LocationBadge
+                            locationName={photo.location_name}
+                            locationUrl={photo.location_url}
+                          />
+                        </div>
                       )}
                       <p className="text-xs text-gray-500 mt-2">{formatDateVN(photo.created_at)}</p>
                     </>

@@ -6,6 +6,7 @@ import AlbumModal from './AlbumModal';
 import AlbumDetail from './AlbumDetail';
 import { Plus, Lock, Globe, Pencil, Trash2, ImageIcon } from 'lucide-react';
 import { formatDateVN } from '@/lib/datetime';
+import LocationBadge from './LocationBadge';
 
 type Visibility = 'private' | 'public';
 
@@ -15,6 +16,8 @@ interface Album {
   title: string;
   description: string;
   visibility: Visibility;
+  location_name?: string | null;
+  location_url?: string | null;
   cover_image_url: string | null;
   cover_photo_id: number | null;
   photo_count: number;
@@ -48,13 +51,19 @@ export default function AlbumList({ token }: { token: string | null }) {
     }
   };
 
-  const handleSubmit = async (title: string, description: string, visibility: Visibility) => {
+  const handleSubmit = async (
+    title: string,
+    description: string,
+    visibility: Visibility,
+    locationName: string,
+    locationUrl: string
+  ) => {
     try {
       if (editing) {
         const response = await fetch(`/api/albums/${editing.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ title, description, visibility }),
+          body: JSON.stringify({ title, description, visibility, locationName, locationUrl }),
         });
         if (response.ok) {
           setTab(visibility);
@@ -64,7 +73,7 @@ export default function AlbumList({ token }: { token: string | null }) {
         const response = await fetch('/api/albums', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ title, description, visibility }),
+          body: JSON.stringify({ title, description, visibility, locationName, locationUrl }),
         });
         const data = await response.json();
         if (data.album) {
@@ -246,6 +255,14 @@ export default function AlbumList({ token }: { token: string | null }) {
                 {album.description && (
                   <p className="text-gray-600 text-sm mt-2 line-clamp-2">{album.description}</p>
                 )}
+                {(album.location_name || album.location_url) && (
+                  <div className="mt-2">
+                    <LocationBadge
+                      locationName={album.location_name}
+                      locationUrl={album.location_url}
+                    />
+                  </div>
+                )}
                 <p className="text-xs text-gray-500 mt-3">📅 {formatDateVN(album.created_at)}</p>
               </div>
             </div>
@@ -263,6 +280,8 @@ export default function AlbumList({ token }: { token: string | null }) {
                 title: editing.title,
                 description: editing.description || '',
                 visibility: editing.visibility,
+                location_name: editing.location_name || '',
+                location_url: editing.location_url || '',
               }
             : null
         }

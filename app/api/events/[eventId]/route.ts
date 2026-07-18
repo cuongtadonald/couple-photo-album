@@ -23,7 +23,7 @@ export async function PUT(
     }
 
     const { eventId } = await params;
-    const { title, description, eventDate, location, visibility } = await request.json();
+    const { title, description, eventDate, location, locationUrl, visibility } = await request.json();
 
     if (!title || !eventDate) {
       return NextResponse.json({ error: 'Title and event date are required' }, { status: 400 });
@@ -42,8 +42,8 @@ export async function PUT(
     const vis = visibility === 'public' ? 'public' : 'private';
 
     await connection.execute(
-      `UPDATE events SET title = ?, description = ?, event_date = ?, location = ?, visibility = ? WHERE id = ?`,
-      [title, description || null, toMysqlDateTime(eventDate), location || null, vis, eventId]
+      `UPDATE events SET title = ?, description = ?, event_date = ?, location = ?, location_url = ?, visibility = ? WHERE id = ?`,
+      [title, description || null, toMysqlDateTime(eventDate), location || null, locationUrl || null, vis, eventId]
     );
     connection.release();
 

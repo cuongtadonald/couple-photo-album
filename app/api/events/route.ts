@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    const { title, description, eventDate, location, visibility } = await request.json();
+    const { title, description, eventDate, location, locationUrl, visibility } = await request.json();
 
     if (!title || !eventDate) {
       return NextResponse.json({ error: 'Title and event date are required' }, { status: 400 });
@@ -64,9 +64,9 @@ export async function POST(request: NextRequest) {
 
     const connection = await pool.getConnection();
     const [result] = await connection.execute(
-      `INSERT INTO events (title, description, event_date, location, visibility, created_by_user_id) 
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [title, description || null, dbDate, location || null, vis, decoded.userId]
+      `INSERT INTO events (title, description, event_date, location, location_url, visibility, created_by_user_id) 
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [title, description || null, dbDate, location || null, locationUrl || null, vis, decoded.userId]
     );
     connection.release();
 
@@ -79,6 +79,7 @@ export async function POST(request: NextRequest) {
           description,
           event_date: dbDate,
           location,
+          location_url: locationUrl || null,
           visibility: vis,
           created_by_user_id: decoded.userId,
           created_by_name: null,

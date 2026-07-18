@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import { verifyToken } from '@/lib/auth';
-import { put } from '@vercel/blob';
+import { writeFile, mkdir } from 'fs/promises';
+import { join } from 'path';
+import { randomUUID } from 'crypto';
 
 export async function POST(request: NextRequest) {
   try {
     const token = request.headers.get('authorization')?.replace('Bearer ', '');
-    
+
     if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -33,19 +35,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Upload to Vercel Blob
-    const filename = `${Date.now()}-${file.name}`;
-    const buffer = await file.arrayBuffer();
-    
-    const blob = await put(filename, buffer, {
-      access: 'private',
-    });
+    // Save to local filesystem under public/uploads/
+    const uploadDir = join(process.cwd(), 'public', 'uploads');
+    await mkdir(uploadDir, { recursive: true });
+
+    const originalName = file.name || 'file';
+    const ext = originalName.includes('.') ? originalName.split('.').pop()!.toLowerCase() : 'bin';
+    const fileName = `${randomUUID()}.${ext}`;
+    const filePath = join(uploadDir, fileName);
+
+    const bytes = await file.arrayBuffer();
+    await writeFile(filePath, Buffer.from(bytes));
+
+    const fileUrl = `/uploads/${fileName}`;
 
     const connection = await pool.getConnection();
     const [result] = await connection.execute(
-      `INSERT INTO attachments (letter_id, event_id, file_url, file_type, file_name) 
+      `INSERT INTO attachments (letter_id, event_id, file_url, file_type, file_name)
        VALUES (?, ?, ?, ?, ?)`,
-      [letterId || null, eventId || null, blob.url, fileType, file.name]
+      [letterId || null, eventId || null, fileUrl, fileType, originalName]
     );
     connection.release();
 
@@ -54,26 +62,23 @@ export async function POST(request: NextRequest) {
         success: true,
         attachment: {
           id: (result as any).insertId,
-          fileUrl: blob.url,
-          fileType,
-          fileName: file.name,
+          file_url: fileUrl,
+          file_type: fileType,
+          file_name: originalName,
         },
       },
       { status: 201 }
     );
   } catch (error) {
     console.error('Error uploading attachment:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
 export async function GET(request: NextRequest) {
   try {
     const token = request.headers.get('authorization')?.replace('Bearer ', '');
-    
+
     if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -87,7 +92,7 @@ export async function GET(request: NextRequest) {
     const eventId = request.nextUrl.searchParams.get('eventId');
 
     let query = 'SELECT * FROM attachments WHERE';
-    const params: any[] = [];
+    const params: (string | number)[] = [];
 
     if (letterId) {
       query += ' letter_id = ?';
@@ -109,9 +114,35 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ attachments });
   } catch (error) {
     console.error('Error fetching attachments:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const token = request.headers.get('authorization')?.replace('Bearer ', '');
+
+    if (!token) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const decoded = verifyToken(token);
+    if (!decoded) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    }
+
+    const attachmentId = request.nextUrl.searchParams.get('id');
+    if (!attachmentId) {
+      return NextResponse.json({ error: 'Attachment ID is required' }, { status: 400 });
+    }
+
+    const connection = await pool.getConnection();
+    await connection.execute('DELETE FROM attachments WHERE id = ?', [attachmentId]);
+    connection.release();
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting attachment:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

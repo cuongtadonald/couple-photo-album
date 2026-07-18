@@ -60,7 +60,7 @@ export async function POST(
     }
 
     const { albumId } = await params;
-    const { imageUrl, caption } = await request.json();
+    const { imageUrl, caption, locationName, locationUrl } = await request.json();
 
     if (!imageUrl) {
       return NextResponse.json({ error: 'Image URL is required' }, { status: 400 });
@@ -78,10 +78,24 @@ export async function POST(
       return NextResponse.json({ error: 'Album not found' }, { status: 404 });
     }
 
-    const [result] = await connection.execute(
-      'INSERT INTO photos (album_id, image_url, caption) VALUES (?, ?, ?)',
-      [albumId, imageUrl, caption || null]
-    );
+    let result: any;
+    try {
+      [result] = await connection.execute(
+        'INSERT INTO photos (album_id, image_url, caption, location_name, location_url) VALUES (?, ?, ?, ?, ?)',
+        [albumId, imageUrl, caption || null, locationName || null, locationUrl || null]
+      );
+    } catch (insertErr: any) {
+      // Fallback: columns may not exist yet on older DB — insert without location fields
+      if (insertErr?.code === 'ER_BAD_FIELD_ERROR') {
+        [result] = await connection.execute(
+          'INSERT INTO photos (album_id, image_url, caption) VALUES (?, ?, ?)',
+          [albumId, imageUrl, caption || null]
+        );
+      } else {
+        connection.release();
+        throw insertErr;
+      }
+    }
     connection.release();
 
     return NextResponse.json(
@@ -92,6 +106,8 @@ export async function POST(
           album_id: Number(albumId),
           image_url: imageUrl,
           caption: caption || '',
+          location_name: locationName || null,
+          location_url: locationUrl || null,
           created_at: new Date().toISOString(),
         },
       },

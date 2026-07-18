@@ -1,12 +1,14 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCcw, MapPin, ExternalLink } from 'lucide-react';
 
 interface ViewerPhoto {
   id: number;
   image_url: string;
   caption?: string;
+  location_name?: string | null;
+  location_url?: string | null;
 }
 
 interface PhotoViewerProps {
@@ -194,12 +196,37 @@ export default function PhotoViewer({ photos, startIndex, onClose }: PhotoViewer
         )}
       </div>
 
-      {/* Caption */}
-      {current.caption && (
-        <div className="px-4 py-4 text-center">
-          <p className="mx-auto max-w-2xl text-sm text-white/85 whitespace-pre-line leading-relaxed">
-            {current.caption}
-          </p>
+      {/* Caption + Location */}
+      {(current.caption || current.location_name || current.location_url) && (
+        <div className="px-4 py-4 text-center space-y-2">
+          {current.caption && (
+            <p className="mx-auto max-w-2xl text-sm text-white/85 whitespace-pre-line leading-relaxed">
+              {current.caption}
+            </p>
+          )}
+          {(current.location_name || current.location_url) && (
+            <div className="flex items-center justify-center gap-2">
+              {current.location_url ? (
+                <a
+                  href={current.location_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium bg-white/15 hover:bg-white/25 text-white/90 transition-colors"
+                  aria-label={`Mo Google Maps: ${current.location_name || 'Xem ban do'}`}
+                >
+                  <MapPin size={12} className="shrink-0" />
+                  <span>{current.location_name || 'Xem bản đồ'}</span>
+                  <ExternalLink size={11} className="shrink-0 opacity-75" />
+                </a>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium bg-white/10 text-white/75">
+                  <MapPin size={12} className="shrink-0" />
+                  <span>{current.location_name}</span>
+                </span>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>

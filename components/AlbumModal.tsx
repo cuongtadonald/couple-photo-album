@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { X, Lock, Globe } from 'lucide-react';
+import LocationPicker from './LocationPicker';
 
 type Visibility = 'private' | 'public';
 
@@ -10,12 +11,20 @@ interface AlbumInitial {
   title: string;
   description: string;
   visibility: Visibility;
+  location_name?: string;
+  location_url?: string;
 }
 
 interface AlbumModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (title: string, description: string, visibility: Visibility) => Promise<void> | void;
+  onSubmit: (
+    title: string,
+    description: string,
+    visibility: Visibility,
+    locationName: string,
+    locationUrl: string
+  ) => Promise<void> | void;
   /** Nếu truyền vào => chế độ chỉnh sửa, ngược lại là tạo mới */
   initial?: AlbumInitial | null;
 }
@@ -25,6 +34,8 @@ export default function AlbumModal({ isOpen, onClose, onSubmit, initial }: Album
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [visibility, setVisibility] = useState<Visibility>('private');
+  const [locationName, setLocationName] = useState('');
+  const [locationUrl, setLocationUrl] = useState('');
   const [loading, setLoading] = useState(false);
 
   // Đồng bộ dữ liệu khi mở modal (tạo mới hoặc sửa)
@@ -33,6 +44,8 @@ export default function AlbumModal({ isOpen, onClose, onSubmit, initial }: Album
       setTitle(initial?.title ?? '');
       setDescription(initial?.description ?? '');
       setVisibility(initial?.visibility ?? 'private');
+      setLocationName(initial?.location_name ?? '');
+      setLocationUrl(initial?.location_url ?? '');
     }
   }, [isOpen, initial]);
 
@@ -40,7 +53,7 @@ export default function AlbumModal({ isOpen, onClose, onSubmit, initial }: Album
     e.preventDefault();
     setLoading(true);
     try {
-      await onSubmit(title, description, visibility);
+      await onSubmit(title, description, visibility, locationName, locationUrl);
     } finally {
       setLoading(false);
     }
@@ -50,7 +63,7 @@ export default function AlbumModal({ isOpen, onClose, onSubmit, initial }: Album
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl w-full max-w-md border-2 border-rose-100">
+      <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto border-2 border-rose-100">
         <div className="flex justify-between items-center p-6 border-b border-rose-100">
           <h2 className="text-xl font-bold bg-gradient-to-r from-rose-500 to-pink-500 bg-clip-text text-transparent font-cute">
             {isEdit ? '✏️ Sửa Album' : '📷 Tạo Album Mới'}
@@ -91,6 +104,14 @@ export default function AlbumModal({ isOpen, onClose, onSubmit, initial }: Album
               rows={3}
             />
           </div>
+
+          {/* Location picker */}
+          <LocationPicker
+            locationName={locationName}
+            locationUrl={locationUrl}
+            onLocationNameChange={setLocationName}
+            onLocationUrlChange={setLocationUrl}
+          />
 
           {/* Chế độ hiển thị */}
           <div>

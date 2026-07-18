@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Upload, MapPin, Calendar as CalendarIcon, Pencil, Trash2, Lock, Globe } from 'lucide-react';
+import { ArrowLeft, Upload, MapPin, Calendar as CalendarIcon, Pencil, Trash2, Lock, Globe, ExternalLink } from 'lucide-react';
+import LocationBadge from './LocationBadge';
 import { parseDate, formatDateVN, formatTimeVN } from '@/lib/datetime';
 
 interface Event {
@@ -11,6 +12,7 @@ interface Event {
   description: string;
   event_date: string;
   location: string;
+  location_url?: string;
   visibility?: 'private' | 'public';
   created_by_name: string;
   created_at: string;
@@ -153,10 +155,22 @@ export default function EventDetail({ event, token, onBack, onEdit, onDelete }: 
                 lúc {formatTimeVN(event.event_date)}
               </span>
             </div>
-            {event.location && (
+            {(event.location || event.location_url) && (
               <div className="flex items-center gap-3">
-                <MapPin size={20} className="text-rose-600" />
-                <span className="text-gray-900">{event.location}</span>
+                <MapPin size={20} className="text-rose-600 shrink-0" />
+                {event.location_url ? (
+                  <a
+                    href={event.location_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 text-rose-600 hover:text-rose-700 hover:underline font-medium"
+                  >
+                    <span>{event.location || 'Xem bản đồ'}</span>
+                    <ExternalLink size={14} />
+                  </a>
+                ) : (
+                  <span className="text-gray-900">{event.location}</span>
+                )}
               </div>
             )}
             <p className="text-xs text-gray-600 pt-2">

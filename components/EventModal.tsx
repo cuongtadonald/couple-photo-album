@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { X, Lock, Globe } from 'lucide-react';
 import { parseDate } from '@/lib/datetime';
+import LocationPicker from './LocationPicker';
 
 type Visibility = 'private' | 'public';
 
@@ -12,6 +13,7 @@ interface EventInitial {
   description: string;
   event_date: string;
   location: string;
+  location_url?: string;
   visibility: Visibility;
 }
 
@@ -23,7 +25,8 @@ interface EventModalProps {
     description: string,
     eventDate: string,
     location: string,
-    visibility: Visibility
+    visibility: Visibility,
+    locationUrl: string
   ) => Promise<void> | void;
   initial?: EventInitial | null;
 }
@@ -37,6 +40,7 @@ export default function EventModal({ isOpen, onClose, onSubmit, initial }: Event
   const [eventDate, setEventDate] = useState('');
   const [eventTime, setEventTime] = useState('');
   const [location, setLocation] = useState('');
+  const [locationUrl, setLocationUrl] = useState('');
   const [visibility, setVisibility] = useState<Visibility>('private');
   const [loading, setLoading] = useState(false);
 
@@ -46,6 +50,7 @@ export default function EventModal({ isOpen, onClose, onSubmit, initial }: Event
       setTitle(initial.title);
       setDescription(initial.description || '');
       setLocation(initial.location || '');
+      setLocationUrl(initial.location_url || '');
       setVisibility(initial.visibility);
       const d = parseDate(initial.event_date);
       if (d) {
@@ -61,6 +66,7 @@ export default function EventModal({ isOpen, onClose, onSubmit, initial }: Event
       setEventDate('');
       setEventTime('');
       setLocation('');
+      setLocationUrl('');
       setVisibility('private');
     }
   }, [isOpen, initial]);
@@ -75,7 +81,7 @@ export default function EventModal({ isOpen, onClose, onSubmit, initial }: Event
     try {
       const time = eventTime || '00:00';
       const fullDateTime = `${eventDate}T${time}`;
-      await onSubmit(title, description, fullDateTime, location, visibility);
+      await onSubmit(title, description, fullDateTime, location, visibility, locationUrl);
     } finally {
       setLoading(false);
     }
@@ -141,16 +147,13 @@ export default function EventModal({ isOpen, onClose, onSubmit, initial }: Event
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2 font-cute">📍 Địa Điểm (Tùy Chọn)</label>
-            <input
-              type="text"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 font-cute text-gray-700"
-              placeholder="Ví dụ: Nhà hàng XYZ"
-            />
-          </div>
+          {/* Location picker */}
+          <LocationPicker
+            locationName={location}
+            locationUrl={locationUrl}
+            onLocationNameChange={setLocation}
+            onLocationUrlChange={setLocationUrl}
+          />
 
           {/* Chế độ hiển thị */}
           <div>

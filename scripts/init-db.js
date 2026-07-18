@@ -116,6 +116,27 @@ const initDatabase = async () => {
       );
     } catch (e) { /* cột đã tồn tại */ }
 
+    // Migration: thêm location_url cho events
+    try {
+      await connection.execute('ALTER TABLE events ADD COLUMN location_url VARCHAR(1000)');
+    } catch (e) { /* cột đã tồn tại */ }
+
+    // Migration: thêm location fields cho albums
+    try {
+      await connection.execute('ALTER TABLE albums ADD COLUMN location_name VARCHAR(255)');
+    } catch (e) { /* cột đã tồn tại */ }
+    try {
+      await connection.execute('ALTER TABLE albums ADD COLUMN location_url VARCHAR(1000)');
+    } catch (e) { /* cột đã tồn tại */ }
+
+    // Migration: thêm location fields cho photos
+    try {
+      await connection.execute('ALTER TABLE photos ADD COLUMN location_name VARCHAR(255)');
+    } catch (e) { /* cột đã tồn tại */ }
+    try {
+      await connection.execute('ALTER TABLE photos ADD COLUMN location_url VARCHAR(1000)');
+    } catch (e) { /* cột đã tồn tại */ }
+
     // Create attachments table
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS attachments (

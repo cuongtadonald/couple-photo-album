@@ -25,7 +25,7 @@ export async function PUT(
 
     const { albumId } = await params;
     const body = await request.json();
-    const { title, description, visibility, coverPhotoId } = body;
+    const { title, description, visibility, coverPhotoId, locationName, locationUrl } = body;
 
     const connection = await pool.getConnection();
 
@@ -41,10 +41,12 @@ export async function PUT(
     const newVisibility =
       visibility === 'public' || visibility === 'private' ? visibility : album.visibility;
     const newCover = coverPhotoId !== undefined ? coverPhotoId : album.cover_photo_id;
+    const newLocationName = locationName !== undefined ? locationName : album.location_name;
+    const newLocationUrl = locationUrl !== undefined ? locationUrl : album.location_url;
 
     await connection.execute(
-      `UPDATE albums SET title = ?, description = ?, visibility = ?, cover_photo_id = ? WHERE id = ?`,
-      [newTitle, newDescription || null, newVisibility, newCover || null, albumId]
+      `UPDATE albums SET title = ?, description = ?, visibility = ?, cover_photo_id = ?, location_name = ?, location_url = ? WHERE id = ?`,
+      [newTitle, newDescription || null, newVisibility, newCover || null, newLocationName || null, newLocationUrl || null, albumId]
     );
     connection.release();
 

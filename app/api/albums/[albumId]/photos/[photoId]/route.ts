@@ -24,7 +24,7 @@ export async function PUT(
     }
 
     const { photoId } = await params;
-    const { caption } = await request.json();
+    const { caption, locationName, locationUrl } = await request.json();
 
     const connection = await pool.getConnection();
     const [rows] = await connection.execute('SELECT id FROM photos WHERE id = ?', [photoId]);
@@ -33,10 +33,19 @@ export async function PUT(
       return NextResponse.json({ error: 'Photo not found' }, { status: 404 });
     }
 
-    await connection.execute('UPDATE photos SET caption = ? WHERE id = ?', [
-      caption || null,
-      photoId,
-    ]);
+    try {
+      await connection.execute(
+        'UPDATE photos SET caption = ?, location_name = ?, location_url = ? WHERE id = ?',
+        [caption || null, locationName || null, locationUrl || null, photoId]
+      );
+    } catch (updateErr: any) {
+      if (updateErr?.code === 'ER_BAD_FIELD_ERROR') {
+        await connection.execute('UPDATE photos SET caption = ? WHERE id = ?', [caption || null, photoId]);
+      } else {
+        connection.release();
+        throw updateErr;
+      }
+    }
     connection.release();
 
     return NextResponse.json({ success: true });

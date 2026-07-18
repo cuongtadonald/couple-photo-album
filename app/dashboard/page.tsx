@@ -1,19 +1,20 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { Button } from '@/components/ui/button';
 import AlbumList from '@/components/AlbumList';
 import LetterList from '@/components/LetterList';
 import EventList from '@/components/EventList';
+import { useSessionState } from '@/lib/use-session-state';
 
 type Tab = 'albums' | 'letters' | 'events';
 
 export default function DashboardPage() {
   const { user, token, loading, logout } = useAuth();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<Tab>('albums');
+  const [activeTab, setActiveTab] = useSessionState<Tab>('dashboard:activeTab', 'albums');
 
   useEffect(() => {
     // Chỉ chuyển về login khi đã xác thực xong (loading=false) mà vẫn không có user.

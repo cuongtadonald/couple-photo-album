@@ -7,6 +7,7 @@ import AlbumDetail from './AlbumDetail';
 import { Plus, Lock, Globe, Pencil, Trash2, ImageIcon } from 'lucide-react';
 import { formatDateVN } from '@/lib/datetime';
 import LocationBadge from './LocationBadge';
+import { useSessionState, clearSessionKey } from '@/lib/use-session-state';
 
 type Visibility = 'private' | 'public';
 
@@ -27,10 +28,13 @@ interface Album {
 export default function AlbumList({ token }: { token: string | null }) {
   const [albums, setAlbums] = useState<Album[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
+  const [showModal, setShowModal] = useSessionState<boolean>('albums:showModal', false);
   const [editing, setEditing] = useState<Album | null>(null);
-  const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null);
-  const [tab, setTab] = useState<Visibility>('private');
+  const [selectedAlbumId, setSelectedAlbumId] = useSessionState<number | null>('albums:selectedId', null);
+  const [tab, setTab] = useSessionState<Visibility>('albums:tab', 'private');
+
+  // Resolve selectedAlbum from loaded albums list
+  const selectedAlbum = albums.find((a) => a.id === selectedAlbumId) ?? null;
 
   useEffect(() => {
     fetchAlbums();
@@ -122,7 +126,7 @@ export default function AlbumList({ token }: { token: string | null }) {
       <AlbumDetail
         album={selectedAlbum}
         token={token}
-        onBack={() => setSelectedAlbum(null)}
+        onBack={() => setSelectedAlbumId(null)}
         onAlbumUpdate={fetchAlbums}
       />
     );
@@ -202,7 +206,7 @@ export default function AlbumList({ token }: { token: string | null }) {
               className="group bg-white/80 backdrop-blur-sm rounded-2xl shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden transform hover:-translate-y-1 border border-rose-100"
             >
               <div
-                onClick={() => setSelectedAlbum(album)}
+                onClick={() => setSelectedAlbumId(album.id)}
                 className="h-48 bg-gradient-to-br from-rose-200 via-pink-100 to-rose-100 flex items-center justify-center overflow-hidden relative cursor-pointer"
               >
                 {album.cover_image_url ? (

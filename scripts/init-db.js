@@ -7,15 +7,16 @@ const initDatabase = async () => {
       host: process.env.MYSQL_HOST || 'localhost',
       user: process.env.MYSQL_USER || 'root',
       password: process.env.MYSQL_PASSWORD || '',
+      database: process.env.MYSQL_DATABASE || 'couple_app',
     });
 
-    // Create database
-    await connection.execute(
-      `CREATE DATABASE IF NOT EXISTS ${process.env.MYSQL_DATABASE || 'couple_app'}`
+    await connection.query(
+      `CREATE DATABASE IF NOT EXISTS \`${process.env.MYSQL_DATABASE || 'couple_app'}\``
     );
 
-    // Switch to the database
-    await connection.execute(`USE ${process.env.MYSQL_DATABASE || 'couple_app'}`);
+    await connection.changeUser({
+      database: process.env.MYSQL_DATABASE || 'couple_app',
+    });
 
     // Create users table
     await connection.execute(`
@@ -171,18 +172,18 @@ const initDatabase = async () => {
 
     // Check if users already exist
     const [existingUsers] = await connection.execute('SELECT COUNT(*) as count FROM users');
-    
+
     if (existingUsers[0].count === 0) {
       await connection.execute(
         'INSERT INTO users (email, password, full_name, role) VALUES (?, ?, ?, ?)',
         ['cuongtadonald@gmail.com', hashedPass1, 'anh xãa', 'anh']
       );
-      
+
       await connection.execute(
         'INSERT INTO users (email, password, full_name, role) VALUES (?, ?, ?, ?)',
         ['phuongvy01st@gmail.com', hashedPass2, 'em xãa', 'em']
       );
-      
+
       console.log('Pre-created accounts added successfully!');
     }
 

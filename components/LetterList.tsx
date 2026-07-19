@@ -6,6 +6,8 @@ import LetterModal from './LetterModal';
 import LetterDetail from './LetterDetail';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { parseDate, formatDateVN } from '@/lib/datetime';
+import { useSeen } from '@/lib/use-seen';
+import { useSessionState, clearSessionKey } from '@/lib/use-session-state';
 
 interface Letter {
   id: number;
@@ -26,9 +28,14 @@ interface LetterListProps {
 export default function LetterList({ token, currentUserId }: LetterListProps) {
   const [letters, setLetters] = useState<Letter[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
-  const [editing, setEditing] = useState<Letter | null>(null);
-  const [selectedLetter, setSelectedLetter] = useState<Letter | null>(null);
+  const [showModal, setShowModal] = useSessionState<boolean>('letters:showModal', false);
+  const [editingId, setEditingId] = useSessionState<number | null>('letters:editingId', null);
+  const [selectedLetterId, setSelectedLetterId] = useSessionState<number | null>('letters:selectedId', null);
+  const { badge, markSeen } = useSeen('letter');
+
+  // Resolve objects from IDs once the list has loaded
+  const editing = letters.find((l) => l.id === editingId) ?? null;
+  const selectedLetter = letters.find((l) => l.id === selectedLetterId) ?? null;
 
   useEffect(() => {
     fetchLetters();
@@ -79,6 +86,11 @@ export default function LetterList({ token, currentUserId }: LetterListProps) {
           setLetters((prev) => [data.letter, ...prev]);
         }
       }
+      // Clear create-mode draft after successful save
+      clearSessionKey('letters:draft:title');
+      clearSessionKey('letters:draft:content');
+      clearSessionKey('letters:draft:date');
+      clearSessionKey('letters:draft:time');
       closeModal();
     } catch (error) {
       console.error('Error saving letter:', error);
@@ -104,18 +116,23 @@ export default function LetterList({ token, currentUserId }: LetterListProps) {
   };
 
   const openCreate = () => {
-    setEditing(null);
+    setEditingId(null);
     setShowModal(true);
   };
 
   const openEdit = (letter: Letter) => {
-    setEditing(letter);
+    setEditingId(letter.id);
     setShowModal(true);
   };
 
   const closeModal = () => {
     setShowModal(false);
-    setEditing(null);
+    setEditingId(null);
+    // Clear create-mode draft when explicitly closing
+    clearSessionKey('letters:draft:title');
+    clearSessionKey('letters:draft:content');
+    clearSessionKey('letters:draft:date');
+    clearSessionKey('letters:draft:time');
   };
 
   const canOpenLetter = (letter: Letter): boolean => {
@@ -126,21 +143,30 @@ export default function LetterList({ token, currentUserId }: LetterListProps) {
 
   const isOwner = (letter: Letter) => letter.from_user_id === currentUserId;
 
+  /** Thư quá 7 ngày kể từ ngày tạo thì không cho sửa/xóa */
+  const isLocked = (letter: Letter): boolean => {
+    const created = parseDate(letter.created_at);
+    if (!created) return false;
+    return Date.now() - created.getTime() > 7 * 24 * 60 * 60 * 1000;
+  };
+
   if (selectedLetter) {
     return (
       <LetterDetail
         letter={selectedLetter}
         token={token}
         currentUserId={currentUserId}
-        onBack={() => setSelectedLetter(null)}
-        onEdit={() => {
-          setSelectedLetter(null);
-          openEdit(selectedLetter);
-        }}
-        onDelete={async () => {
-          await handleDelete(selectedLetter);
-          setSelectedLetter(null);
-        }}
+        onBack={() => setSelectedLetterId(null)}
+        onEdit={
+          selectedLetter.from_user_id === currentUserId && !isLocked(selectedLetter)
+            ? () => { setSelectedLetterId(null); openEdit(selectedLetter); }
+            : undefined
+        }
+        onDelete={
+          selectedLetter.from_user_id === currentUserId && !isLocked(selectedLetter)
+            ? async () => { await handleDelete(selectedLetter); setSelectedLetterId(null); }
+            : undefined
+        }
       />
     );
   }
@@ -180,6 +206,7 @@ export default function LetterList({ token, currentUserId }: LetterListProps) {
           {letters.map((letter) => {
             const canOpen = canOpenLetter(letter);
             const owner = isOwner(letter);
+            const locked = isLocked(letter);
             return (
               <div
                 key={letter.id}
@@ -190,12 +217,21 @@ export default function LetterList({ token, currentUserId }: LetterListProps) {
                 <div className="flex justify-between items-start gap-3">
                   <div
                     className={`flex-1 min-w-0 ${canOpen ? 'cursor-pointer' : ''}`}
-                    onClick={() => canOpen && setSelectedLetter(letter)}
+                    onClick={() => { if (canOpen) { setSelectedLetterId(letter.id); markSeen(letter.id); } }}
                   >
                     <div className="flex items-center gap-3 flex-wrap">
                       <h3 className="text-lg font-bold bg-gradient-to-r from-rose-500 to-pink-500 bg-clip-text text-transparent">
                         {letter.title}
                       </h3>
+                      {canOpen && (() => {
+                        const b = badge(letter.id, letter.created_at);
+                        if (!b) return null;
+                        return (
+                          <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${b === 'new' ? 'bg-rose-500 text-white' : 'bg-amber-400 text-white'}`}>
+                            {b === 'new' ? 'Mới' : 'Chưa xem'}
+                          </span>
+                        );
+                      })()}
                       {!canOpen && (
                         <span className="flex items-center gap-1 text-amber-700 text-xs font-semibold bg-amber-100 px-3 py-1 rounded-full">
                           🔒 Khóa
@@ -220,25 +256,28 @@ export default function LetterList({ token, currentUserId }: LetterListProps) {
                     </p>
                   </div>
                   <div className="text-right ml-2 shrink-0">
-                    {/* Chỉ chính chủ mới có nút sửa/xóa */}
-                    {owner && (
-                      <div className="flex gap-1 justify-end mb-2">
-                        <button
-                          onClick={() => openEdit(letter)}
-                          aria-label="Sửa thư"
-                          className="grid place-items-center w-8 h-8 rounded-full text-gray-400 hover:text-rose-500 hover:bg-rose-50 transition-colors"
-                        >
-                          <Pencil size={16} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(letter)}
-                          aria-label="Xóa thư"
-                          className="grid place-items-center w-8 h-8 rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    )}
+                  {/* Chỉ chính chủ mới có nút sửa/xóa — ẩn nếu đã quá 7 ngày */}
+                  {owner && !locked && (
+                    <div className="flex gap-1 justify-end mb-2">
+                      <button
+                        onClick={() => openEdit(letter)}
+                        aria-label="Sửa thư"
+                        className="grid place-items-center w-8 h-8 rounded-full text-gray-400 hover:text-rose-500 hover:bg-rose-50 transition-colors"
+                      >
+                        <Pencil size={16} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(letter)}
+                        aria-label="Xóa thư"
+                        className="grid place-items-center w-8 h-8 rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  )}
+                  {owner && locked && (
+                    <span className="text-xs text-gray-400 italic mb-2 block text-right">Đã khóa</span>
+                  )}
                     {letter.scheduled_unlock_date && (
                       <p className="text-xs text-amber-600 font-semibold mb-1">
                         📅 {formatDateVN(letter.scheduled_unlock_date)}
@@ -266,6 +305,7 @@ export default function LetterList({ token, currentUserId }: LetterListProps) {
               }
             : null
         }
+        draftKey="letters:draft"
       />
     </div>
   );

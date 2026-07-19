@@ -7,6 +7,8 @@ import EventDetail from './EventDetail';
 import { Plus, Lock, Globe, Pencil, Trash2 } from 'lucide-react';
 import { parseDate, formatDateVN, formatTimeVN } from '@/lib/datetime';
 import LocationBadge from './LocationBadge';
+import { useSeen } from '@/lib/use-seen';
+import { useSessionState, clearSessionKey } from '@/lib/use-session-state';
 
 type Visibility = 'private' | 'public';
 
@@ -26,10 +28,15 @@ interface Event {
 export default function EventList({ token }: { token: string | null }) {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
-  const [editing, setEditing] = useState<Event | null>(null);
-  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
-  const [tab, setTab] = useState<Visibility>('private');
+  const [showModal, setShowModal] = useSessionState<boolean>('events:showModal', false);
+  const [editingId, setEditingId] = useSessionState<number | null>('events:editingId', null);
+  const [selectedEventId, setSelectedEventId] = useSessionState<number | null>('events:selectedId', null);
+  const [tab, setTab] = useSessionState<Visibility>('events:tab', 'private');
+  const { badge, markSeen } = useSeen('event');
+
+  // Resolve objects from IDs once the list has loaded
+  const editing = events.find((e) => e.id === editingId) ?? null;
+  const selectedEvent = events.find((e) => e.id === selectedEventId) ?? null;
 
   useEffect(() => {
     fetchEvents();
@@ -81,6 +88,14 @@ export default function EventList({ token }: { token: string | null }) {
           setTab(visibility);
         }
       }
+      // Clear draft after successful save
+      clearSessionKey('events:draft:title');
+      clearSessionKey('events:draft:desc');
+      clearSessionKey('events:draft:date');
+      clearSessionKey('events:draft:time');
+      clearSessionKey('events:draft:location');
+      clearSessionKey('events:draft:locationUrl');
+      clearSessionKey('events:draft:visibility');
       closeModal();
     } catch (error) {
       console.error('Error saving event:', error);
@@ -103,18 +118,26 @@ export default function EventList({ token }: { token: string | null }) {
   };
 
   const openCreate = () => {
-    setEditing(null);
+    setEditingId(null);
     setShowModal(true);
   };
 
   const openEdit = (event: Event) => {
-    setEditing(event);
+    setEditingId(event.id);
     setShowModal(true);
   };
 
   const closeModal = () => {
     setShowModal(false);
-    setEditing(null);
+    setEditingId(null);
+    // Clear create-mode draft when explicitly closing
+    clearSessionKey('events:draft:title');
+    clearSessionKey('events:draft:desc');
+    clearSessionKey('events:draft:date');
+    clearSessionKey('events:draft:time');
+    clearSessionKey('events:draft:location');
+    clearSessionKey('events:draft:locationUrl');
+    clearSessionKey('events:draft:visibility');
   };
 
   const isUpcoming = (eventDate: string): boolean => {
@@ -122,19 +145,27 @@ export default function EventList({ token }: { token: string | null }) {
     return d ? d > new Date() : false;
   };
 
+  /** Sự kiện quá 7 ngày kể từ ngày tạo thì không cho sửa (nhưng vẫn xóa được) */
+  const isEditLocked = (event: Event): boolean => {
+    const created = parseDate(event.created_at);
+    if (!created) return false;
+    return Date.now() - created.getTime() > 7 * 24 * 60 * 60 * 1000;
+  };
+
   if (selectedEvent) {
     return (
       <EventDetail
         event={selectedEvent}
         token={token}
-        onBack={() => setSelectedEvent(null)}
-        onEdit={() => {
-          setSelectedEvent(null);
-          openEdit(selectedEvent);
-        }}
+        onBack={() => setSelectedEventId(null)}
+        onEdit={
+          !isEditLocked(selectedEvent)
+            ? () => { setSelectedEventId(null); openEdit(selectedEvent); }
+            : undefined
+        }
         onDelete={async () => {
           await handleDelete(selectedEvent);
-          setSelectedEvent(null);
+          setSelectedEventId(null);
         }}
       />
     );
@@ -157,7 +188,7 @@ export default function EventList({ token }: { token: string | null }) {
       }`}
     >
       <div
-        onClick={() => setSelectedEvent(event)}
+        onClick={() => { setSelectedEventId(event.id); markSeen(event.id); }}
         className={`h-20 flex items-center justify-center relative overflow-hidden cursor-pointer ${
           past ? 'bg-gradient-to-r from-gray-100 to-gray-50' : 'bg-gradient-to-r from-rose-200 via-pink-100 to-rose-100'
         }`}
@@ -168,22 +199,35 @@ export default function EventList({ token }: { token: string | null }) {
       </div>
       <div className="p-5">
         <div className="flex items-start justify-between gap-2">
-          <h4
-            onClick={() => setSelectedEvent(event)}
-            className={`text-lg font-bold cursor-pointer line-clamp-1 ${
-              past ? 'text-gray-700' : 'bg-gradient-to-r from-rose-500 to-pink-500 bg-clip-text text-transparent'
-            }`}
-          >
-            {event.title}
-          </h4>
-          <div className="flex gap-1 shrink-0">
-            <button
-              onClick={() => openEdit(event)}
-              aria-label="Sửa sự kiện"
-              className="grid place-items-center w-8 h-8 rounded-full text-gray-400 hover:text-rose-500 hover:bg-rose-50 transition-colors"
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <h4
+              onClick={() => { setSelectedEventId(event.id); markSeen(event.id); }}
+              className={`text-lg font-bold cursor-pointer line-clamp-1 ${
+                past ? 'text-gray-700' : 'bg-gradient-to-r from-rose-500 to-pink-500 bg-clip-text text-transparent'
+              }`}
             >
-              <Pencil size={16} />
-            </button>
+              {event.title}
+            </h4>
+            {(() => {
+              const b = badge(event.id, event.created_at);
+              if (!b) return null;
+              return (
+                <span className={`shrink-0 text-xs font-bold px-2 py-0.5 rounded-full ${b === 'new' ? 'bg-rose-500 text-white' : 'bg-amber-400 text-white'}`}>
+                  {b === 'new' ? 'Mới' : 'Chưa xem'}
+                </span>
+              );
+            })()}
+          </div>
+          <div className="flex gap-1 shrink-0">
+            {!isEditLocked(event) && (
+              <button
+                onClick={() => openEdit(event)}
+                aria-label="Sửa sự kiện"
+                className="grid place-items-center w-8 h-8 rounded-full text-gray-400 hover:text-rose-500 hover:bg-rose-50 transition-colors"
+              >
+                <Pencil size={16} />
+              </button>
+            )}
             <button
               onClick={() => handleDelete(event)}
               aria-label="Xóa sự kiện"
@@ -323,6 +367,7 @@ export default function EventList({ token }: { token: string | null }) {
               }
             : null
         }
+        draftKey="events:draft"
       />
     </div>
   );

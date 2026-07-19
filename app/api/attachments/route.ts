@@ -35,8 +35,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Save to local filesystem under public/uploads/
-    const uploadDir = join(process.cwd(), 'public', 'uploads');
+    // Save to local filesystem under storage/uploads/
+    const uploadDir = join(process.cwd(), 'storage', 'uploads');
     await mkdir(uploadDir, { recursive: true });
 
     const originalName = file.name || 'file';
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
     const bytes = await file.arrayBuffer();
     await writeFile(filePath, Buffer.from(bytes));
 
-    const fileUrl = `/uploads/${fileName}`;
+    const fileUrl = `/api/files/${fileName}`;
 
     const connection = await pool.getConnection();
     const [result] = await connection.execute(

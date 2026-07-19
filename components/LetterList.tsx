@@ -6,6 +6,7 @@ import LetterModal from './LetterModal';
 import LetterDetail from './LetterDetail';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { parseDate, formatDateVN } from '@/lib/datetime';
+import { useSeen } from '@/lib/use-seen';
 
 interface Letter {
   id: number;
@@ -29,6 +30,7 @@ export default function LetterList({ token, currentUserId }: LetterListProps) {
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<Letter | null>(null);
   const [selectedLetter, setSelectedLetter] = useState<Letter | null>(null);
+  const { badge, markSeen } = useSeen('letter');
 
   useEffect(() => {
     fetchLetters();
@@ -126,6 +128,13 @@ export default function LetterList({ token, currentUserId }: LetterListProps) {
 
   const isOwner = (letter: Letter) => letter.from_user_id === currentUserId;
 
+  /** Thư quá 7 ngày kể từ ngày tạo thì không cho sửa/xóa */
+  const isLocked = (letter: Letter): boolean => {
+    const created = parseDate(letter.created_at);
+    if (!created) return false;
+    return Date.now() - created.getTime() > 7 * 24 * 60 * 60 * 1000;
+  };
+
   if (selectedLetter) {
     return (
       <LetterDetail
@@ -133,14 +142,16 @@ export default function LetterList({ token, currentUserId }: LetterListProps) {
         token={token}
         currentUserId={currentUserId}
         onBack={() => setSelectedLetter(null)}
-        onEdit={() => {
-          setSelectedLetter(null);
-          openEdit(selectedLetter);
-        }}
-        onDelete={async () => {
-          await handleDelete(selectedLetter);
-          setSelectedLetter(null);
-        }}
+        onEdit={
+          selectedLetter.from_user_id === currentUserId && !isLocked(selectedLetter)
+            ? () => { setSelectedLetter(null); openEdit(selectedLetter); }
+            : undefined
+        }
+        onDelete={
+          selectedLetter.from_user_id === currentUserId && !isLocked(selectedLetter)
+            ? async () => { await handleDelete(selectedLetter); setSelectedLetter(null); }
+            : undefined
+        }
       />
     );
   }
@@ -180,6 +191,7 @@ export default function LetterList({ token, currentUserId }: LetterListProps) {
           {letters.map((letter) => {
             const canOpen = canOpenLetter(letter);
             const owner = isOwner(letter);
+            const locked = isLocked(letter);
             return (
               <div
                 key={letter.id}
@@ -190,12 +202,21 @@ export default function LetterList({ token, currentUserId }: LetterListProps) {
                 <div className="flex justify-between items-start gap-3">
                   <div
                     className={`flex-1 min-w-0 ${canOpen ? 'cursor-pointer' : ''}`}
-                    onClick={() => canOpen && setSelectedLetter(letter)}
+                    onClick={() => { if (canOpen) { setSelectedLetter(letter); markSeen(letter.id); } }}
                   >
                     <div className="flex items-center gap-3 flex-wrap">
                       <h3 className="text-lg font-bold bg-gradient-to-r from-rose-500 to-pink-500 bg-clip-text text-transparent">
                         {letter.title}
                       </h3>
+                      {canOpen && (() => {
+                        const b = badge(letter.id, letter.created_at);
+                        if (!b) return null;
+                        return (
+                          <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${b === 'new' ? 'bg-rose-500 text-white' : 'bg-amber-400 text-white'}`}>
+                            {b === 'new' ? 'Mới' : 'Chưa xem'}
+                          </span>
+                        );
+                      })()}
                       {!canOpen && (
                         <span className="flex items-center gap-1 text-amber-700 text-xs font-semibold bg-amber-100 px-3 py-1 rounded-full">
                           🔒 Khóa
@@ -220,25 +241,28 @@ export default function LetterList({ token, currentUserId }: LetterListProps) {
                     </p>
                   </div>
                   <div className="text-right ml-2 shrink-0">
-                    {/* Chỉ chính chủ mới có nút sửa/xóa */}
-                    {owner && (
-                      <div className="flex gap-1 justify-end mb-2">
-                        <button
-                          onClick={() => openEdit(letter)}
-                          aria-label="Sửa thư"
-                          className="grid place-items-center w-8 h-8 rounded-full text-gray-400 hover:text-rose-500 hover:bg-rose-50 transition-colors"
-                        >
-                          <Pencil size={16} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(letter)}
-                          aria-label="Xóa thư"
-                          className="grid place-items-center w-8 h-8 rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    )}
+                  {/* Chỉ chính chủ mới có nút sửa/xóa — ẩn nếu đã quá 7 ngày */}
+                  {owner && !locked && (
+                    <div className="flex gap-1 justify-end mb-2">
+                      <button
+                        onClick={() => openEdit(letter)}
+                        aria-label="Sửa thư"
+                        className="grid place-items-center w-8 h-8 rounded-full text-gray-400 hover:text-rose-500 hover:bg-rose-50 transition-colors"
+                      >
+                        <Pencil size={16} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(letter)}
+                        aria-label="Xóa thư"
+                        className="grid place-items-center w-8 h-8 rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  )}
+                  {owner && locked && (
+                    <span className="text-xs text-gray-400 italic mb-2 block text-right">Đã khóa</span>
+                  )}
                     {letter.scheduled_unlock_date && (
                       <p className="text-xs text-amber-600 font-semibold mb-1">
                         📅 {formatDateVN(letter.scheduled_unlock_date)}

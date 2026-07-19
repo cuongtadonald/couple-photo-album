@@ -59,6 +59,7 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
   const [locationNames, setLocationNames] = useState<Record<string, string>>({});
   const [locationUrls, setLocationUrls] = useState<Record<string, string>>({});
 
+  const [showAddPhoto, setShowAddPhoto] = useState(false);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
   const [coverPhotoId, setCoverPhotoId] = useState<number | null>(album.cover_photo_id ?? null);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -357,118 +358,143 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
         )}
       </div>
 
-      {/* Add Photo Form */}
-      <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-md p-6 mb-8 border border-rose-100">
-        <h3 className="text-lg font-bold text-rose-600 mb-4 flex items-center gap-2 font-cute">
-          Thêm Ảnh Mới
-        </h3>
+      {/* Floating sticker button to add photos */}
+      <button
+        onClick={() => setShowAddPhoto(true)}
+        aria-label="Thêm ảnh mới"
+        title="Thêm ảnh mới"
+        className="fixed bottom-6 right-6 z-40 w-16 h-16 rounded-full bg-gradient-to-br from-rose-400 to-pink-500 shadow-2xl flex items-center justify-center text-2xl hover:scale-110 active:scale-95 transition-transform select-none"
+      >
+        📷
+      </button>
 
-        {previews.length > 0 && (
-          <div className="mb-6 p-4 bg-rose-50 rounded-lg border-2 border-rose-200">
-            <h4 className="font-semibold text-rose-700 mb-4">Các ảnh đã chọn ({previews.length})</h4>
+      {/* Add Photo Popup */}
+      {showAddPhoto && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm p-0 sm:p-4">
+          <div className="w-full sm:max-w-lg max-h-[92dvh] overflow-y-auto bg-white/98 backdrop-blur-sm rounded-t-3xl sm:rounded-2xl shadow-2xl border border-rose-100">
+            {/* Popup header */}
+            <div className="sticky top-0 bg-white/95 backdrop-blur-sm z-10 flex items-center justify-between px-6 py-4 border-b border-rose-100">
+              <h3 className="text-lg font-bold text-rose-600 font-cute">
+                Thêm Ảnh Mới
+              </h3>
+              <button
+                onClick={() => { setShowAddPhoto(false); clearPreviews(); }}
+                aria-label="Đóng"
+                className="grid place-items-center w-8 h-8 rounded-full text-gray-400 hover:text-rose-500 hover:bg-rose-50 transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
 
-            <div className="space-y-4 max-h-[28rem] overflow-y-auto pr-1">
-              {previews.map((preview, idx) => (
-                <div key={preview.id} className="flex gap-3 bg-white rounded-lg p-3 border border-rose-100">
-                  <div className="relative h-28 w-28 flex-shrink-0 bg-gray-100 rounded-lg overflow-hidden">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={preview.url || '/placeholder.svg'} alt={`Xem trước ${idx + 1}`} className="w-full h-full object-cover" />
+            <div className="p-6">
+              {previews.length > 0 && (
+                <div className="mb-6 p-4 bg-rose-50 rounded-lg border-2 border-rose-200">
+                  <h4 className="font-semibold text-rose-700 mb-4">Các ảnh đã chọn ({previews.length})</h4>
+
+                  <div className="space-y-4 max-h-64 overflow-y-auto pr-1">
+                    {previews.map((preview, idx) => (
+                      <div key={preview.id} className="flex gap-3 bg-white rounded-lg p-3 border border-rose-100">
+                        <div className="relative h-24 w-24 flex-shrink-0 bg-gray-100 rounded-lg overflow-hidden">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={preview.url || '/placeholder.svg'} alt={`Xem trước ${idx + 1}`} className="w-full h-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => removePreview(preview.id)}
+                            className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold transition-colors"
+                            aria-label="Xóa ảnh"
+                          >
+                            <X size={12} />
+                          </button>
+                        </div>
+                        <div className="flex-1 space-y-2">
+                          <div>
+                            <label className="text-xs font-semibold text-gray-700 mb-1 block">
+                              Chú thích (có thể để trống)
+                            </label>
+                            <textarea
+                              value={captions[preview.id] || ''}
+                              onChange={(e) => setCaptions({ ...captions, [preview.id]: e.target.value })}
+                              placeholder="Viết mô tả cho ảnh này..."
+                              className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 font-cute text-sm text-gray-700 resize-y min-h-[3rem]"
+                              rows={2}
+                            />
+                          </div>
+                          <LocationPicker
+                            locationName={locationNames[preview.id] || ''}
+                            locationUrl={locationUrls[preview.id] || ''}
+                            onLocationNameChange={(v) => setLocationNames((prev) => ({ ...prev, [preview.id]: v }))}
+                            onLocationUrlChange={(v) => setLocationUrls((prev) => ({ ...prev, [preview.id]: v }))}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {addingPhoto && (
+                    <div className="mt-4">
+                      <div className="flex justify-between text-xs font-semibold text-rose-600 mb-1">
+                        <span>Đang gửi ảnh vào nhà mình...</span>
+                        <span>{uploadProgress}%</span>
+                      </div>
+                      <div className="w-full h-3 bg-rose-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-rose-400 to-pink-500 rounded-full transition-all duration-200"
+                          style={{ width: `${uploadProgress}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex gap-2 mt-4">
                     <button
                       type="button"
-                      onClick={() => removePreview(preview.id)}
-                      className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold transition-colors"
-                      aria-label="Xóa ảnh"
+                      onClick={clearPreviews}
+                      disabled={addingPhoto}
+                      className="flex-1 px-4 py-2 bg-gray-200 hover:bg-gray-300 disabled:opacity-50 text-gray-800 rounded-lg font-cute text-sm transition-colors"
                     >
-                      ✕
+                      Hủy Tất Cả
+                    </button>
+                    <button
+                      type="button"
+                      onClick={async () => { await uploadPhotos(); setShowAddPhoto(false); }}
+                      disabled={addingPhoto || previews.length === 0}
+                      className="flex-1 px-4 py-2 bg-rose-500 hover:bg-rose-600 disabled:opacity-50 text-white rounded-lg font-cute text-sm transition-colors"
+                    >
+                      {addingPhoto ? 'Đang tải...' : `Thêm ${previews.length} Ảnh`}
                     </button>
                   </div>
-                  <div className="flex-1 space-y-2">
-                    <div>
-                      <label className="text-xs font-semibold text-gray-700 mb-1 block">
-                        Chú thích (có thể để trống)
-                      </label>
-                      <textarea
-                        value={captions[preview.id] || ''}
-                        onChange={(e) => setCaptions({ ...captions, [preview.id]: e.target.value })}
-                        placeholder="Viết mô tả cho ảnh này..."
-                        className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 font-cute text-sm text-gray-700 resize-y min-h-[4rem]"
-                        rows={3}
-                      />
-                    </div>
-                    <LocationPicker
-                      locationName={locationNames[preview.id] || ''}
-                      locationUrl={locationUrls[preview.id] || ''}
-                      onLocationNameChange={(v) => setLocationNames((prev) => ({ ...prev, [preview.id]: v }))}
-                      onLocationUrlChange={(v) => setLocationUrls((prev) => ({ ...prev, [preview.id]: v }))}
-                    />
-                  </div>
                 </div>
-              ))}
-            </div>
+              )}
 
-            {/* Thanh tiến trình tải lên dễ thương */}
-            {addingPhoto && (
-              <div className="mt-4">
-                <div className="flex justify-between text-xs font-semibold text-rose-600 mb-1">
-                  <span>💕 Đang gửi ảnh vào nhà mình...</span>
-                  <span>{uploadProgress}%</span>
-                </div>
-                <div className="w-full h-3 bg-rose-100 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-rose-400 to-pink-500 rounded-full transition-all duration-200"
-                    style={{ width: `${uploadProgress}%` }}
-                  />
-                </div>
+              <div
+                onDragEnter={handleDrag}
+                onDragLeave={handleDrag}
+                onDragOver={handleDrag}
+                onDrop={handleDrop}
+                className={`w-full px-6 py-8 border-2 border-dashed rounded-xl text-center transition-colors cursor-pointer ${
+                  dragActive ? 'border-rose-500 bg-rose-50' : 'border-rose-200 bg-rose-50/50 hover:border-rose-300'
+                }`}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleFileInputChange}
+                  className="hidden"
+                />
+                <p className="text-gray-700 font-semibold mb-1 font-cute">
+                  Kéo thả ảnh vào đây hoặc nhấp để chọn
+                </p>
+                <p className="text-sm text-gray-500">
+                  Hỗ trợ: JPG, PNG, GIF, WebP (có thể chọn nhiều ảnh)
+                </p>
               </div>
-            )}
-
-            <div className="flex gap-2 mt-4">
-              <button
-                type="button"
-                onClick={clearPreviews}
-                disabled={addingPhoto}
-                className="flex-1 px-4 py-2 bg-gray-200 hover:bg-gray-300 disabled:opacity-50 text-gray-800 rounded-lg font-cute text-sm transition-colors"
-              >
-                Hủy Tất Cả
-              </button>
-              <button
-                type="button"
-                onClick={uploadPhotos}
-                disabled={addingPhoto || previews.length === 0}
-                className="flex-1 px-4 py-2 bg-rose-500 hover:bg-rose-600 disabled:opacity-50 text-white rounded-lg font-cute text-sm transition-colors"
-              >
-                {addingPhoto ? 'Đang tải...' : `Thêm ${previews.length} Ảnh`}
-              </button>
             </div>
           </div>
-        )}
-
-        <div
-          onDragEnter={handleDrag}
-          onDragLeave={handleDrag}
-          onDragOver={handleDrag}
-          onDrop={handleDrop}
-          className={`w-full px-6 py-8 mb-2 border-2 border-dashed rounded-xl text-center transition-colors cursor-pointer ${
-            dragActive ? 'border-rose-500 bg-rose-50' : 'border-rose-200 bg-rose-50/50 hover:border-rose-300'
-          }`}
-          onClick={() => fileInputRef.current?.click()}
-        >
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            multiple
-            onChange={handleFileInputChange}
-            className="hidden"
-          />
-          <p className="text-gray-700 font-semibold mb-1 font-cute">
-            Kéo thả ảnh vào đây hoặc nhấp để chọn
-          </p>
-          <p className="text-sm text-gray-500">
-            Hỗ trợ: JPG, PNG, GIF, WebP (có thể chọn nhiều ảnh cùng lúc)
-          </p>
         </div>
-      </div>
+      )}
 
       {/* Photos Gallery */}
       {loading ? (

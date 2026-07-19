@@ -12,6 +12,7 @@ import {
   MicOff,
   X,
   Play,
+  Download,
 } from 'lucide-react';
 import { formatDateVN, formatTimeVN } from '@/lib/datetime';
 
@@ -60,7 +61,7 @@ export default function LetterDetail({
   // Recording state
   const [isRecording, setIsRecording] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
-  const [audioPreview, setAudioPreview] = useState<string | null>(null); // object URL of the latest recorded blob
+  const [audioPreview, setAudioPreview] = useState<string | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
@@ -73,7 +74,6 @@ export default function LetterDetail({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [letter.id, token]);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       stopStream();
@@ -103,16 +103,19 @@ export default function LetterDetail({
     streamRef.current = null;
   };
 
-  // --- Image upload ---
+  // Multi-image upload
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
     e.target.value = '';
-    const fileType = file.type.startsWith('image/') ? 'image' : 'document';
-    await uploadBlob(file, fileType, file.name);
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const fileType = file.type.startsWith('image/') ? 'image' : 'document';
+      await uploadBlob(file, fileType, file.name);
+    }
   };
 
-  // --- Recording ---
+  // Recording
   const handleStartRecording = async () => {
     setUploadError(null);
     setAudioPreview(null);
@@ -131,11 +134,10 @@ export default function LetterDetail({
       recorder.onstop = () => {
         stopStream();
         const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
-        const previewUrl = URL.createObjectURL(blob);
-        setAudioPreview(previewUrl);
+        setAudioPreview(URL.createObjectURL(blob));
       };
 
-      recorder.start(200); // collect data every 200 ms for reliability
+      recorder.start(200);
       setIsRecording(true);
       setRecordingSeconds(0);
       timerRef.current = setInterval(() => setRecordingSeconds((s) => s + 1), 1000);
@@ -146,10 +148,7 @@ export default function LetterDetail({
   };
 
   const handleStopRecording = () => {
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
     mediaRecorderRef.current?.stop();
     setIsRecording(false);
   };
@@ -157,7 +156,7 @@ export default function LetterDetail({
   const handleSaveRecording = async () => {
     if (!audioPreview || chunksRef.current.length === 0) return;
     const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
-    const fileName = `recording-${Date.now()}.webm`;
+    const fileName = `ghi-am-${Date.now()}.webm`;
     await uploadBlob(blob, 'audio', fileName);
     URL.revokeObjectURL(audioPreview);
     setAudioPreview(null);
@@ -172,7 +171,6 @@ export default function LetterDetail({
     setRecordingSeconds(0);
   };
 
-  // --- Shared upload helper ---
   const uploadBlob = async (blob: Blob, fileType: string, fileName: string) => {
     setUploading(true);
     setUploadError(null);
@@ -201,8 +199,8 @@ export default function LetterDetail({
     }
   };
 
-  // --- Delete attachment ---
   const handleDeleteAttachment = async (id: number) => {
+    if (!confirm('Xóa tệp đính kèm này?')) return;
     try {
       await fetch(`/api/attachments?id=${id}`, {
         method: 'DELETE',
@@ -212,6 +210,16 @@ export default function LetterDetail({
     } catch (err) {
       console.error('Delete error:', err);
     }
+  };
+
+  const handleDownload = (url: string, fileName: string) => {
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    a.target = '_blank';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   };
 
   const formatDuration = (s: number) => {
@@ -227,7 +235,7 @@ export default function LetterDetail({
         className="flex items-center gap-2 text-rose-600 hover:text-rose-700 mb-6 transition-colors"
       >
         <ArrowLeft size={20} />
-        Quay Lai
+        Quay Lại
       </button>
 
       <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 max-w-3xl">
@@ -235,7 +243,7 @@ export default function LetterDetail({
         <div className="flex items-start justify-between mb-4 gap-3">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 text-balance">{letter.title}</h1>
-            <p className="text-gray-500 mt-1 text-sm">Tu: {letter.from_user_name}</p>
+            <p className="text-gray-500 mt-1 text-sm">Từ: {letter.from_user_name}</p>
             <p className="text-gray-400 text-xs mt-0.5">
               {formatDateVN(letter.created_at, { year: 'numeric', month: 'long', day: 'numeric' })}
             </p>
@@ -245,7 +253,7 @@ export default function LetterDetail({
               {onEdit && (
                 <button
                   onClick={onEdit}
-                  aria-label="Sua thu"
+                  aria-label="Sửa thư"
                   className="grid place-items-center w-9 h-9 rounded-full text-gray-400 hover:text-rose-500 hover:bg-rose-50 transition-colors"
                 >
                   <Pencil size={17} />
@@ -254,7 +262,7 @@ export default function LetterDetail({
               {onDelete && (
                 <button
                   onClick={onDelete}
-                  aria-label="Xoa thu"
+                  aria-label="Xóa thư"
                   className="grid place-items-center w-9 h-9 rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
                 >
                   <Trash2 size={17} />
@@ -267,7 +275,7 @@ export default function LetterDetail({
         {letter.scheduled_unlock_date && (
           <div className="bg-rose-50 border border-rose-200 rounded-lg px-4 py-3 mb-5">
             <p className="text-sm text-rose-700">
-              Thu hen mo luc: {formatDateVN(letter.scheduled_unlock_date)} luc{' '}
+              Thư hẹn mở lúc: {formatDateVN(letter.scheduled_unlock_date)} lúc{' '}
               {formatTimeVN(letter.scheduled_unlock_date)}
             </p>
           </div>
@@ -284,12 +292,12 @@ export default function LetterDetail({
 
         {/* Attachments list */}
         <div className="mb-8">
-          <h2 className="text-base font-semibold text-gray-800 mb-3">Tep Dinh Kem</h2>
+          <h2 className="text-base font-semibold text-gray-800 mb-3">Tệp Đính Kèm</h2>
 
           {loadingAttachments ? (
-            <p className="text-sm text-gray-400">Dang tai...</p>
+            <p className="text-sm text-gray-400">Đang tải...</p>
           ) : attachments.length === 0 ? (
-            <p className="text-sm text-gray-400 italic">Chua co tep dinh kem nao.</p>
+            <p className="text-sm text-gray-400 italic">Chưa có tệp đính kèm nào.</p>
           ) : (
             <div className="space-y-3">
               {attachments.map((att) => (
@@ -306,15 +314,24 @@ export default function LetterDetail({
                         className="w-full max-h-72 object-cover"
                       />
                       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
-                      {isOwner && (
+                      <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
-                          onClick={() => handleDeleteAttachment(att.id)}
-                          aria-label="Xoa anh"
-                          className="absolute top-2 right-2 grid place-items-center w-8 h-8 rounded-full bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                          onClick={() => handleDownload(att.file_url, att.file_name)}
+                          aria-label="Tải về ảnh"
+                          className="grid place-items-center w-8 h-8 rounded-full bg-black/50 text-white hover:bg-rose-600 transition-colors"
                         >
-                          <X size={14} />
+                          <Download size={14} />
                         </button>
-                      )}
+                        {isOwner && (
+                          <button
+                            onClick={() => handleDeleteAttachment(att.id)}
+                            aria-label="Xóa ảnh"
+                            className="grid place-items-center w-8 h-8 rounded-full bg-black/50 text-white hover:bg-red-600 transition-colors"
+                          >
+                            <X size={14} />
+                          </button>
+                        )}
+                      </div>
                       <p className="px-3 py-1.5 text-xs text-gray-500">{att.file_name}</p>
                     </div>
                   ) : att.file_type === 'audio' ? (
@@ -329,15 +346,24 @@ export default function LetterDetail({
                           style={{ accentColor: '#f43f5e' }}
                         />
                       </div>
-                      {isOwner && (
+                      <div className="flex gap-1 shrink-0">
                         <button
-                          onClick={() => handleDeleteAttachment(att.id)}
-                          aria-label="Xoa ghi am"
-                          className="grid place-items-center w-8 h-8 rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors shrink-0"
+                          onClick={() => handleDownload(att.file_url, att.file_name)}
+                          aria-label="Tải về ghi âm"
+                          className="grid place-items-center w-8 h-8 rounded-full text-gray-400 hover:text-rose-500 hover:bg-rose-50 transition-colors"
                         >
-                          <X size={14} />
+                          <Download size={14} />
                         </button>
-                      )}
+                        {isOwner && (
+                          <button
+                            onClick={() => handleDeleteAttachment(att.id)}
+                            aria-label="Xóa ghi âm"
+                            className="grid place-items-center w-8 h-8 rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                          >
+                            <X size={14} />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   ) : (
                     <div className="flex items-center justify-between px-4 py-3">
@@ -345,19 +371,18 @@ export default function LetterDetail({
                         <Upload size={18} className="text-gray-400 shrink-0" />
                         <span className="text-sm text-gray-700 truncate">{att.file_name}</span>
                       </div>
-                      <div className="flex items-center gap-2 shrink-0 ml-3">
-                        <a
-                          href={att.file_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-rose-600 hover:text-rose-700 text-sm font-medium"
+                      <div className="flex items-center gap-1 shrink-0 ml-3">
+                        <button
+                          onClick={() => handleDownload(att.file_url, att.file_name)}
+                          aria-label="Tải về tệp"
+                          className="grid place-items-center w-8 h-8 rounded-full text-gray-400 hover:text-rose-500 hover:bg-rose-50 transition-colors"
                         >
-                          Xem
-                        </a>
+                          <Download size={14} />
+                        </button>
                         {isOwner && (
                           <button
                             onClick={() => handleDeleteAttachment(att.id)}
-                            aria-label="Xoa tep"
+                            aria-label="Xóa tệp"
                             className="grid place-items-center w-7 h-7 rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
                           >
                             <X size={13} />
@@ -372,14 +397,14 @@ export default function LetterDetail({
           )}
         </div>
 
-        {/* Upload section — only owner can add attachments */}
+        {/* Upload section — only owner */}
         {isOwner && (
           <div className="border-t border-gray-100 pt-6 space-y-5">
-            <h3 className="text-base font-semibold text-gray-800">Them Tep Dinh Kem</h3>
+            <h3 className="text-base font-semibold text-gray-800">Thêm Tệp Đính Kèm</h3>
 
-            {/* Image upload */}
+            {/* Multi-image upload */}
             <div>
-              <p className="text-xs text-gray-500 mb-2 font-medium uppercase tracking-wide">Hinh anh</p>
+              <p className="text-xs text-gray-500 mb-2 font-medium uppercase tracking-wide">Hình ảnh (chọn nhiều)</p>
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
@@ -387,21 +412,22 @@ export default function LetterDetail({
                 className="flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 border-dashed border-rose-200 text-rose-500 hover:border-rose-400 hover:bg-rose-50 transition-colors text-sm font-medium disabled:opacity-50"
               >
                 <ImageIcon size={18} />
-                {uploading ? 'Dang tai len...' : 'Chon anh tu thiet bi'}
+                {uploading ? 'Đang tải lên...' : 'Chọn ảnh từ thiết bị'}
               </button>
               <input
                 ref={fileInputRef}
                 type="file"
                 accept="image/*"
+                multiple
                 onChange={handleFileChange}
                 className="hidden"
-                aria-label="Chon anh"
+                aria-label="Chọn ảnh"
               />
             </div>
 
             {/* Audio recording */}
             <div>
-              <p className="text-xs text-gray-500 mb-2 font-medium uppercase tracking-wide">Ghi am</p>
+              <p className="text-xs text-gray-500 mb-2 font-medium uppercase tracking-wide">Ghi âm</p>
 
               {!isRecording && !audioPreview && (
                 <button
@@ -411,7 +437,7 @@ export default function LetterDetail({
                   className="flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 border-dashed border-rose-200 text-rose-500 hover:border-rose-400 hover:bg-rose-50 transition-colors text-sm font-medium disabled:opacity-50"
                 >
                   <Mic size={18} />
-                  Bat dau ghi am
+                  Bắt đầu ghi âm
                 </button>
               )}
 
@@ -422,7 +448,7 @@ export default function LetterDetail({
                     <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500" />
                   </span>
                   <span className="text-sm text-red-600 font-medium flex-1">
-                    Dang ghi am... {formatDuration(recordingSeconds)}
+                    Đang ghi âm... {formatDuration(recordingSeconds)}
                   </span>
                   <button
                     type="button"
@@ -430,7 +456,7 @@ export default function LetterDetail({
                     className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-medium transition-colors"
                   >
                     <MicOff size={15} />
-                    Dung
+                    Dừng
                   </button>
                 </div>
               )}
@@ -439,7 +465,7 @@ export default function LetterDetail({
                 <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl space-y-3">
                   <div className="flex items-center gap-2">
                     <Play size={16} className="text-rose-500 shrink-0" />
-                    <p className="text-sm text-rose-700 font-medium">Nghe lai truoc khi luu</p>
+                    <p className="text-sm text-rose-700 font-medium">Nghe lại trước khi lưu</p>
                   </div>
                   <audio controls src={audioPreview} className="w-full h-8" style={{ accentColor: '#f43f5e' }} />
                   <div className="flex gap-2">
@@ -449,7 +475,7 @@ export default function LetterDetail({
                       disabled={uploading}
                       className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
                     >
-                      {uploading ? 'Dang luu...' : 'Luu ghi am'}
+                      {uploading ? 'Đang lưu...' : 'Lưu ghi âm'}
                     </button>
                     <button
                       type="button"
@@ -457,7 +483,7 @@ export default function LetterDetail({
                       disabled={uploading}
                       className="flex items-center justify-center gap-1.5 px-3 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
                     >
-                      Huy
+                      Hủy
                     </button>
                   </div>
                 </div>

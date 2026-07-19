@@ -33,6 +33,11 @@ interface EventModalProps {
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
 export default function EventModal({ isOpen, onClose, onSubmit, initial }: EventModalProps) {
   const isEdit = !!initial;
   const [title, setTitle] = useState('');
@@ -76,6 +81,14 @@ export default function EventModal({ isOpen, onClose, onSubmit, initial }: Event
     if (!eventDate) {
       alert('Vui lòng chọn ngày sự kiện');
       return;
+    }
+    // Khi tạo mới, không cho phép chọn ngày trong quá khứ
+    if (!initial) {
+      const chosen = new Date(`${eventDate}T${eventTime || '00:00'}`);
+      if (chosen < new Date()) {
+        alert('Ngày sự kiện không được nhỏ hơn ngày hiện tại.');
+        return;
+      }
     }
     setLoading(true);
     try {
@@ -131,6 +144,7 @@ export default function EventModal({ isOpen, onClose, onSubmit, initial }: Event
               <input
                 type="date"
                 value={eventDate}
+                min={!initial ? todayStr() : undefined}
                 onChange={(e) => setEventDate(e.target.value)}
                 className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 font-cute text-gray-700"
                 required

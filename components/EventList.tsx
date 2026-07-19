@@ -7,6 +7,7 @@ import EventDetail from './EventDetail';
 import { Plus, Lock, Globe, Pencil, Trash2 } from 'lucide-react';
 import { parseDate, formatDateVN, formatTimeVN } from '@/lib/datetime';
 import LocationBadge from './LocationBadge';
+import { useSeen } from '@/lib/use-seen';
 
 type Visibility = 'private' | 'public';
 
@@ -30,6 +31,7 @@ export default function EventList({ token }: { token: string | null }) {
   const [editing, setEditing] = useState<Event | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [tab, setTab] = useState<Visibility>('private');
+  const { badge, markSeen } = useSeen('event');
 
   useEffect(() => {
     fetchEvents();
@@ -122,16 +124,24 @@ export default function EventList({ token }: { token: string | null }) {
     return d ? d > new Date() : false;
   };
 
+  /** Sự kiện quá 7 ngày kể từ ngày tạo thì không cho sửa (nhưng vẫn xóa được) */
+  const isEditLocked = (event: Event): boolean => {
+    const created = parseDate(event.created_at);
+    if (!created) return false;
+    return Date.now() - created.getTime() > 7 * 24 * 60 * 60 * 1000;
+  };
+
   if (selectedEvent) {
     return (
       <EventDetail
         event={selectedEvent}
         token={token}
         onBack={() => setSelectedEvent(null)}
-        onEdit={() => {
-          setSelectedEvent(null);
-          openEdit(selectedEvent);
-        }}
+        onEdit={
+          !isEditLocked(selectedEvent)
+            ? () => { setSelectedEvent(null); openEdit(selectedEvent); }
+            : undefined
+        }
         onDelete={async () => {
           await handleDelete(selectedEvent);
           setSelectedEvent(null);
@@ -157,7 +167,7 @@ export default function EventList({ token }: { token: string | null }) {
       }`}
     >
       <div
-        onClick={() => setSelectedEvent(event)}
+        onClick={() => { setSelectedEvent(event); markSeen(event.id); }}
         className={`h-20 flex items-center justify-center relative overflow-hidden cursor-pointer ${
           past ? 'bg-gradient-to-r from-gray-100 to-gray-50' : 'bg-gradient-to-r from-rose-200 via-pink-100 to-rose-100'
         }`}
@@ -168,22 +178,35 @@ export default function EventList({ token }: { token: string | null }) {
       </div>
       <div className="p-5">
         <div className="flex items-start justify-between gap-2">
-          <h4
-            onClick={() => setSelectedEvent(event)}
-            className={`text-lg font-bold cursor-pointer line-clamp-1 ${
-              past ? 'text-gray-700' : 'bg-gradient-to-r from-rose-500 to-pink-500 bg-clip-text text-transparent'
-            }`}
-          >
-            {event.title}
-          </h4>
-          <div className="flex gap-1 shrink-0">
-            <button
-              onClick={() => openEdit(event)}
-              aria-label="Sửa sự kiện"
-              className="grid place-items-center w-8 h-8 rounded-full text-gray-400 hover:text-rose-500 hover:bg-rose-50 transition-colors"
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <h4
+              onClick={() => { setSelectedEvent(event); markSeen(event.id); }}
+              className={`text-lg font-bold cursor-pointer line-clamp-1 ${
+                past ? 'text-gray-700' : 'bg-gradient-to-r from-rose-500 to-pink-500 bg-clip-text text-transparent'
+              }`}
             >
-              <Pencil size={16} />
-            </button>
+              {event.title}
+            </h4>
+            {(() => {
+              const b = badge(event.id, event.created_at);
+              if (!b) return null;
+              return (
+                <span className={`shrink-0 text-xs font-bold px-2 py-0.5 rounded-full ${b === 'new' ? 'bg-rose-500 text-white' : 'bg-amber-400 text-white'}`}>
+                  {b === 'new' ? 'Mới' : 'Chưa xem'}
+                </span>
+              );
+            })()}
+          </div>
+          <div className="flex gap-1 shrink-0">
+            {!isEditLocked(event) && (
+              <button
+                onClick={() => openEdit(event)}
+                aria-label="Sửa sự kiện"
+                className="grid place-items-center w-8 h-8 rounded-full text-gray-400 hover:text-rose-500 hover:bg-rose-50 transition-colors"
+              >
+                <Pencil size={16} />
+              </button>
+            )}
             <button
               onClick={() => handleDelete(event)}
               aria-label="Xóa sự kiện"

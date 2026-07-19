@@ -20,6 +20,11 @@ interface LetterModalProps {
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
 export default function LetterModal({ isOpen, onClose, onSubmit, initial }: LetterModalProps) {
   const isEdit = !!initial;
   const [title, setTitle] = useState('');
@@ -54,6 +59,14 @@ export default function LetterModal({ isOpen, onClose, onSubmit, initial }: Lett
     if (!title.trim()) {
       alert('Vui lòng nhập tiêu đề');
       return;
+    }
+    // Validate scheduled date is not in the past
+    if (scheduledDate) {
+      const chosen = new Date(`${scheduledDate}T${scheduledTime || '00:00'}`);
+      if (chosen < new Date()) {
+        alert('Ngày hẹn mở thư không được nhỏ hơn ngày hiện tại.');
+        return;
+      }
     }
     setLoading(true);
     try {
@@ -117,6 +130,7 @@ export default function LetterModal({ isOpen, onClose, onSubmit, initial }: Lett
               <input
                 type="date"
                 value={scheduledDate}
+                min={todayStr()}
                 onChange={(e) => setScheduledDate(e.target.value)}
                 className="flex-1 px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 font-cute text-gray-700"
               />

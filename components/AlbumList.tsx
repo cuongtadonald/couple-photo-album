@@ -8,6 +8,7 @@ import { Plus, Lock, Globe, Pencil, Trash2, ImageIcon } from 'lucide-react';
 import { formatDateVN } from '@/lib/datetime';
 import LocationBadge from './LocationBadge';
 import { useSessionState, clearSessionKey } from '@/lib/use-session-state';
+import { useSeen } from '@/lib/use-seen';
 
 type Visibility = 'private' | 'public';
 
@@ -32,6 +33,7 @@ export default function AlbumList({ token }: { token: string | null }) {
   const [editing, setEditing] = useState<Album | null>(null);
   const [selectedAlbumId, setSelectedAlbumId] = useSessionState<number | null>('albums:selectedId', null);
   const [tab, setTab] = useSessionState<Visibility>('albums:tab', 'private');
+  const { badge, markSeen } = useSeen('album');
 
   // Resolve selectedAlbum from loaded albums list
   const selectedAlbum = albums.find((a) => a.id === selectedAlbumId) ?? null;
@@ -206,7 +208,7 @@ export default function AlbumList({ token }: { token: string | null }) {
               className="group bg-white/80 backdrop-blur-sm rounded-2xl shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden transform hover:-translate-y-1 border border-rose-100"
             >
               <div
-                onClick={() => setSelectedAlbumId(album.id)}
+                onClick={() => { setSelectedAlbumId(album.id); markSeen(album.id); }}
                 className="h-48 bg-gradient-to-br from-rose-200 via-pink-100 to-rose-100 flex items-center justify-center overflow-hidden relative cursor-pointer"
               >
                 {album.cover_image_url ? (
@@ -233,12 +235,23 @@ export default function AlbumList({ token }: { token: string | null }) {
               </div>
               <div className="p-5">
                 <div className="flex items-start justify-between gap-2">
-                  <h3
-                    onClick={() => setSelectedAlbum(album)}
-                    className="font-bold text-lg text-rose-600 group-hover:text-pink-600 transition-colors cursor-pointer line-clamp-1"
-                  >
-                    {album.title}
-                  </h3>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <h3
+                      onClick={() => { setSelectedAlbumId(album.id); markSeen(album.id); }}
+                      className="font-bold text-lg text-rose-600 group-hover:text-pink-600 transition-colors cursor-pointer line-clamp-1"
+                    >
+                      {album.title}
+                    </h3>
+                    {(() => {
+                      const b = badge(album.id, album.created_at);
+                      if (!b) return null;
+                      return (
+                        <span className={`shrink-0 text-xs font-bold px-2 py-0.5 rounded-full ${b === 'new' ? 'bg-rose-500 text-white' : 'bg-amber-400 text-white'}`}>
+                          {b === 'new' ? 'Mới' : 'Chưa xem'}
+                        </span>
+                      );
+                    })()}
+                  </div>
                   <div className="flex gap-1 shrink-0">
                     <button
                       onClick={() => openEdit(album)}

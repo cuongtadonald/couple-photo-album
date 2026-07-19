@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { X, Lock, Globe } from 'lucide-react';
 import LocationPicker from './LocationPicker';
+import { clearSessionKey } from '@/lib/use-session-state';
 
 type Visibility = 'private' | 'public';
 
@@ -25,12 +26,24 @@ interface AlbumModalProps {
     locationName: string,
     locationUrl: string
   ) => Promise<void> | void;
-  /** Nếu truyền vào => chế độ chỉnh sửa, ngược lại là tạo mới */
+  /** If provided, the modal is in edit mode */
   initial?: AlbumInitial | null;
+  /** sessionStorage prefix used to persist create-mode draft (e.g. "albums:draft") */
+  draftKey?: string;
 }
 
-export default function AlbumModal({ isOpen, onClose, onSubmit, initial }: AlbumModalProps) {
+function readDraft(key: string, field: string, fallback = ''): string {
+  if (typeof window === 'undefined') return fallback;
+  try { return sessionStorage.getItem(`${key}:${field}`) ?? fallback; } catch { return fallback; }
+}
+
+function saveDraft(key: string, field: string, value: string) {
+  try { sessionStorage.setItem(`${key}:${field}`, value); } catch { /* ignore */ }
+}
+
+export default function AlbumModal({ isOpen, onClose, onSubmit, initial, draftKey }: AlbumModalProps) {
   const isEdit = !!initial;
+
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [visibility, setVisibility] = useState<Visibility>('private');
@@ -38,25 +51,59 @@ export default function AlbumModal({ isOpen, onClose, onSubmit, initial }: Album
   const [locationUrl, setLocationUrl] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Đồng bộ dữ liệu khi mở modal (tạo mới hoặc sửa)
   useEffect(() => {
-    if (isOpen) {
-      setTitle(initial?.title ?? '');
-      setDescription(initial?.description ?? '');
-      setVisibility(initial?.visibility ?? 'private');
-      setLocationName(initial?.location_name ?? '');
-      setLocationUrl(initial?.location_url ?? '');
+    if (!isOpen) return;
+    if (initial) {
+      // Edit mode — use server values
+      setTitle(initial.title ?? '');
+      setDescription(initial.description ?? '');
+      setVisibility(initial.visibility ?? 'private');
+      setLocationName(initial.location_name ?? '');
+      setLocationUrl(initial.location_url ?? '');
+    } else if (draftKey) {
+      // Create mode — restore draft
+      setTitle(readDraft(draftKey, 'title'));
+      setDescription(readDraft(draftKey, 'desc'));
+      setVisibility((readDraft(draftKey, 'visibility', 'private') as Visibility) || 'private');
+      setLocationName(readDraft(draftKey, 'locationName'));
+      setLocationUrl(readDraft(draftKey, 'locationUrl'));
+    } else {
+      setTitle('');
+      setDescription('');
+      setVisibility('private');
+      setLocationName('');
+      setLocationUrl('');
     }
-  }, [isOpen, initial]);
+  }, [isOpen, initial, draftKey]);
+
+  // Persist draft live (create mode only)
+  useEffect(() => { if (isOpen && !isEdit && draftKey) saveDraft(draftKey, 'title', title); }, [title, isOpen, isEdit, draftKey]);
+  useEffect(() => { if (isOpen && !isEdit && draftKey) saveDraft(draftKey, 'desc', description); }, [description, isOpen, isEdit, draftKey]);
+  useEffect(() => { if (isOpen && !isEdit && draftKey) saveDraft(draftKey, 'visibility', visibility); }, [visibility, isOpen, isEdit, draftKey]);
+  useEffect(() => { if (isOpen && !isEdit && draftKey) saveDraft(draftKey, 'locationName', locationName); }, [locationName, isOpen, isEdit, draftKey]);
+  useEffect(() => { if (isOpen && !isEdit && draftKey) saveDraft(draftKey, 'locationUrl', locationUrl); }, [locationUrl, isOpen, isEdit, draftKey]);
+
+  const clearDraft = () => {
+    if (!draftKey) return;
+    ['title', 'desc', 'visibility', 'locationName', 'locationUrl'].forEach((f) =>
+      clearSessionKey(`${draftKey}:${f}`)
+    );
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
       await onSubmit(title, description, visibility, locationName, locationUrl);
+      clearDraft();
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleClose = () => {
+    // Do NOT clear draft on close — preserve for post-reload restore
+    onClose();
   };
 
   if (!isOpen) return null;
@@ -66,12 +113,12 @@ export default function AlbumModal({ isOpen, onClose, onSubmit, initial }: Album
       <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto border-2 border-rose-100">
         <div className="flex justify-between items-center p-6 border-b border-rose-100">
           <h2 className="text-xl font-bold bg-gradient-to-r from-rose-500 to-pink-500 bg-clip-text text-transparent font-cute">
-            {isEdit ? '✏️ Sửa Album' : '📷 Tạo Album Mới'}
+            {isEdit ? 'Sua Album' : 'Tao Album Moi'}
           </h2>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="text-gray-500 hover:text-rose-500 transition-colors"
-            aria-label="Đóng"
+            aria-label="Dong"
           >
             <X size={24} />
           </button>
@@ -80,32 +127,31 @@ export default function AlbumModal({ isOpen, onClose, onSubmit, initial }: Album
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2 font-cute">
-              📝 Tên Album
+              Ten Album
             </label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 font-cute text-gray-700"
-              placeholder="Ví dụ: Kỷ niệm ngày gặp nhau"
+              placeholder="Vi du: Ky niem ngay gap nhau"
               required
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2 font-cute">
-              💭 Mô Tả (Tùy Chọn)
+              Mo Ta (Tuy Chon)
             </label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 font-cute text-gray-700"
-              placeholder="Mô tả chi tiết về album..."
+              placeholder="Mo ta chi tiet ve album..."
               rows={3}
             />
           </div>
 
-          {/* Location picker */}
           <LocationPicker
             locationName={locationName}
             locationUrl={locationUrl}
@@ -113,10 +159,9 @@ export default function AlbumModal({ isOpen, onClose, onSubmit, initial }: Album
             onLocationUrlChange={setLocationUrl}
           />
 
-          {/* Chế độ hiển thị */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2 font-cute">
-              🔐 Chế Độ Hiển Thị
+              Che Do Hien Thi
             </label>
             <div className="grid grid-cols-2 gap-3">
               <button
@@ -129,7 +174,7 @@ export default function AlbumModal({ isOpen, onClose, onSubmit, initial }: Album
                 }`}
               >
                 <Lock size={16} />
-                Riêng tư
+                Rieng tu
               </button>
               <button
                 type="button"
@@ -141,30 +186,30 @@ export default function AlbumModal({ isOpen, onClose, onSubmit, initial }: Album
                 }`}
               >
                 <Globe size={16} />
-                Công khai
+                Cong khai
               </button>
             </div>
             <p className="text-xs text-gray-500 mt-2">
               {visibility === 'private'
-                ? 'Chỉ mình bạn nhìn thấy album này.'
-                : 'Cả hai đứa đều nhìn thấy trong tab Công khai.'}
+                ? 'Chi minh ban nhin thay album nay.'
+                : 'Ca hai dua deu nhin thay trong tab Cong khai.'}
             </p>
           </div>
 
           <div className="flex gap-3 pt-2">
             <Button
               type="button"
-              onClick={onClose}
+              onClick={handleClose}
               className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-cute"
             >
-              ✕ Hủy
+              Huy
             </Button>
             <Button
               type="submit"
               disabled={loading}
               className="flex-1 bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white font-cute shadow-lg"
             >
-              {loading ? '⏳ Đang lưu...' : isEdit ? '💾 Lưu' : '✨ Tạo'}
+              {loading ? 'Dang luu...' : isEdit ? 'Luu' : 'Tao'}
             </Button>
           </div>
         </form>

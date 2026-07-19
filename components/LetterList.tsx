@@ -7,6 +7,7 @@ import LetterDetail from './LetterDetail';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { parseDate, formatDateVN } from '@/lib/datetime';
 import { useSeen } from '@/lib/use-seen';
+import { useSessionState, clearSessionKey } from '@/lib/use-session-state';
 
 interface Letter {
   id: number;
@@ -27,10 +28,14 @@ interface LetterListProps {
 export default function LetterList({ token, currentUserId }: LetterListProps) {
   const [letters, setLetters] = useState<Letter[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
-  const [editing, setEditing] = useState<Letter | null>(null);
-  const [selectedLetter, setSelectedLetter] = useState<Letter | null>(null);
+  const [showModal, setShowModal] = useSessionState<boolean>('letters:showModal', false);
+  const [editingId, setEditingId] = useSessionState<number | null>('letters:editingId', null);
+  const [selectedLetterId, setSelectedLetterId] = useSessionState<number | null>('letters:selectedId', null);
   const { badge, markSeen } = useSeen('letter');
+
+  // Resolve objects from IDs once the list has loaded
+  const editing = letters.find((l) => l.id === editingId) ?? null;
+  const selectedLetter = letters.find((l) => l.id === selectedLetterId) ?? null;
 
   useEffect(() => {
     fetchLetters();
@@ -81,6 +86,11 @@ export default function LetterList({ token, currentUserId }: LetterListProps) {
           setLetters((prev) => [data.letter, ...prev]);
         }
       }
+      // Clear create-mode draft after successful save
+      clearSessionKey('letters:draft:title');
+      clearSessionKey('letters:draft:content');
+      clearSessionKey('letters:draft:date');
+      clearSessionKey('letters:draft:time');
       closeModal();
     } catch (error) {
       console.error('Error saving letter:', error);
@@ -106,18 +116,23 @@ export default function LetterList({ token, currentUserId }: LetterListProps) {
   };
 
   const openCreate = () => {
-    setEditing(null);
+    setEditingId(null);
     setShowModal(true);
   };
 
   const openEdit = (letter: Letter) => {
-    setEditing(letter);
+    setEditingId(letter.id);
     setShowModal(true);
   };
 
   const closeModal = () => {
     setShowModal(false);
-    setEditing(null);
+    setEditingId(null);
+    // Clear create-mode draft when explicitly closing
+    clearSessionKey('letters:draft:title');
+    clearSessionKey('letters:draft:content');
+    clearSessionKey('letters:draft:date');
+    clearSessionKey('letters:draft:time');
   };
 
   const canOpenLetter = (letter: Letter): boolean => {
@@ -141,15 +156,15 @@ export default function LetterList({ token, currentUserId }: LetterListProps) {
         letter={selectedLetter}
         token={token}
         currentUserId={currentUserId}
-        onBack={() => setSelectedLetter(null)}
+        onBack={() => setSelectedLetterId(null)}
         onEdit={
           selectedLetter.from_user_id === currentUserId && !isLocked(selectedLetter)
-            ? () => { setSelectedLetter(null); openEdit(selectedLetter); }
+            ? () => { setSelectedLetterId(null); openEdit(selectedLetter); }
             : undefined
         }
         onDelete={
           selectedLetter.from_user_id === currentUserId && !isLocked(selectedLetter)
-            ? async () => { await handleDelete(selectedLetter); setSelectedLetter(null); }
+            ? async () => { await handleDelete(selectedLetter); setSelectedLetterId(null); }
             : undefined
         }
       />
@@ -202,7 +217,7 @@ export default function LetterList({ token, currentUserId }: LetterListProps) {
                 <div className="flex justify-between items-start gap-3">
                   <div
                     className={`flex-1 min-w-0 ${canOpen ? 'cursor-pointer' : ''}`}
-                    onClick={() => { if (canOpen) { setSelectedLetter(letter); markSeen(letter.id); } }}
+                    onClick={() => { if (canOpen) { setSelectedLetterId(letter.id); markSeen(letter.id); } }}
                   >
                     <div className="flex items-center gap-3 flex-wrap">
                       <h3 className="text-lg font-bold bg-gradient-to-r from-rose-500 to-pink-500 bg-clip-text text-transparent">
@@ -290,6 +305,7 @@ export default function LetterList({ token, currentUserId }: LetterListProps) {
               }
             : null
         }
+        draftKey="letters:draft"
       />
     </div>
   );

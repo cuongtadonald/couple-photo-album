@@ -87,6 +87,12 @@ export default function AlbumList({ token }: { token: string | null }) {
           setTab(visibility);
         }
       }
+      // Clear create-mode draft after successful save
+      clearSessionKey('albums:draft:title');
+      clearSessionKey('albums:draft:desc');
+      clearSessionKey('albums:draft:visibility');
+      clearSessionKey('albums:draft:locationName');
+      clearSessionKey('albums:draft:locationUrl');
       closeModal();
     } catch (error) {
       console.error('Error saving album:', error);
@@ -121,6 +127,12 @@ export default function AlbumList({ token }: { token: string | null }) {
   const closeModal = () => {
     setShowModal(false);
     setEditing(null);
+    // Clear create-mode draft when explicitly closing
+    clearSessionKey('albums:draft:title');
+    clearSessionKey('albums:draft:desc');
+    clearSessionKey('albums:draft:visibility');
+    clearSessionKey('albums:draft:locationName');
+    clearSessionKey('albums:draft:locationUrl');
   };
 
   if (selectedAlbum) {
@@ -302,6 +314,7 @@ export default function AlbumList({ token }: { token: string | null }) {
               }
             : null
         }
+        draftKey="albums:draft"
       />
     </div>
   );

@@ -8,6 +8,7 @@ import { Plus, Lock, Globe, Pencil, Trash2 } from 'lucide-react';
 import { parseDate, formatDateVN, formatTimeVN } from '@/lib/datetime';
 import LocationBadge from './LocationBadge';
 import { useSeen } from '@/lib/use-seen';
+import { useSessionState, clearSessionKey } from '@/lib/use-session-state';
 
 type Visibility = 'private' | 'public';
 
@@ -27,11 +28,15 @@ interface Event {
 export default function EventList({ token }: { token: string | null }) {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
-  const [editing, setEditing] = useState<Event | null>(null);
-  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
-  const [tab, setTab] = useState<Visibility>('private');
+  const [showModal, setShowModal] = useSessionState<boolean>('events:showModal', false);
+  const [editingId, setEditingId] = useSessionState<number | null>('events:editingId', null);
+  const [selectedEventId, setSelectedEventId] = useSessionState<number | null>('events:selectedId', null);
+  const [tab, setTab] = useSessionState<Visibility>('events:tab', 'private');
   const { badge, markSeen } = useSeen('event');
+
+  // Resolve objects from IDs once the list has loaded
+  const editing = events.find((e) => e.id === editingId) ?? null;
+  const selectedEvent = events.find((e) => e.id === selectedEventId) ?? null;
 
   useEffect(() => {
     fetchEvents();
@@ -83,6 +88,14 @@ export default function EventList({ token }: { token: string | null }) {
           setTab(visibility);
         }
       }
+      // Clear draft after successful save
+      clearSessionKey('events:draft:title');
+      clearSessionKey('events:draft:desc');
+      clearSessionKey('events:draft:date');
+      clearSessionKey('events:draft:time');
+      clearSessionKey('events:draft:location');
+      clearSessionKey('events:draft:locationUrl');
+      clearSessionKey('events:draft:visibility');
       closeModal();
     } catch (error) {
       console.error('Error saving event:', error);
@@ -105,18 +118,26 @@ export default function EventList({ token }: { token: string | null }) {
   };
 
   const openCreate = () => {
-    setEditing(null);
+    setEditingId(null);
     setShowModal(true);
   };
 
   const openEdit = (event: Event) => {
-    setEditing(event);
+    setEditingId(event.id);
     setShowModal(true);
   };
 
   const closeModal = () => {
     setShowModal(false);
-    setEditing(null);
+    setEditingId(null);
+    // Clear create-mode draft when explicitly closing
+    clearSessionKey('events:draft:title');
+    clearSessionKey('events:draft:desc');
+    clearSessionKey('events:draft:date');
+    clearSessionKey('events:draft:time');
+    clearSessionKey('events:draft:location');
+    clearSessionKey('events:draft:locationUrl');
+    clearSessionKey('events:draft:visibility');
   };
 
   const isUpcoming = (eventDate: string): boolean => {
@@ -136,15 +157,15 @@ export default function EventList({ token }: { token: string | null }) {
       <EventDetail
         event={selectedEvent}
         token={token}
-        onBack={() => setSelectedEvent(null)}
+        onBack={() => setSelectedEventId(null)}
         onEdit={
           !isEditLocked(selectedEvent)
-            ? () => { setSelectedEvent(null); openEdit(selectedEvent); }
+            ? () => { setSelectedEventId(null); openEdit(selectedEvent); }
             : undefined
         }
         onDelete={async () => {
           await handleDelete(selectedEvent);
-          setSelectedEvent(null);
+          setSelectedEventId(null);
         }}
       />
     );
@@ -167,7 +188,7 @@ export default function EventList({ token }: { token: string | null }) {
       }`}
     >
       <div
-        onClick={() => { setSelectedEvent(event); markSeen(event.id); }}
+        onClick={() => { setSelectedEventId(event.id); markSeen(event.id); }}
         className={`h-20 flex items-center justify-center relative overflow-hidden cursor-pointer ${
           past ? 'bg-gradient-to-r from-gray-100 to-gray-50' : 'bg-gradient-to-r from-rose-200 via-pink-100 to-rose-100'
         }`}
@@ -180,7 +201,7 @@ export default function EventList({ token }: { token: string | null }) {
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0 flex-1">
             <h4
-              onClick={() => { setSelectedEvent(event); markSeen(event.id); }}
+              onClick={() => { setSelectedEventId(event.id); markSeen(event.id); }}
               className={`text-lg font-bold cursor-pointer line-clamp-1 ${
                 past ? 'text-gray-700' : 'bg-gradient-to-r from-rose-500 to-pink-500 bg-clip-text text-transparent'
               }`}
@@ -346,6 +367,7 @@ export default function EventList({ token }: { token: string | null }) {
               }
             : null
         }
+        draftKey="events:draft"
       />
     </div>
   );

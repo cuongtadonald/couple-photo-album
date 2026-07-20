@@ -20,12 +20,14 @@ export async function GET(request: NextRequest) {
     // cover_image_url: ưu tiên ảnh bìa đã chọn, nếu không thì lấy ảnh đầu tiên.
     const [albums] = await connection.execute(
       `SELECT a.*,
+        u.full_name as uploader_name,
         COUNT(p.id) as photo_count,
         COALESCE(
           cover.image_url,
           (SELECT image_url FROM photos WHERE album_id = a.id ORDER BY created_at ASC LIMIT 1)
         ) as cover_image_url
        FROM albums a
+       LEFT JOIN users u ON u.id = a.user_id
        LEFT JOIN photos p ON a.id = p.album_id
        LEFT JOIN photos cover ON cover.id = a.cover_photo_id
        WHERE a.visibility = 'public' OR a.user_id = ?

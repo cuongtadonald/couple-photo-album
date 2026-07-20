@@ -24,9 +24,10 @@ interface Album {
   cover_photo_id: number | null;
   photo_count: number;
   created_at: string;
+  uploader_name?: string | null;
 }
 
-export default function AlbumList({ token }: { token: string | null }) {
+export default function AlbumList({ token, currentUserId }: { token: string | null; currentUserId?: number | null }) {
   const [albums, setAlbums] = useState<Album[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useSessionState<boolean>('albums:showModal', false);
@@ -264,22 +265,24 @@ export default function AlbumList({ token }: { token: string | null }) {
                       );
                     })()}
                   </div>
-                  <div className="flex gap-1 shrink-0">
-                    <button
-                      onClick={() => openEdit(album)}
-                      aria-label="Sửa album"
-                      className="grid place-items-center w-8 h-8 rounded-full text-gray-400 hover:text-rose-500 hover:bg-rose-50 transition-colors"
-                    >
-                      <Pencil size={16} />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(album)}
-                      aria-label="Xóa album"
-                      className="grid place-items-center w-8 h-8 rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
+                  {currentUserId === album.user_id && (
+                    <div className="flex gap-1 shrink-0">
+                      <button
+                        onClick={() => openEdit(album)}
+                        aria-label="Sửa album"
+                        className="grid place-items-center w-8 h-8 rounded-full text-gray-400 hover:text-rose-500 hover:bg-rose-50 transition-colors"
+                      >
+                        <Pencil size={16} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(album)}
+                        aria-label="Xóa album"
+                        className="grid place-items-center w-8 h-8 rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  )}
                 </div>
                 {album.description && (
                   <p className="text-gray-600 text-sm mt-2 line-clamp-2">{album.description}</p>
@@ -293,6 +296,11 @@ export default function AlbumList({ token }: { token: string | null }) {
                   </div>
                 )}
                 <p className="text-xs text-gray-500 mt-3">📅 {formatDateVN(album.created_at)}</p>
+                {album.uploader_name && (
+                  <p className="text-xs text-gray-400 mt-1">
+                    Được đăng bởi: <span className="font-semibold text-rose-400">{album.uploader_name}</span>
+                  </p>
+                )}
               </div>
             </div>
           ))}

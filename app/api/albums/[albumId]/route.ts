@@ -36,6 +36,11 @@ export async function PUT(
       return NextResponse.json({ error: 'Album not found' }, { status: 404 });
     }
 
+    if (album.user_id !== auth.decoded.userId) {
+      connection.release();
+      return NextResponse.json({ error: 'Forbidden: bạn không phải chủ sở hữu album này' }, { status: 403 });
+    }
+
     const newTitle = title ?? album.title;
     const newDescription = description !== undefined ? description : album.description;
     const newVisibility =
@@ -71,10 +76,16 @@ export async function DELETE(
     const { albumId } = await params;
     const connection = await pool.getConnection();
 
-    const [rows] = await connection.execute('SELECT id FROM albums WHERE id = ?', [albumId]);
+    const [rows] = await connection.execute('SELECT id, user_id FROM albums WHERE id = ?', [albumId]);
     if ((rows as any[]).length === 0) {
       connection.release();
       return NextResponse.json({ error: 'Album not found' }, { status: 404 });
+    }
+
+    const album = (rows as any[])[0];
+    if (album.user_id !== auth.decoded.userId) {
+      connection.release();
+      return NextResponse.json({ error: 'Forbidden: bạn không phải chủ sở hữu album này' }, { status: 403 });
     }
 
     // Lấy đường dẫn ảnh để xóa file vật lý

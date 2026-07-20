@@ -103,7 +103,7 @@ export default function DashboardPage() {
       {/* Content */}
       <main className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8 relative z-10">
         <div className="animate-fade-in">
-          {activeTab === 'albums' && <AlbumList token={token} />}
+          {activeTab === 'albums' && <AlbumList token={token} currentUserId={user.id} />}
           {activeTab === 'letters' && <LetterList token={token} currentUserId={user.id} />}
           {activeTab === 'events' && <EventList token={token} />}
         </div>

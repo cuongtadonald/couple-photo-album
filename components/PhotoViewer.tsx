@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCcw, MapPin, ExternalLink, Sticker } from 'lucide-react';
-import StickerOverlay from './StickerOverlay';
+import StickerOverlay, { StickerItem } from './StickerOverlay';
 
 interface ViewerPhoto {
   id: number;
@@ -18,17 +18,35 @@ interface PhotoViewerProps {
   onClose: () => void;
   albumId?: number;
   token?: string | null;
+  onStickersSaved?: (photoId: number, stickers: StickerItem[]) => void;
 }
 
 const MIN_ZOOM = 1;
 const MAX_ZOOM = 4;
 
-export default function PhotoViewer({ photos, startIndex, onClose, albumId, token }: PhotoViewerProps) {
+export default function PhotoViewer({ photos, startIndex, onClose, albumId, token, onStickersSaved }: PhotoViewerProps) {
   const [index, setIndex] = useState(startIndex);
   const [zoom, setZoom] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [stickerMode, setStickerMode] = useState(false);
+  const [displayStickers, setDisplayStickers] = useState<StickerItem[]>([]);
   const stageRef = useRef<HTMLDivElement>(null);
+
+  // Fetch stickers mỗi khi chuyển ảnh (luôn hiển thị, không cần bật sticker mode)
+  useEffect(() => {
+    if (albumId == null || !current) return;
+    let cancelled = false;
+    setDisplayStickers([]);
+    fetch(`/api/albums/${albumId}/photos/${current.id}/stickers`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (!cancelled) setDisplayStickers(data.stickers || []);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [albumId, current?.id, token]);
   const dragState = useRef<{ dragging: boolean; startX: number; startY: number; baseX: number; baseY: number }>({
     dragging: false,
     startX: 0,
@@ -215,14 +233,50 @@ export default function PhotoViewer({ photos, startIndex, onClose, albumId, toke
           </button>
         )}
 
-        {/* Sticker overlay */}
+        {/* Stickers luôn hiển thị (không tương tác) khi không ở sticker mode */}
+        {!stickerMode && displayStickers.map((s) => (
+          <div
+            key={s.id}
+            style={{
+              position: 'absolute',
+              left: `${s.pos_x}%`,
+              top: `${s.pos_y}%`,
+              fontSize: `${s.size}px`,
+              transform: `translate(-50%, -50%) rotate(${s.rotation}deg)`,
+              pointerEvents: 'none',
+              userSelect: 'none',
+              lineHeight: 1,
+              zIndex: 15,
+            }}
+          >
+            {s.emoji}
+          </div>
+        ))}
+
+        {/* Sticker overlay (edit mode) */}
         {stickerMode && albumId != null && current && (
           <StickerOverlay
             photoId={current.id}
             albumId={albumId}
             token={token ?? null}
             containerRef={stageRef}
-            onClose={() => setStickerMode(false)}
+            onClose={() => {
+              setStickerMode(false);
+              // Reload stickers mới nhất sau khi lưu
+              if (albumId != null && current) {
+                const photoId = current.id;
+                fetch(`/api/albums/${albumId}/photos/${photoId}/stickers`, {
+                  headers: token ? { Authorization: `Bearer ${token}` } : {},
+                })
+                  .then((r) => r.json())
+                  .then((data) => {
+                    const updated: StickerItem[] = data.stickers || [];
+                    setDisplayStickers(updated);
+                    onStickersSaved?.(photoId, updated);
+                  })
+                  .catch(() => {});
+              }
+            }}
           />
         )}
       </div>

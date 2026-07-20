@@ -31,22 +31,6 @@ export default function PhotoViewer({ photos, startIndex, onClose, albumId, toke
   const [stickerMode, setStickerMode] = useState(false);
   const [displayStickers, setDisplayStickers] = useState<StickerItem[]>([]);
   const stageRef = useRef<HTMLDivElement>(null);
-
-  // Fetch stickers mỗi khi chuyển ảnh (luôn hiển thị, không cần bật sticker mode)
-  useEffect(() => {
-    if (albumId == null || !current) return;
-    let cancelled = false;
-    setDisplayStickers([]);
-    fetch(`/api/albums/${albumId}/photos/${current.id}/stickers`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    })
-      .then((r) => r.json())
-      .then((data) => {
-        if (!cancelled) setDisplayStickers(data.stickers || []);
-      })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, [albumId, current?.id, token]);
   const dragState = useRef<{ dragging: boolean; startX: number; startY: number; baseX: number; baseY: number }>({
     dragging: false,
     startX: 0,
@@ -55,7 +39,25 @@ export default function PhotoViewer({ photos, startIndex, onClose, albumId, toke
     baseY: 0,
   });
 
+  // current phải được khai báo trước useEffect để tránh lỗi
   const current = photos[index];
+  const currentId = current?.id;
+
+  // Fetch stickers mỗi khi chuyển ảnh (luôn hiển thị, không cần bật sticker mode)
+  useEffect(() => {
+    if (albumId == null || currentId == null) return;
+    let cancelled = false;
+    setDisplayStickers([]);
+    fetch(`/api/albums/${albumId}/photos/${currentId}/stickers`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (!cancelled) setDisplayStickers(data.stickers || []);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [albumId, currentId, token]);
 
   const resetZoom = useCallback(() => {
     setZoom(1);
@@ -263,8 +265,8 @@ export default function PhotoViewer({ photos, startIndex, onClose, albumId, toke
             onClose={() => {
               setStickerMode(false);
               // Reload stickers mới nhất sau khi lưu
-              if (albumId != null && current) {
-                const photoId = current.id;
+              if (albumId != null && currentId != null) {
+                const photoId = currentId;
                 fetch(`/api/albums/${albumId}/photos/${photoId}/stickers`, {
                   headers: token ? { Authorization: `Bearer ${token}` } : {},
                 })

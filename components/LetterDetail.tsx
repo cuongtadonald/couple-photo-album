@@ -24,6 +24,7 @@ interface Letter {
   from_user_name: string;
   scheduled_unlock_date: string | null;
   is_opened: boolean;
+  is_confirmed: boolean;
   created_at: string;
 }
 
@@ -397,8 +398,8 @@ export default function LetterDetail({
           )}
         </div>
 
-        {/* Upload section — only owner */}
-        {isOwner && (
+        {/* Upload section — only owner, only when not confirmed-locked */}
+        {isOwner && !letter.is_confirmed && (
           <div className="border-t border-gray-100 pt-6 space-y-5">
             <h3 className="text-base font-semibold text-gray-800">Thêm Tệp Đính Kèm</h3>
 

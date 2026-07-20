@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ChangeEvent, DragEvent } from 'react';
-import { ArrowLeft, Star, Pencil, Trash2, Check, X, Lock, Globe } from 'lucide-react';
+import { ArrowLeft, Star, Pencil, Trash2, Check, X, Lock, Globe, Download } from 'lucide-react';
 import PhotoViewer from './PhotoViewer';
 import { formatDateVN } from '@/lib/datetime';
 import LocationPicker from './LocationPicker';
@@ -313,6 +313,25 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
     }
   };
 
+  const downloadPhoto = async (photo: Photo) => {
+    try {
+      const response = await fetch(photo.image_url);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      // Lấy tên file từ URL, fallback về tên ảnh hoặc id
+      const filename = photo.image_url.split('/').pop() || `photo-${photo.id}.jpg`;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading photo:', error);
+    }
+  };
+
   const setAsCover = async (photoId: number) => {
     try {
       const response = await fetch(`/api/albums/${album.id}`, {
@@ -539,6 +558,14 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
                       <Star size={15} className={coverPhotoId === photo.id ? 'fill-rose-500 text-rose-500' : ''} />
                     </button>
                     <button
+                      onClick={() => downloadPhoto(photo)}
+                      aria-label="Tải ảnh về"
+                      title="Tải ảnh về"
+                      className="grid place-items-center w-8 h-8 rounded-full bg-white/90 text-gray-600 hover:text-blue-500 shadow transition-colors"
+                    >
+                      <Download size={15} />
+                    </button>
+                    <button
                       onClick={() => startEdit(photo)}
                       aria-label="Sửa chú thích"
                       title="Sửa chú thích"
@@ -625,7 +652,13 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
 
       {/* Fullscreen viewer */}
       {viewerIndex !== null && (
-        <PhotoViewer photos={photos} startIndex={viewerIndex} onClose={() => setViewerIndex(null)} />
+        <PhotoViewer
+          photos={photos}
+          startIndex={viewerIndex}
+          onClose={() => setViewerIndex(null)}
+          albumId={album.id}
+          token={token}
+        />
       )}
     </div>
   );

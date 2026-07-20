@@ -87,12 +87,22 @@ const initDatabase = async () => {
         scheduled_unlock_date DATETIME,
         is_opened BOOLEAN DEFAULT FALSE,
         opened_at DATETIME,
+        is_confirmed BOOLEAN DEFAULT FALSE,
+        confirmed_at DATETIME,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (from_user_id) REFERENCES users(id) ON DELETE CASCADE,
         FOREIGN KEY (to_user_id) REFERENCES users(id) ON DELETE SET NULL
       )
     `);
+
+    // Migration: thêm is_confirmed cho DB đã tồn tại
+    try {
+      await connection.execute('ALTER TABLE letters ADD COLUMN is_confirmed BOOLEAN DEFAULT FALSE');
+    } catch (e) { /* cột đã tồn tại */ }
+    try {
+      await connection.execute('ALTER TABLE letters ADD COLUMN confirmed_at DATETIME');
+    } catch (e) { /* cột đã tồn tại */ }
 
     // Create events table (phải tạo TRƯỚC attachments vì attachments tham chiếu events)
     await connection.execute(`
@@ -150,6 +160,21 @@ const initDatabase = async () => {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (letter_id) REFERENCES letters(id) ON DELETE CASCADE,
         FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
+      )
+    `);
+
+    // Create photo_stickers table
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS photo_stickers (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        photo_id INT NOT NULL,
+        emoji VARCHAR(10) NOT NULL,
+        pos_x FLOAT NOT NULL DEFAULT 50,
+        pos_y FLOAT NOT NULL DEFAULT 50,
+        size INT NOT NULL DEFAULT 48,
+        rotation FLOAT NOT NULL DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (photo_id) REFERENCES photos(id) ON DELETE CASCADE
       )
     `);
 

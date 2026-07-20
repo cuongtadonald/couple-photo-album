@@ -652,7 +652,13 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
 
       {/* Fullscreen viewer */}
       {viewerIndex !== null && (
-        <PhotoViewer photos={photos} startIndex={viewerIndex} onClose={() => setViewerIndex(null)} />
+        <PhotoViewer
+          photos={photos}
+          startIndex={viewerIndex}
+          onClose={() => setViewerIndex(null)}
+          albumId={album.id}
+          token={token}
+        />
       )}
     </div>
   );

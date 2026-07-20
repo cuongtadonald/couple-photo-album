@@ -153,6 +153,21 @@ const initDatabase = async () => {
       )
     `);
 
+    // Create photo_stickers table
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS photo_stickers (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        photo_id INT NOT NULL,
+        emoji VARCHAR(10) NOT NULL,
+        pos_x FLOAT NOT NULL DEFAULT 50,
+        pos_y FLOAT NOT NULL DEFAULT 50,
+        size INT NOT NULL DEFAULT 48,
+        rotation FLOAT NOT NULL DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (photo_id) REFERENCES photos(id) ON DELETE CASCADE
+      )
+    `);
+
     // Create event_letters table for linking letters to events
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS event_letters (

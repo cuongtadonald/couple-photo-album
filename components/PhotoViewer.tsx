@@ -1,7 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCcw, MapPin, ExternalLink } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCcw, MapPin, ExternalLink, Sticker } from 'lucide-react';
+import StickerOverlay from './StickerOverlay';
 
 interface ViewerPhoto {
   id: number;
@@ -15,15 +16,19 @@ interface PhotoViewerProps {
   photos: ViewerPhoto[];
   startIndex: number;
   onClose: () => void;
+  albumId?: number;
+  token?: string | null;
 }
 
 const MIN_ZOOM = 1;
 const MAX_ZOOM = 4;
 
-export default function PhotoViewer({ photos, startIndex, onClose }: PhotoViewerProps) {
+export default function PhotoViewer({ photos, startIndex, onClose, albumId, token }: PhotoViewerProps) {
   const [index, setIndex] = useState(startIndex);
   const [zoom, setZoom] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [stickerMode, setStickerMode] = useState(false);
+  const stageRef = useRef<HTMLDivElement>(null);
   const dragState = useRef<{ dragging: boolean; startX: number; startY: number; baseX: number; baseY: number }>({
     dragging: false,
     startX: 0,
@@ -42,11 +47,13 @@ export default function PhotoViewer({ photos, startIndex, onClose }: PhotoViewer
   const goPrev = useCallback(() => {
     setIndex((i) => (i - 1 + photos.length) % photos.length);
     resetZoom();
+    setStickerMode(false);
   }, [photos.length, resetZoom]);
 
   const goNext = useCallback(() => {
     setIndex((i) => (i + 1) % photos.length);
     resetZoom();
+    setStickerMode(false);
   }, [photos.length, resetZoom]);
 
   const zoomIn = useCallback(() => setZoom((z) => Math.min(MAX_ZOOM, +(z + 0.5).toFixed(2))), []);
@@ -140,6 +147,18 @@ export default function PhotoViewer({ photos, startIndex, onClose }: PhotoViewer
           >
             <RotateCcw size={18} />
           </button>
+          {albumId != null && (
+            <button
+              onClick={() => { resetZoom(); setStickerMode((v) => !v); }}
+              aria-label="Sticker"
+              title="Sticker"
+              className={`grid place-items-center w-10 h-10 rounded-full transition-colors ${
+                stickerMode ? 'bg-rose-500 text-white' : 'bg-white/10 hover:bg-white/20 text-white'
+              }`}
+            >
+              <Sticker size={20} />
+            </button>
+          )}
           <button
             onClick={onClose}
             aria-label="Đóng"
@@ -152,11 +171,12 @@ export default function PhotoViewer({ photos, startIndex, onClose }: PhotoViewer
 
       {/* Image stage */}
       <div
+        ref={stageRef}
         className="relative flex-1 overflow-hidden flex items-center justify-center"
         onWheel={handleWheel}
         onClick={(e) => {
           // Click on the empty backdrop closes; clicks on controls/image do not
-          if (e.target === e.currentTarget) onClose();
+          if (!stickerMode && e.target === e.currentTarget) onClose();
         }}
       >
         {photos.length > 1 && (
@@ -193,6 +213,17 @@ export default function PhotoViewer({ photos, startIndex, onClose }: PhotoViewer
           >
             <ChevronRight size={26} />
           </button>
+        )}
+
+        {/* Sticker overlay */}
+        {stickerMode && albumId != null && current && (
+          <StickerOverlay
+            photoId={current.id}
+            albumId={albumId}
+            token={token ?? null}
+            containerRef={stageRef}
+            onClose={() => setStickerMode(false)}
+          />
         )}
       </div>
 

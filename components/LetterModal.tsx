@@ -15,7 +15,7 @@ interface LetterInitial {
 interface LetterModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (title: string, textContent: string, scheduledUnlockDate: string | null) => Promise<void> | void;
+  onSubmit: (title: string, textContent: string, scheduledUnlockDate: string | null, confirm: boolean) => Promise<void> | void;
   initial?: LetterInitial | null;
   /** sessionStorage prefix used to persist create-mode draft (e.g. "letters:draft") */
   draftKey?: string;
@@ -46,9 +46,11 @@ export default function LetterModal({ isOpen, onClose, onSubmit, initial, draftK
   const [scheduledDate, setScheduledDate] = useState('');
   const [scheduledTime, setScheduledTime] = useState('');
   const [loading, setLoading] = useState(false);
+  const [confirmStep, setConfirmStep] = useState(false);
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) { setConfirmStep(false); return; }
+    setConfirmStep(false);
     if (initial) {
       // Edit mode — always reset to server values
       setTitle(initial.title);
@@ -104,6 +106,11 @@ export default function LetterModal({ isOpen, onClose, onSubmit, initial, draftK
     clearSessionKey(`${draftKey}:time`);
   };
 
+  const buildScheduledUnlockDate = () => {
+    if (!scheduledDate) return null;
+    return `${scheduledDate}T${scheduledTime || '00:00'}`;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) {
@@ -116,15 +123,24 @@ export default function LetterModal({ isOpen, onClose, onSubmit, initial, draftK
         alert('Ngày hẹn mở thư không được nhỏ hơn ngày hiện tại.');
         return;
       }
+      // Chuyển sang bước xác nhận khóa
+      setConfirmStep(true);
+      return;
     }
+    // Không có ngày hẹn — lưu bình thường, không confirm
     setLoading(true);
     try {
-      let scheduledUnlockDate: string | null = null;
-      if (scheduledDate) {
-        const time = scheduledTime || '00:00';
-        scheduledUnlockDate = `${scheduledDate}T${time}`;
-      }
-      await onSubmit(title, textContent, scheduledUnlockDate);
+      await onSubmit(title, textContent, null, false);
+      clearDraft();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleConfirm = async () => {
+    setLoading(true);
+    try {
+      await onSubmit(title, textContent, buildScheduledUnlockDate(), true);
       clearDraft();
     } finally {
       setLoading(false);
@@ -137,6 +153,48 @@ export default function LetterModal({ isOpen, onClose, onSubmit, initial, draftK
   };
 
   if (!isOpen) return null;
+
+  // --- Bước xác nhận khóa thư ---
+  if (confirmStep) {
+    const unlockDate = new Date(`${scheduledDate}T${scheduledTime || '00:00'}`);
+    const dateStr = unlockDate.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const timeStr = unlockDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm border-2 border-rose-100 p-6 text-center">
+          <div className="text-4xl mb-4">🔒</div>
+          <h2 className="text-lg font-bold text-gray-800 mb-3">Bạn xác nhận mở thư vào:</h2>
+          <div className="bg-rose-50 border border-rose-200 rounded-xl px-6 py-4 mb-4 inline-block w-full">
+            <p className="text-2xl font-bold text-rose-600">{dateStr}</p>
+            <p className="text-xl font-semibold text-rose-500 mt-1">{timeStr}</p>
+          </div>
+          <p className="text-sm text-gray-500 mb-6 leading-relaxed">
+            Sau khi xác nhận bạn sẽ không thể sửa hoặc xóa thư.
+            <br />
+            <span className="font-semibold text-gray-700">Bạn có chắc chắn không?</span>
+          </p>
+          <div className="flex gap-3">
+            <Button
+              type="button"
+              onClick={() => setConfirmStep(false)}
+              disabled={loading}
+              className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800"
+            >
+              Quay lại
+            </Button>
+            <Button
+              type="button"
+              onClick={handleConfirm}
+              disabled={loading}
+              className="flex-1 bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white shadow-lg"
+            >
+              {loading ? 'Đang lưu...' : 'Xác nhận'}
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">

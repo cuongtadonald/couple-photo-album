@@ -87,12 +87,22 @@ const initDatabase = async () => {
         scheduled_unlock_date DATETIME,
         is_opened BOOLEAN DEFAULT FALSE,
         opened_at DATETIME,
+        is_confirmed BOOLEAN DEFAULT FALSE,
+        confirmed_at DATETIME,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (from_user_id) REFERENCES users(id) ON DELETE CASCADE,
         FOREIGN KEY (to_user_id) REFERENCES users(id) ON DELETE SET NULL
       )
     `);
+
+    // Migration: thêm is_confirmed cho DB đã tồn tại
+    try {
+      await connection.execute('ALTER TABLE letters ADD COLUMN is_confirmed BOOLEAN DEFAULT FALSE');
+    } catch (e) { /* cột đã tồn tại */ }
+    try {
+      await connection.execute('ALTER TABLE letters ADD COLUMN confirmed_at DATETIME');
+    } catch (e) { /* cột đã tồn tại */ }
 
     // Create events table (phải tạo TRƯỚC attachments vì attachments tham chiếu events)
     await connection.execute(`

@@ -35,7 +35,7 @@ export async function PUT(
     const connection = await pool.getConnection();
 
     const [rows] = await connection.execute(
-      'SELECT from_user_id FROM letters WHERE id = ?',
+      'SELECT from_user_id, is_confirmed FROM letters WHERE id = ?',
       [letterId]
     );
     const letter = (rows as any[])[0];
@@ -47,6 +47,13 @@ export async function PUT(
       connection.release();
       return NextResponse.json(
         { error: 'Bạn không có quyền chỉnh sửa thư này' },
+        { status: 403 }
+      );
+    }
+    if (letter.is_confirmed) {
+      connection.release();
+      return NextResponse.json(
+        { error: 'Thư đã được xác nhận và khóa, không thể chỉnh sửa.' },
         { status: 403 }
       );
     }
@@ -79,7 +86,7 @@ export async function DELETE(
     const connection = await pool.getConnection();
 
     const [rows] = await connection.execute(
-      'SELECT from_user_id FROM letters WHERE id = ?',
+      'SELECT from_user_id, is_confirmed FROM letters WHERE id = ?',
       [letterId]
     );
     const letter = (rows as any[])[0];
@@ -91,6 +98,13 @@ export async function DELETE(
       connection.release();
       return NextResponse.json(
         { error: 'Bạn không có quyền xóa thư này' },
+        { status: 403 }
+      );
+    }
+    if (letter.is_confirmed) {
+      connection.release();
+      return NextResponse.json(
+        { error: 'Thư đã được xác nhận và khóa, không thể xóa.' },
         { status: 403 }
       );
     }

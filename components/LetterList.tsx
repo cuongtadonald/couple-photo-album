@@ -17,6 +17,7 @@ interface Letter {
   from_user_name: string;
   scheduled_unlock_date: string | null;
   is_opened: boolean;
+  is_confirmed: boolean;
   created_at: string;
 }
 
@@ -59,7 +60,8 @@ export default function LetterList({ token, currentUserId }: LetterListProps) {
   const handleSubmit = async (
     title: string,
     textContent: string,
-    scheduledUnlockDate: string | null
+    scheduledUnlockDate: string | null,
+    confirm: boolean
   ) => {
     try {
       if (editing) {
@@ -83,7 +85,16 @@ export default function LetterList({ token, currentUserId }: LetterListProps) {
         });
         const data = await response.json();
         if (data.letter) {
-          setLetters((prev) => [data.letter, ...prev]);
+          const newLetter = data.letter;
+          // Nếu người dùng đã xác nhận khóa, gọi PATCH ngay sau khi tạo
+          if (confirm && newLetter.id) {
+            await fetch('/api/letters', {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+              body: JSON.stringify({ letterId: newLetter.id }),
+            });
+          }
+          setLetters((prev) => [{ ...newLetter, is_confirmed: confirm }, ...prev]);
         }
       }
       // Clear create-mode draft after successful save
@@ -143,11 +154,9 @@ export default function LetterList({ token, currentUserId }: LetterListProps) {
 
   const isOwner = (letter: Letter) => letter.from_user_id === currentUserId;
 
-  /** Thư quá 7 ngày kể từ ngày tạo thì không cho sửa/xóa */
+  /** Thư đã xác nhận (is_confirmed) thì không cho sửa/xóa */
   const isLocked = (letter: Letter): boolean => {
-    const created = parseDate(letter.created_at);
-    if (!created) return false;
-    return Date.now() - created.getTime() > 7 * 24 * 60 * 60 * 1000;
+    return !!letter.is_confirmed;
   };
 
   if (selectedLetter) {
@@ -251,9 +260,6 @@ export default function LetterList({ token, currentUserId }: LetterListProps) {
                     <p className="text-gray-600 mt-2 text-sm">
                       <span className="font-semibold">📮 Từ:</span> {letter.from_user_name}
                     </p>
-                    <p className="text-gray-500 text-sm mt-2 line-clamp-2 italic">
-                      {letter.text_content || '(Chỉ có tệp đính kèm)'}
-                    </p>
                   </div>
                   <div className="text-right ml-2 shrink-0">
                   {/* Chỉ chính chủ mới có nút sửa/xóa — ẩn nếu đã quá 7 ngày */}
@@ -276,7 +282,7 @@ export default function LetterList({ token, currentUserId }: LetterListProps) {
                     </div>
                   )}
                   {owner && locked && (
-                    <span className="text-xs text-gray-400 italic mb-2 block text-right">Đã khóa</span>
+                    <span className="text-xs text-gray-400 italic mb-2 block text-right">Đã xác nhận &amp; khóa</span>
                   )}
                     {letter.scheduled_unlock_date && (
                       <p className="text-xs text-amber-600 font-semibold mb-1">

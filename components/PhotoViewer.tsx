@@ -32,21 +32,31 @@ export default function PhotoViewer({ photos, startIndex, onClose, albumId, toke
   const [displayStickers, setDisplayStickers] = useState<StickerItem[]>([]);
   const stageRef = useRef<HTMLDivElement>(null);
 
+  const current = photos[index];
+  const currentId = current?.id ?? null;
+
   // Fetch stickers mỗi khi chuyển ảnh (luôn hiển thị, không cần bật sticker mode)
   useEffect(() => {
-    if (albumId == null || !current) return;
+    if (albumId == null || currentId == null) return;
+
     let cancelled = false;
     setDisplayStickers([]);
-    fetch(`/api/albums/${albumId}/photos/${current.id}/stickers`, {
+
+    fetch(`/api/albums/${albumId}/photos/${currentId}/stickers`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     })
       .then((r) => r.json())
       .then((data) => {
-        if (!cancelled) setDisplayStickers(data.stickers || []);
+        if (!cancelled) {
+          setDisplayStickers(data.stickers || []);
+        }
       })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, [albumId, current?.id, token]);
+      .catch(() => { });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [albumId, currentId, token]);
   const dragState = useRef<{ dragging: boolean; startX: number; startY: number; baseX: number; baseY: number }>({
     dragging: false,
     startX: 0,
@@ -55,7 +65,7 @@ export default function PhotoViewer({ photos, startIndex, onClose, albumId, toke
     baseY: 0,
   });
 
-  const current = photos[index];
+  //const current = photos[index];
 
   const resetZoom = useCallback(() => {
     setZoom(1);
@@ -170,9 +180,8 @@ export default function PhotoViewer({ photos, startIndex, onClose, albumId, toke
               onClick={() => { resetZoom(); setStickerMode((v) => !v); }}
               aria-label="Sticker"
               title="Sticker"
-              className={`grid place-items-center w-10 h-10 rounded-full transition-colors ${
-                stickerMode ? 'bg-rose-500 text-white' : 'bg-white/10 hover:bg-white/20 text-white'
-              }`}
+              className={`grid place-items-center w-10 h-10 rounded-full transition-colors ${stickerMode ? 'bg-rose-500 text-white' : 'bg-white/10 hover:bg-white/20 text-white'
+                }`}
             >
               <Sticker size={20} />
             </button>
@@ -263,8 +272,8 @@ export default function PhotoViewer({ photos, startIndex, onClose, albumId, toke
             onClose={() => {
               setStickerMode(false);
               // Reload stickers mới nhất sau khi lưu
-              if (albumId != null && current) {
-                const photoId = current.id;
+              if (albumId != null && currentId != null) {
+                const photoId = currentId;
                 fetch(`/api/albums/${albumId}/photos/${photoId}/stickers`, {
                   headers: token ? { Authorization: `Bearer ${token}` } : {},
                 })
@@ -274,7 +283,7 @@ export default function PhotoViewer({ photos, startIndex, onClose, albumId, toke
                     setDisplayStickers(updated);
                     onStickersSaved?.(photoId, updated);
                   })
-                  .catch(() => {});
+                  .catch(() => { });
               }
             }}
           />

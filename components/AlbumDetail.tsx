@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ChangeEvent, DragEvent } from 'react';
+import type { StickerItem } from './StickerOverlay';
 import { ArrowLeft, Star, Pencil, Trash2, Check, X, Lock, Globe, Download } from 'lucide-react';
 import PhotoViewer from './PhotoViewer';
 import { formatDateVN } from '@/lib/datetime';
@@ -62,6 +63,7 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
   const [showAddPhoto, setShowAddPhoto] = useState(false);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
   const [coverPhotoId, setCoverPhotoId] = useState<number | null>(album.cover_photo_id ?? null);
+  const [photoStickers, setPhotoStickers] = useState<Map<number, StickerItem[]>>(new Map());
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editCaption, setEditCaption] = useState('');
   const [editLocationName, setEditLocationName] = useState('');
@@ -87,6 +89,25 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
         setTotal(data.total ?? incoming.length);
         setHasMore(Boolean(data.hasMore));
         offsetRef.current = offset + incoming.length;
+
+        // Fetch stickers cho từng ảnh mới (fire-and-forget, không block UI)
+        incoming.forEach((photo) => {
+          fetch(`/api/albums/${album.id}/photos/${photo.id}/stickers`, {
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+          })
+            .then((r) => r.json())
+            .then((d) => {
+              const list: StickerItem[] = d.stickers || [];
+              if (list.length > 0) {
+                setPhotoStickers((prev) => {
+                  const next = new Map(prev);
+                  next.set(photo.id, list);
+                  return next;
+                });
+              }
+            })
+            .catch(() => {});
+        });
       } catch (error) {
         console.error('Error fetching photos:', error);
       } finally {
@@ -617,6 +638,19 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
                     </div>
                   ) : (
                     <>
+                      {/* Dòng title: sticker strip + caption */}
+                      {(() => {
+                        const stickers = photoStickers.get(photo.id) || [];
+                        return stickers.length > 0 ? (
+                          <div className="flex items-center gap-1 flex-wrap mb-1">
+                            {stickers.map((s) => (
+                              <span key={s.id} style={{ fontSize: '18px', lineHeight: 1 }} title={s.emoji}>
+                                {s.emoji}
+                              </span>
+                            ))}
+                          </div>
+                        ) : null;
+                      })()}
                       {photo.caption ? (
                         <p className="text-gray-700 text-sm sm:text-base whitespace-pre-line">
                           {photo.caption}
@@ -658,6 +692,13 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
           onClose={() => setViewerIndex(null)}
           albumId={album.id}
           token={token}
+          onStickersSaved={(photoId, stickers) => {
+            setPhotoStickers((prev) => {
+              const next = new Map(prev);
+              next.set(photoId, stickers);
+              return next;
+            });
+          }}
         />
       )}
     </div>

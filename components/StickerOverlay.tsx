@@ -8,73 +8,123 @@ import { RotateCcw, RotateCw, Trash2, X, Check } from 'lucide-react';
 //   '🌹', '🌸', '⭐', '🎂', '🎉', '💌', '🐻', '🐱', '🌈', '🎈',
 // ];
 
-const STICKER_LIST = [
-  // ❤️ Love
-  '❤️', '🩷', '🧡', '💛', '💚', '🩵', '💙', '💜', '🤍', '🖤',
-  '❤️‍🔥', '❤️‍🩹',
-  '💕', '💞', '💓', '💗', '💖', '💘', '💝', '💟', '❣️', '♥️',
-  '💋', '💌', '💍', '💐', '🌹', '🌷', '🌸', '🌺', '🌻', '🌼',
-  '🪻', '🥀', '🍀',
+// const STICKER_LIST = [
+//   // ❤️ Love
+//   '❤️', '🩷', '🧡', '💛', '💚', '🩵', '💙', '💜', '🤍', '🖤',
+//   '❤️‍🔥', '❤️‍🩹',
+//   '💕', '💞', '💓', '💗', '💖', '💘', '💝', '💟', '❣️', '♥️',
+//   '💋', '💌', '💍', '💐', '🌹', '🌷', '🌸', '🌺', '🌻', '🌼',
+//   '🪻', '🥀', '🍀',
 
-  // 💑 Couple
-  '💑', '👩‍❤️‍👨', '👨‍❤️‍👨', '👩‍❤️‍👩',
-  '👩‍❤️‍💋‍👨', '👨‍❤️‍💋‍👨', '👩‍❤️‍💋‍👩',
-  '🫂', '🫶',
+//   // 💑 Couple
+//   '💑', '👩‍❤️‍👨', '👨‍❤️‍👨', '👩‍❤️‍👩',
+//   '👩‍❤️‍💋‍👨', '👨‍❤️‍💋‍👨', '👩‍❤️‍💋‍👩',
+//   '🫂', '🫶',
 
-  // 😊 Cute Face
-  '😀', '😃', '😄', '😁', '😆', '😊', '☺️',
-  '🥰', '😍', '😘', '😗', '😙', '😚',
-  '😋', '😜', '🤪', '🤭', '🫢', '🫣',
-  '🥹', '😭', '😂', '🤣', '😇', '🤩',
-  '😎', '🥳', '😴', '😢', '😡', '🤔',
+//   // 😊 Cute Face
+//   '😀', '😃', '😄', '😁', '😆', '😊', '☺️',
+//   '🥰', '😍', '😘', '😗', '😙', '😚',
+//   '😋', '😜', '🤪', '🤭', '🫢', '🫣',
+//   '🥹', '😭', '😂', '🤣', '😇', '🤩',
+//   '😎', '🥳', '😴', '😢', '😡', '🤔',
 
-  // 😻 Face Sticker
-  '😻', '😽', '😺', '😸', '😹',
-  '🙈', '🙉', '🙊',
-  '👀', '👁️',
-  '👄',
-  '👅',
+//   // 😻 Face Sticker
+//   '😻', '😽', '😺', '😸', '😹',
+//   '🙈', '🙉', '🙊',
+//   '👀', '👁️',
+//   '👄',
+//   '👅',
 
-  // 😈 Đội lên đầu
-  '👑', '👒', '🎩', '🧢',
-  '😈', '👿',
-  '👻', '💀',
-  '🤖',
-  '👽',
-  '👼',
-  '😇',
-  '🦄',
+//   // 😈 Đội lên đầu
+//   '👑', '👒', '🎩', '🧢',
+//   '😈', '👿',
+//   '👻', '💀',
+//   '🤖',
+//   '👽',
+//   '👼',
+//   '😇',
+//   '🦄',
 
-  // 🐻 Animal
-  '🐻', '🧸', '🐼', '🐰', '🐇', '🐱', '🐶',
-  '🦊', '🐨', '🐯', '🦁', '🐷', '🐸',
-  '🐵', '🐥', '🐧', '🐤', '🦋', '🐝',
-  '🐢', '🐬', '🐳',
+//   // 🐻 Animal
+//   '🐻', '🧸', '🐼', '🐰', '🐇', '🐱', '🐶',
+//   '🦊', '🐨', '🐯', '🦁', '🐷', '🐸',
+//   '🐵', '🐥', '🐧', '🐤', '🦋', '🐝',
+//   '🐢', '🐬', '🐳',
 
-  // ✨ Hiệu ứng
-  '✨', '⭐', '🌟', '💫',
-  '🔥', '⚡', '☄️',
-  '🌈', '☀️', '🌤️', '🌙', '☁️',
-  '❄️', '🌊',
+//   // ✨ Hiệu ứng
+//   '✨', '⭐', '🌟', '💫',
+//   '🔥', '⚡', '☄️',
+//   '🌈', '☀️', '🌤️', '🌙', '☁️',
+//   '❄️', '🌊',
 
-  // 👍 Reaction
-  '👍', '👎', '👏', '🙌', '👌',
-  '✌️', '🤞', '🤟', '🤙',
-  '🙏', '💪',
+//   // 👍 Reaction
+//   '👍', '👎', '👏', '🙌', '👌',
+//   '✌️', '🤞', '🤟', '🤙',
+//   '🙏', '💪',
 
-  // 🎀 Cute
-  '🎀', '🎁', '🎈', '🎉', '🎊',
-  '🎂', '🍰', '🧁',
-  '🍫', '🍭', '🍬',
-  '🍓', '🍒', '🍑', '🍉', '🍍', '🍇',
-  '☕', '🧋',
+//   // 🎀 Cute
+//   '🎀', '🎁', '🎈', '🎉', '🎊',
+//   '🎂', '🍰', '🧁',
+//   '🍫', '🍭', '🍬',
+//   '🍓', '🍒', '🍑', '🍉', '🍍', '🍇',
+//   '☕', '🧋',
 
-  // 🎵 Music
-  '🎵', '🎶', '🎤', '🎧', '🎸', '🎹',
+//   // 🎵 Music
+//   '🎵', '🎶', '🎤', '🎧', '🎸', '🎹',
 
-  // 📸 Memory
-  '📷', '📸', '🖼️', '🎞️', '🎬',
-  '💌', '📮', '🕰️', '⌛', '🧩'
+//   // 📸 Memory
+//   '📷', '📸', '🖼️', '🎞️', '🎬',
+//   '💌', '📮', '🕰️', '⌛', '🧩'
+// ];
+
+const STICKER_SECTIONS = [
+  {
+    title: "❤️ Love",
+    stickers: [
+      '❤️', '🩷', '💖', '💕', '💞', '💘', '💝', '💗', '💓', '💟',
+      '💋', '💌', '💍', '💐', '🌹', '🌸', '🌺', '🌷', '🥰', '😍',
+      '😘', '🫶', '🫂', '💑', '👩‍❤️‍👨', '👨‍❤️‍👨', '👩‍❤️‍👩'
+    ]
+  },
+  {
+    title: "👑 Headwear",
+    stickers: [
+      '👑', '🎩', '👒', '🧢', '🎓', '🪖',
+      '😇', '👼', '😈', '👿',
+      '🦄', '🐱', '🐻', '🐰', '🦊',
+      '🎀', '🌸', '🌺', '⭐', '✨'
+    ]
+  },
+  {
+    title: "😎 Face",
+    stickers: [
+      '😎', '🤓', '🥸',
+      '👓', '🕶️',
+      '👀', '👁️',
+      '👄', '👅',
+      '😻', '😽', '😂', '😭', '🥹',
+      '🤩', '🤭', '🫣', '😊'
+    ]
+  },
+  {
+    title: "✨ Effects",
+    stickers: [
+      '✨', '💫', '⭐', '🌟',
+      '🔥', '💥', '⚡',
+      '🌈', '☀️', '🌙', '☁️',
+      '🎉', '🎊', '🎈',
+      '🦋', '🌸', '🍃',
+      '💖', '💕', '❤️‍🔥'
+    ]
+  },
+  {
+    title: "🐻 Cute",
+    stickers: [
+      '🐻', '🧸', '🐰', '🐱', '🐶',
+      '🐼', '🦊', '🐨', '🐷', '🐸',
+      '🐥', '🐧', '🦄', '🍓', '🍒'
+    ]
+  }
 ];
 
 export interface StickerItem {
@@ -423,10 +473,11 @@ export default function StickerOverlay({
       {/* ── Sticker picker panel ───────────────────────────────────────────── */}
       {showPicker && (
         <div
-          className="absolute bottom-14 left-3 z-40 bg-black/80 backdrop-blur-sm rounded-2xl p-3 shadow-2xl"
+          // className="absolute bottom-14 left-3 z-40 bg-black/80 backdrop-blur-sm rounded-2xl p-3 shadow-2xl"
+          className=" absolute bottom-14 left-3 z-40 w-64 bg-black/85 backdrop-blur-md rounded-2xl p-3 shadow-2xl flex flex-col "
           onClick={(e) => e.stopPropagation()}
         >
-          <p className="text-white/60 text-xs mb-2 font-medium">Chon sticker</p>
+          {/* <p className="text-white/60 text-xs mb-2 font-medium">Chon sticker</p>
           <div className="grid grid-cols-5 gap-1">
             {STICKER_LIST.map((emoji) => (
               <button
@@ -438,6 +489,61 @@ export default function StickerOverlay({
                 {emoji}
               </button>
             ))}
+          </div> */}
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-white font-semibold">
+              Chọn Sticker
+            </h3>
+
+            <button
+              onClick={() => setShowPicker(false)}
+              className="w-7 h-7 rounded-full hover:bg-white/15 flex items-center justify-center"
+            >
+              <X size={16} className="text-white" />
+            </button>
+          </div>
+
+          <div className="flex flex-col gap-4 max-h-[52vh] overflow-y-auto pr-1">
+
+            {STICKER_SECTIONS.map(section => (
+
+              <div key={section.title}>
+
+                <p className="text-xs text-white/60 font-semibold mb-2">
+                  {section.title}
+                </p>
+
+                <div className="grid grid-cols-5 gap-1">
+
+                  {section.stickers.map(emoji => (
+
+                    <button
+                      key={emoji}
+                      onClick={() => addSticker(emoji)}
+                      className="
+                          w-10
+                          h-10
+                          rounded-xl
+                          flex
+                          items-center
+                          justify-center
+                          text-2xl
+                          hover:bg-white/15
+                          hover:scale-110
+                          transition
+                        "
+                    >
+                      {emoji}
+                    </button>
+
+                  ))}
+
+                </div>
+
+              </div>
+
+            ))}
+
           </div>
         </div>
       )}

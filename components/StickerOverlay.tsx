@@ -3,9 +3,78 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { RotateCcw, RotateCw, Trash2, X, Check } from 'lucide-react';
 
+// const STICKER_LIST = [
+//   '❤️', '💖', '😍', '😊', '😂', '😭', '👍', '👎', '🔥',
+//   '🌹', '🌸', '⭐', '🎂', '🎉', '💌', '🐻', '🐱', '🌈', '🎈',
+// ];
+
 const STICKER_LIST = [
-  '❤️', '💖', '😍', '😊', '😂', '😭', '👍', '👎', '🔥',
-  '🌹', '🌸', '⭐', '🎂', '🎉', '💌', '🐻', '🐱', '🌈', '🎈',
+  // ❤️ Love
+  '❤️', '🩷', '🧡', '💛', '💚', '🩵', '💙', '💜', '🤍', '🖤',
+  '❤️‍🔥', '❤️‍🩹',
+  '💕', '💞', '💓', '💗', '💖', '💘', '💝', '💟', '❣️', '♥️',
+  '💋', '💌', '💍', '💐', '🌹', '🌷', '🌸', '🌺', '🌻', '🌼',
+  '🪻', '🥀', '🍀',
+
+  // 💑 Couple
+  '💑', '👩‍❤️‍👨', '👨‍❤️‍👨', '👩‍❤️‍👩',
+  '👩‍❤️‍💋‍👨', '👨‍❤️‍💋‍👨', '👩‍❤️‍💋‍👩',
+  '🫂', '🫶',
+
+  // 😊 Cute Face
+  '😀', '😃', '😄', '😁', '😆', '😊', '☺️',
+  '🥰', '😍', '😘', '😗', '😙', '😚',
+  '😋', '😜', '🤪', '🤭', '🫢', '🫣',
+  '🥹', '😭', '😂', '🤣', '😇', '🤩',
+  '😎', '🥳', '😴', '😢', '😡', '🤔',
+
+  // 😻 Face Sticker
+  '😻', '😽', '😺', '😸', '😹',
+  '🙈', '🙉', '🙊',
+  '👀', '👁️',
+  '👄',
+  '👅',
+
+  // 😈 Đội lên đầu
+  '👑', '👒', '🎩', '🧢',
+  '😈', '👿',
+  '👻', '💀',
+  '🤖',
+  '👽',
+  '👼',
+  '😇',
+  '🦄',
+
+  // 🐻 Animal
+  '🐻', '🧸', '🐼', '🐰', '🐇', '🐱', '🐶',
+  '🦊', '🐨', '🐯', '🦁', '🐷', '🐸',
+  '🐵', '🐥', '🐧', '🐤', '🦋', '🐝',
+  '🐢', '🐬', '🐳',
+
+  // ✨ Hiệu ứng
+  '✨', '⭐', '🌟', '💫',
+  '🔥', '⚡', '☄️',
+  '🌈', '☀️', '🌤️', '🌙', '☁️',
+  '❄️', '🌊',
+
+  // 👍 Reaction
+  '👍', '👎', '👏', '🙌', '👌',
+  '✌️', '🤞', '🤟', '🤙',
+  '🙏', '💪',
+
+  // 🎀 Cute
+  '🎀', '🎁', '🎈', '🎉', '🎊',
+  '🎂', '🍰', '🧁',
+  '🍫', '🍭', '🍬',
+  '🍓', '🍒', '🍑', '🍉', '🍍', '🍇',
+  '☕', '🧋',
+
+  // 🎵 Music
+  '🎵', '🎶', '🎤', '🎧', '🎸', '🎹',
+
+  // 📸 Memory
+  '📷', '📸', '🖼️', '🎞️', '🎬',
+  '💌', '📮', '🕰️', '⌛', '🧩'
 ];
 
 export interface StickerItem {
@@ -114,7 +183,7 @@ export default function StickerOverlay({
           method: 'DELETE',
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
-      } catch {/* ignore */}
+      } catch {/* ignore */ }
     },
     [albumId, photoId, token, selectedId]
   );
@@ -128,7 +197,7 @@ export default function StickerOverlay({
         method: 'DELETE',
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
-    } catch {/* ignore */}
+    } catch {/* ignore */ }
   }, [albumId, photoId, token]);
 
   // ─── Save positions (batch PUT) ───────────────────────────────────────────
@@ -152,7 +221,7 @@ export default function StickerOverlay({
           })),
         }),
       });
-    } catch {/* ignore */} finally {
+    } catch {/* ignore */ } finally {
       setSaving(false);
       onClose();
     }

@@ -118,10 +118,21 @@ export default function LetterModal({ isOpen, onClose, onSubmit, initial, draftK
       return;
     }
     if (scheduledDate) {
-      const chosen = new Date(`${scheduledDate}T${scheduledTime || '00:00'}`);
-      if (chosen < new Date()) {
+      // So sánh ngày (không tính giờ) để cho phép chọn hôm nay
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const chosenDay = new Date(scheduledDate + 'T00:00:00');
+      if (chosenDay < today) {
         alert('Ngày hẹn mở thư không được nhỏ hơn ngày hiện tại.');
         return;
+      }
+      // Nếu chọn hôm nay nhưng giờ đã qua, cảnh báo nhẹ
+      if (chosenDay.getTime() === today.getTime() && scheduledTime) {
+        const chosen = new Date(`${scheduledDate}T${scheduledTime}`);
+        if (chosen < new Date()) {
+          alert('Giờ hẹn mở thư đã qua. Vui lòng chọn giờ khác.');
+          return;
+        }
       }
       // Chuyển sang bước xác nhận khóa
       setConfirmStep(true);

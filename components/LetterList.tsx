@@ -71,6 +71,14 @@ export default function LetterList({ token, currentUserId }: LetterListProps) {
           body: JSON.stringify({ title, textContent, scheduledUnlockDate }),
         });
         if (response.ok) {
+          // Nếu xác nhận khóa khi sửa, gọi PATCH để set is_confirmed
+          if (confirm) {
+            await fetch('/api/letters', {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+              body: JSON.stringify({ letterId: editing.id }),
+            });
+          }
           await fetchLetters();
         } else {
           const err = await response.json();
@@ -219,9 +227,8 @@ export default function LetterList({ token, currentUserId }: LetterListProps) {
             return (
               <div
                 key={letter.id}
-                className={`group bg-white/80 backdrop-blur-sm rounded-2xl shadow-md p-6 border-l-4 transition-all duration-300 transform hover:-translate-y-1 ${
-                  canOpen ? 'hover:shadow-2xl border-rose-400 hover:border-pink-400' : 'border-yellow-300 opacity-80'
-                }`}
+                className={`group bg-white/80 backdrop-blur-sm rounded-2xl shadow-md p-6 border-l-4 transition-all duration-300 transform hover:-translate-y-1 ${canOpen ? 'hover:shadow-2xl border-rose-400 hover:border-pink-400' : 'border-yellow-300 opacity-80'
+                  }`}
               >
                 <div className="flex justify-between items-start gap-3">
                   <div
@@ -262,28 +269,28 @@ export default function LetterList({ token, currentUserId }: LetterListProps) {
                     </p>
                   </div>
                   <div className="text-right ml-2 shrink-0">
-                  {/* Chỉ chính chủ mới có nút sửa/xóa — ẩn nếu đã quá 7 ngày */}
-                  {owner && !locked && (
-                    <div className="flex gap-1 justify-end mb-2">
-                      <button
-                        onClick={() => openEdit(letter)}
-                        aria-label="Sửa thư"
-                        className="grid place-items-center w-8 h-8 rounded-full text-gray-400 hover:text-rose-500 hover:bg-rose-50 transition-colors"
-                      >
-                        <Pencil size={16} />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(letter)}
-                        aria-label="Xóa thư"
-                        className="grid place-items-center w-8 h-8 rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  )}
-                  {owner && locked && (
-                    <span className="text-xs text-gray-400 italic mb-2 block text-right">Đã xác nhận &amp; khóa</span>
-                  )}
+                    {/* Chỉ chính chủ mới có nút sửa/xóa — ẩn nếu đã quá 7 ngày */}
+                    {owner && !locked && (
+                      <div className="flex gap-1 justify-end mb-2">
+                        <button
+                          onClick={() => openEdit(letter)}
+                          aria-label="Sửa thư"
+                          className="grid place-items-center w-8 h-8 rounded-full text-gray-400 hover:text-rose-500 hover:bg-rose-50 transition-colors"
+                        >
+                          <Pencil size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(letter)}
+                          aria-label="Xóa thư"
+                          className="grid place-items-center w-8 h-8 rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    )}
+                    {owner && locked && (
+                      <span className="text-xs text-gray-400 italic mb-2 block text-right">Đã xác nhận &amp; khóa</span>
+                    )}
                     {letter.scheduled_unlock_date && (
                       <p className="text-xs text-amber-600 font-semibold mb-1">
                         📅 {formatDateVN(letter.scheduled_unlock_date)}
@@ -305,10 +312,10 @@ export default function LetterList({ token, currentUserId }: LetterListProps) {
         initial={
           editing
             ? {
-                title: editing.title,
-                text_content: editing.text_content || '',
-                scheduled_unlock_date: editing.scheduled_unlock_date,
-              }
+              title: editing.title,
+              text_content: editing.text_content || '',
+              scheduled_unlock_date: editing.scheduled_unlock_date,
+            }
             : null
         }
         draftKey="letters:draft"

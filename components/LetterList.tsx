@@ -32,7 +32,7 @@ export default function LetterList({ token, currentUserId }: LetterListProps) {
   const [showModal, setShowModal] = useSessionState<boolean>('letters:showModal', false);
   const [editingId, setEditingId] = useSessionState<number | null>('letters:editingId', null);
   const [selectedLetterId, setSelectedLetterId] = useSessionState<number | null>('letters:selectedId', null);
-  const { badge, markSeen } = useSeen('letter');
+  const { badge } = useSeen('letter');
 
   // Resolve objects from IDs once the list has loaded
   const editing = letters.find((l) => l.id === editingId) ?? null;
@@ -227,19 +227,20 @@ export default function LetterList({ token, currentUserId }: LetterListProps) {
             return (
               <div
                 key={letter.id}
-                className={`group bg-white/80 backdrop-blur-sm rounded-2xl shadow-md p-6 border-l-4 transition-all duration-300 transform hover:-translate-y-1 ${canOpen ? 'hover:shadow-2xl border-rose-400 hover:border-pink-400' : 'border-yellow-300 opacity-80'
-                  }`}
+                className={`group bg-white/80 backdrop-blur-sm rounded-2xl shadow-md p-6 border-l-4 transition-all duration-300 transform hover:-translate-y-1 ${
+                  canOpen ? 'hover:shadow-2xl border-rose-400 hover:border-pink-400' : 'border-yellow-300 opacity-80'
+                }`}
               >
                 <div className="flex justify-between items-start gap-3">
                   <div
                     className={`flex-1 min-w-0 ${canOpen ? 'cursor-pointer' : ''}`}
-                    onClick={() => { if (canOpen) { setSelectedLetterId(letter.id); markSeen(letter.id); } }}
+                    onClick={() => { if (canOpen) { setSelectedLetterId(letter.id); } }}
                   >
                     <div className="flex items-center gap-3 flex-wrap">
                       <h3 className="text-lg font-bold bg-gradient-to-r from-rose-500 to-pink-500 bg-clip-text text-transparent">
                         {letter.title}
                       </h3>
-                      {canOpen && (() => {
+                      {canOpen && !owner && (() => {
                         const b = badge(letter.id, letter.created_at);
                         if (!b) return null;
                         return (
@@ -269,28 +270,28 @@ export default function LetterList({ token, currentUserId }: LetterListProps) {
                     </p>
                   </div>
                   <div className="text-right ml-2 shrink-0">
-                    {/* Chỉ chính chủ mới có nút sửa/xóa — ẩn nếu đã quá 7 ngày */}
-                    {owner && !locked && (
-                      <div className="flex gap-1 justify-end mb-2">
-                        <button
-                          onClick={() => openEdit(letter)}
-                          aria-label="Sửa thư"
-                          className="grid place-items-center w-8 h-8 rounded-full text-gray-400 hover:text-rose-500 hover:bg-rose-50 transition-colors"
-                        >
-                          <Pencil size={16} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(letter)}
-                          aria-label="Xóa thư"
-                          className="grid place-items-center w-8 h-8 rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    )}
-                    {owner && locked && (
-                      <span className="text-xs text-gray-400 italic mb-2 block text-right">Đã xác nhận &amp; khóa</span>
-                    )}
+                  {/* Chỉ chính chủ mới có nút sửa/xóa — ẩn nếu đã quá 7 ngày */}
+                  {owner && !locked && (
+                    <div className="flex gap-1 justify-end mb-2">
+                      <button
+                        onClick={() => openEdit(letter)}
+                        aria-label="Sửa thư"
+                        className="grid place-items-center w-8 h-8 rounded-full text-gray-400 hover:text-rose-500 hover:bg-rose-50 transition-colors"
+                      >
+                        <Pencil size={16} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(letter)}
+                        aria-label="Xóa thư"
+                        className="grid place-items-center w-8 h-8 rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  )}
+                  {owner && locked && (
+                    <span className="text-xs text-gray-400 italic mb-2 block text-right">Đã xác nhận &amp; khóa</span>
+                  )}
                     {letter.scheduled_unlock_date && (
                       <p className="text-xs text-amber-600 font-semibold mb-1">
                         📅 {formatDateVN(letter.scheduled_unlock_date)}
@@ -312,10 +313,10 @@ export default function LetterList({ token, currentUserId }: LetterListProps) {
         initial={
           editing
             ? {
-              title: editing.title,
-              text_content: editing.text_content || '',
-              scheduled_unlock_date: editing.scheduled_unlock_date,
-            }
+                title: editing.title,
+                text_content: editing.text_content || '',
+                scheduled_unlock_date: editing.scheduled_unlock_date,
+              }
             : null
         }
         draftKey="letters:draft"

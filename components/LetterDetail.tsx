@@ -15,6 +15,7 @@ import {
   Download,
 } from 'lucide-react';
 import { formatDateVN, formatTimeVN } from '@/lib/datetime';
+import { useSeen } from '@/lib/use-seen';
 
 interface Letter {
   id: number;
@@ -70,10 +71,18 @@ export default function LetterDetail({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const { markSeen } = useSeen('letter');
+
   useEffect(() => {
     fetchAttachments();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [letter.id, token]);
+
+  // Mark letter as seen when user views the content
+  useEffect(() => {
+    markSeen(letter.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [letter.id]);
 
   useEffect(() => {
     return () => {

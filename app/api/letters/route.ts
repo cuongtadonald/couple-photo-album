@@ -39,6 +39,7 @@ export async function GET(request: NextRequest) {
        JOIN users u ON l.from_user_id = u.id
        ORDER BY l.created_at DESC`
     );
+    console.log(JSON.stringify((letters as any[])[0], null, 2));
     connection.release();
 
     return NextResponse.json({ letters });

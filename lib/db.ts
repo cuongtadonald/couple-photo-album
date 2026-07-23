@@ -8,6 +8,8 @@ const pool = mysql.createPool({
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
+
+  dateStrings: true,
 });
 
 // Run pending column migrations automatically on first use
@@ -38,7 +40,7 @@ async function runMigrations() {
 }
 
 // Kick off migrations immediately (fire-and-forget; errors are swallowed above)
-runMigrations().catch(() => {});
+runMigrations().catch(() => { });
 
 export default pool;
 

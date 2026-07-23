@@ -8,7 +8,7 @@ import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { parseDate, formatDateVN } from '@/lib/datetime';
 import { useSeen } from '@/lib/use-seen';
 import { useSessionState, clearSessionKey } from '@/lib/use-session-state';
-import { formatDateVN, formatDateTimeVN } from '@/lib/datetime';
+//import { formatDateVN, formatDateTimeVN } from '@/lib/datetime';
 
 interface Letter {
   id: number;
@@ -294,7 +294,11 @@ export default function LetterList({ token, currentUserId }: LetterListProps) {
                     )}
                     {letter.scheduled_unlock_date && (
                       <p className="text-xs text-amber-600 font-semibold mb-1">
-                        🔓 {formatDateTimeVN(letter.scheduled_unlock_date).replace(" lúc ", " • ")}
+                        🔓 {formatDateVN(letter.scheduled_unlock_date)} •{" "}
+                        {parseDate(letter.scheduled_unlock_date)?.toLocaleTimeString("vi-VN", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
                       </p>
                     )}
 

@@ -3,20 +3,31 @@
  * định dạng MySQL DATETIME "YYYY-MM-DD HH:mm:ss".
  * Trả về null nếu không hợp lệ hoặc rỗng => tránh lỗi "Invalid date" khi lưu.
  */
+// export function toMysqlDateTime(input: string | null | undefined): string | null {
+//   if (!input) return null;
+//   const d = new Date(input);
+//   if (isNaN(d.getTime())) return null;
+
+//   const pad = (n: number) => String(n).padStart(2, '0');
+//   const year = d.getFullYear();
+//   const month = pad(d.getMonth() + 1);
+//   const day = pad(d.getDate());
+//   const hours = pad(d.getHours());
+//   const minutes = pad(d.getMinutes());
+//   const seconds = pad(d.getSeconds());
+
+//   return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+// }
+
 export function toMysqlDateTime(input: string | null | undefined): string | null {
   if (!input) return null;
-  const d = new Date(input);
-  if (isNaN(d.getTime())) return null;
 
-  const pad = (n: number) => String(n).padStart(2, '0');
-  const year = d.getFullYear();
-  const month = pad(d.getMonth() + 1);
-  const day = pad(d.getDate());
-  const hours = pad(d.getHours());
-  const minutes = pad(d.getMinutes());
-  const seconds = pad(d.getSeconds());
+  const value = input.trim().replace("T", " ");
 
-  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+  // Nếu chỉ có YYYY-MM-DD HH:mm thì thêm giây
+  return value.length === 16
+    ? value + ":00"
+    : value;
 }
 
 /** Kiểm tra một chuỗi ngày giờ có hợp lệ hay không. */
@@ -32,11 +43,26 @@ export function isValidDate(input: string | null | undefined): boolean {
  */
 export function parseDate(input: string | Date | null | undefined): Date | null {
   if (!input) return null;
-  if (input instanceof Date) return isNaN(input.getTime()) ? null : input;
-  // Chuẩn hóa "YYYY-MM-DD HH:mm:ss" -> "YYYY-MM-DDTHH:mm:ss"
-  const normalized = input.includes('T') ? input : input.replace(' ', 'T');
-  const d = new Date(normalized);
-  return isNaN(d.getTime()) ? null : d;
+
+  if (input instanceof Date) {
+    return isNaN(input.getTime()) ? null : input;
+  }
+
+  const value = input.replace("T", " ").trim();
+
+  const [datePart, timePart = "00:00:00"] = value.split(" ");
+
+  const [year, month, day] = datePart.split("-").map(Number);
+  const [hour, minute, second] = timePart.split(":").map(Number);
+
+  return new Date(
+    year,
+    month - 1,
+    day,
+    hour,
+    minute,
+    second || 0
+  );
 }
 
 /** Format ngày (vi-VN) an toàn, trả về chuỗi rỗng nếu không hợp lệ. */

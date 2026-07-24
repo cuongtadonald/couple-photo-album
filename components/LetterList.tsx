@@ -254,7 +254,7 @@ export default function LetterList({ token, currentUserId }: LetterListProps) {
                           🔒 Khóa
                         </span>
                       )}
-                      {canOpen && letter.is_opened && (
+                      {canOpen && !!letter.is_opened && (
                         <span className="text-xs font-semibold text-rose-600 bg-rose-50 px-3 py-1 rounded-full">
                           ✓ Đã mở
                         </span>

@@ -27,12 +27,39 @@ interface Album {
   uploader_name?: string | null;
 }
 
-const CARD_STICKERS = [
-  { src: '/assets-new-design/heart_pink_solid_01.png', w: 36, h: 36, pos: 'bottom-2 right-2' },
-  { src: '/assets-new-design/flower_pink_medium.png', w: 40, h: 40, pos: 'bottom-1 right-1' },
-  { src: '/assets-new-design/bow_pink_small.png', w: 40, h: 28, pos: 'bottom-1 right-1' },
-  { src: '/assets-new-design/heart_pink_solid_02.png', w: 34, h: 34, pos: 'bottom-2 right-2' },
+// Washi tape options for album card decorations
+const WASHI_TAPES = [
+  '/assets-new-design/tape_washi_pink_solid.png',
+  '/assets-new-design/tape_washi_pink_dotted.png',
+  '/assets-new-design/tape_washi_pink_light.png',
+  '/assets-new-design/tape_washi_blue.png',
 ];
+
+// Corner decoration options (hearts, flowers, bows)
+const CORNER_STICKERS = [
+  { src: '/assets-new-design/heart_pink_solid_01.png', w: 44, h: 44 },
+  { src: '/assets-new-design/heart_pink_solid_02.png', w: 40, h: 40 },
+  { src: '/assets-new-design/flower_pink_medium.png', w: 48, h: 48 },
+  { src: '/assets-new-design/bow_pink_small.png', w: 48, h: 34 },
+  { src: '/assets-new-design/flower_pink_small.png', w: 42, h: 42 },
+];
+
+// Corner positions with rotation offsets
+const CORNER_POSITIONS = [
+  { pos: 'top-1 left-1', rotate: -15 },
+  { pos: 'top-1 right-1', rotate: 12 },
+  { pos: 'bottom-1 left-1', rotate: 8 },
+  { pos: 'bottom-1 right-1', rotate: -10 },
+];
+
+function getCardDecoration(index: number) {
+  // Alternate between tape on different corners and sticker on opposite corner
+  const tapePosition = index % 2 === 0 ? CORNER_POSITIONS[0] : CORNER_POSITIONS[1]; // top-left or top-right
+  const stickerPosition = index % 2 === 0 ? CORNER_POSITIONS[3] : CORNER_POSITIONS[2]; // bottom-right or bottom-left
+  const tapeImage = WASHI_TAPES[index % WASHI_TAPES.length];
+  const sticker = CORNER_STICKERS[index % CORNER_STICKERS.length];
+  return { tapePosition, stickerPosition, tapeImage, sticker };
+}
 
 export default function AlbumList({ token, currentUserId }: { token: string | null; currentUserId?: number | null }) {
   const [albums, setAlbums] = useState<Album[]>([]);
@@ -219,9 +246,9 @@ export default function AlbumList({ token, currentUserId }: { token: string | nu
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-5">
           {visibleAlbums.map((album, idx) => {
-            const sticker = CARD_STICKERS[idx % CARD_STICKERS.length];
+            const decoration = getCardDecoration(idx);
             return (
               <div
                 key={album.id}
@@ -230,7 +257,7 @@ export default function AlbumList({ token, currentUserId }: { token: string | nu
                 {/* Thumbnail */}
                 <div
                   onClick={() => { setSelectedAlbumId(album.id); markSeen(album.id); }}
-                  className="h-44 bg-gradient-to-br from-rose-100 via-pink-50 to-rose-50 flex items-center justify-center overflow-hidden relative cursor-pointer"
+                  className="h-36 sm:h-44 bg-gradient-to-br from-rose-100 via-pink-50 to-rose-50 flex items-center justify-center overflow-hidden relative cursor-pointer"
                 >
                   {album.cover_image_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -246,24 +273,45 @@ export default function AlbumList({ token, currentUserId }: { token: string | nu
                       <p className="text-xs font-semibold text-rose-400 mt-2">Chưa có ảnh</p>
                     </div>
                   )}
+                  
                   {/* Photo count badge */}
-                  <span className="absolute top-2.5 left-2.5 flex items-center gap-1 text-xs font-bold text-rose-600 bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-full shadow-sm border border-pink-100">
-                    <Image src="/assets-new-design/icon_camera_album_badge.png" alt="" width={14} height={14} />
+                  <span className="absolute top-2.5 left-2.5 flex items-center gap-1 text-[10px] sm:text-xs font-bold text-rose-600 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-full shadow-sm border border-pink-100 z-10">
+                    <Image src="/assets-new-design/icon_camera_album_badge.png" alt="" width={12} height={12} />
                     {album.photo_count} ảnh
                   </span>
-                  {/* Decorative sticker on card */}
-                  <div className={`absolute ${sticker.pos} pointer-events-none`}>
-                    <Image src={sticker.src} alt="" width={sticker.w} height={sticker.h} className="opacity-80" />
+                  
+                  {/* Washi tape decoration - positioned on corner */}
+                  <div className={`absolute ${decoration.tapePosition.pos} z-20 pointer-events-none`}>
+                    <Image
+                      src={decoration.tapeImage}
+                      alt=""
+                      width={60}
+                      height={24}
+                      className="opacity-85"
+                      style={{ transform: `rotate(${decoration.tapePosition.rotate}deg)` }}
+                    />
+                  </div>
+                  
+                  {/* Corner sticker decoration */}
+                  <div className={`absolute ${decoration.stickerPosition.pos} z-20 pointer-events-none`}>
+                    <Image
+                      src={decoration.sticker.src}
+                      alt=""
+                      width={decoration.sticker.w}
+                      height={decoration.sticker.h}
+                      className="opacity-80"
+                      style={{ transform: `rotate(${decoration.stickerPosition.rotate}deg)` }}
+                    />
                   </div>
                 </div>
 
                 {/* Card body */}
-                <div className="p-4 relative">
+                <div className="p-3 sm:p-4 relative">
                   <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-1.5 min-w-0">
+                    <div className="flex items-center gap-1.5 min-w-0 flex-1">
                       <h3
                         onClick={() => { setSelectedAlbumId(album.id); markSeen(album.id); }}
-                        className="font-bold text-base text-[#E8548E] hover:text-pink-600 transition-colors cursor-pointer line-clamp-1"
+                        className="font-bold text-sm sm:text-base text-[#E8548E] hover:text-pink-600 transition-colors cursor-pointer line-clamp-1"
                       >
                         {album.title}
                       </h3>
@@ -301,7 +349,7 @@ export default function AlbumList({ token, currentUserId }: { token: string | nu
                   </div>
 
                   {album.description && (
-                    <p className="text-gray-500 text-xs mt-1.5 line-clamp-2">{album.description}</p>
+                    <p className="text-gray-500 text-[11px] sm:text-xs mt-1.5 line-clamp-2">{album.description}</p>
                   )}
                   {(album.location_name || album.location_url) && (
                     <div className="mt-1.5">
@@ -311,11 +359,11 @@ export default function AlbumList({ token, currentUserId }: { token: string | nu
                       />
                     </div>
                   )}
-                  <p className="text-xs text-gray-400 mt-2 flex items-center gap-1">
+                  <p className="text-[10px] sm:text-xs text-gray-400 mt-2 flex items-center gap-1">
                     📅 {formatDateVN(album.created_at)}
                   </p>
                   {album.uploader_name && (
-                    <p className="text-xs text-gray-400 mt-0.5">
+                    <p className="text-[10px] sm:text-xs text-gray-400 mt-0.5">
                       Được đăng bởi: <span className="font-semibold text-pink-400">{album.uploader_name}</span>
                     </p>
                   )}

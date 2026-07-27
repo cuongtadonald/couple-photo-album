@@ -10,11 +10,50 @@ import Image from 'next/image';
 
 type Tab = 'albums' | 'letters' | 'events';
 
+// Relationship start date
+const RELATIONSHIP_START = new Date('2026-11-02T00:00:00');
+
+function useDurationCounter(startDate: Date) {
+  const [duration, setDuration] = useState({ years: 0, months: 0, days: 0, totalDays: 0 });
+
+  useEffect(() => {
+    const calculate = () => {
+      const now = new Date();
+      const diff = now.getTime() - startDate.getTime();
+      const totalDays = Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24)));
+
+      // Calculate years, months, days
+      let years = now.getFullYear() - startDate.getFullYear();
+      let months = now.getMonth() - startDate.getMonth();
+      let days = now.getDate() - startDate.getDate();
+
+      if (days < 0) {
+        months--;
+        const lastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+        days += lastMonth.getDate();
+      }
+      if (months < 0) {
+        years--;
+        months += 12;
+      }
+
+      setDuration({ years: Math.max(0, years), months: Math.max(0, months), days: Math.max(0, days), totalDays });
+    };
+
+    calculate();
+    const interval = setInterval(calculate, 60000); // Update every minute
+    return () => clearInterval(interval);
+  }, [startDate]);
+
+  return duration;
+}
+
 export default function DashboardPage() {
   const { user, token, loading, logout } = useAuth();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>('albums');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const duration = useDurationCounter(RELATIONSHIP_START);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -82,11 +121,13 @@ export default function DashboardPage() {
               <h1 className="text-[22px] font-extrabold text-[#E8548E] leading-tight">
                 Cuong {'<'}3 Vy's Home
               </h1>
-              <p className="text-[13px] text-gray-400 mt-1 italic">Our little memory space ~</p>
+              <p className="text-[12px] text-gray-400 mt-1 italic leading-tight">
+                Xin chào, em xãa hãy iuu anh xãa nhìu thêm mỗi ngày nhé &lt;333
+              </p>
             </div>
 
             {/* Navigation */}
-            <nav className="mt-8 flex flex-col gap-2">
+            <nav className="mt-6 flex flex-col gap-2">
               {tabs.map(({ key, label, icon }) => (
                 <button
                   key={key}
@@ -107,22 +148,32 @@ export default function DashboardPage() {
             <div className="flex-1" />
 
             {/* Milestone card */}
-            <div className="mb-8 bg-white/70 backdrop-blur-sm rounded-2xl p-4 border border-pink-100 shadow-sm">
+            <div className="mb-4 bg-white/70 backdrop-blur-sm rounded-2xl p-4 border border-pink-100 shadow-sm">
               <h3 className="text-sm font-bold text-[#E8548E] text-center mb-3">
-                ❤️ Ngày đặc biệt của hai đứa
+                ❤️ Our special day
               </h3>
               <div className="space-y-2 text-sm">
                 <div className="flex items-center gap-2">
                   <span>📅</span>
-                  <span className="text-gray-500">Ngày quen nhau:</span>
-                  <span className="font-bold text-gray-700">17/07/2024</span>
+                  <span className="text-gray-500 text-xs">Ngày quen nhau:</span>
+                  <span className="font-bold text-gray-700 text-xs">02/11/2026</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span>💑</span>
-                  <span className="text-gray-500">Đã bên nhau:</span>
-                  <span className="font-bold text-pink-500">365 ngày</span>
+                  <Image
+                    src="/assets-new-design/heart_badge_album_corner.png"
+                    alt="heart"
+                    width={20}
+                    height={20}
+                    className="animate-heartbeat-fast"
+                  />
+                  <span className="text-gray-500 text-xs">Đã bên nhau:</span>
                 </div>
-                <p className="text-xs text-gray-400 pl-7">1 năm, 0 tháng, 0 ngày</p>
+                <div className="pl-7">
+                  <span className="font-bold text-pink-500 text-base">{duration.totalDays} ngày</span>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    ({duration.years} năm, {duration.months} tháng, {duration.days} ngày)
+                  </p>
+                </div>
               </div>
               {/* Bears sticker */}
               <div className="mt-3 flex justify-center">
@@ -134,6 +185,10 @@ export default function DashboardPage() {
                   className="object-contain"
                 />
               </div>
+              {/* First message note */}
+              <p className="text-[11px] text-gray-400 italic text-center mt-2">
+                The first day of messaging was October 12 &lt;333
+              </p>
             </div>
           </div>
         </aside>
@@ -154,9 +209,12 @@ export default function DashboardPage() {
             <div />
             <button
               onClick={logout}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm text-gray-500 bg-white/80 border border-pink-100 hover:bg-pink-50 hover:text-rose-500 transition-all shadow-sm"
+              title="Đăng xuất"
+              className="group grid place-items-center w-11 h-11 rounded-xl bg-white/80 text-pink-400 border border-pink-100 shadow-sm hover:bg-pink-500 hover:text-white hover:border-pink-500 hover:shadow-lg transition-all duration-300 hover:-rotate-12 active:scale-90"
             >
-              <span>↪</span> Đăng xuất
+              <svg className="w-5 h-5 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
             </button>
           </div>
 
@@ -242,12 +300,15 @@ export default function DashboardPage() {
               <span className="block w-5 h-0.5 bg-pink-500 rounded" />
               <span className="block w-5 h-0.5 bg-pink-500 rounded" />
             </button>
-            {/* Logout */}
+            {/* Logout - icon only */}
             <button
               onClick={logout}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs text-pink-500 bg-white/80 border border-pink-200 shadow-sm"
+              title="Đăng xuất"
+              className="group grid place-items-center w-10 h-10 rounded-xl bg-white/80 text-pink-400 border border-pink-200 shadow-sm active:bg-pink-500 active:text-white active:scale-90 transition-all duration-200"
             >
-              <span>↪</span> Đăng xuất
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
             </button>
           </div>
         </div>
@@ -279,7 +340,9 @@ export default function DashboardPage() {
             >
               <div className="text-center mb-6">
                 <h2 className="text-lg font-extrabold text-[#E8548E]">Cuong {'<'}3 Vy's Home</h2>
-                <p className="text-xs text-gray-400 italic">Our little memory space ~</p>
+                <p className="text-[10px] text-gray-400 italic mt-1">
+                  Xin chào, em xãa hãy iuu anh xãa nhìu thêm mỗi ngày nhé &lt;333
+                </p>
               </div>
               <nav className="flex flex-col gap-2">
                 {tabs.map(({ key, label, icon }) => (
@@ -299,20 +362,31 @@ export default function DashboardPage() {
               </nav>
 
               {/* Milestone in mobile menu */}
-              <div className="mt-8 bg-white/70 rounded-2xl p-4 border border-pink-100">
+              <div className="mt-6 bg-white/70 rounded-2xl p-4 border border-pink-100">
                 <h3 className="text-sm font-bold text-[#E8548E] text-center mb-3">
-                  ❤️ Ngày đặc biệt của hai đứa
+                  ❤️ Our special day
                 </h3>
                 <div className="space-y-2 text-sm">
                   <div className="flex items-center gap-2">
                     <span>📅</span>
                     <span className="text-gray-500 text-xs">Ngày quen:</span>
-                    <span className="font-bold text-gray-700 text-xs">17/07/2024</span>
+                    <span className="font-bold text-gray-700 text-xs">02/11/2026</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span>💑</span>
+                    <Image
+                      src="/assets-new-design/heart_badge_album_corner.png"
+                      alt="heart"
+                      width={18}
+                      height={18}
+                      className="animate-heartbeat-fast"
+                    />
                     <span className="text-gray-500 text-xs">Bên nhau:</span>
-                    <span className="font-bold text-pink-500 text-xs">365 ngày</span>
+                  </div>
+                  <div className="pl-7">
+                    <span className="font-bold text-pink-500 text-sm">{duration.totalDays} ngày</span>
+                    <p className="text-[10px] text-gray-400">
+                      ({duration.years} năm, {duration.months} tháng, {duration.days} ngày)
+                    </p>
                   </div>
                 </div>
                 <Image
@@ -322,6 +396,9 @@ export default function DashboardPage() {
                   height={70}
                   className="mx-auto mt-2 object-contain"
                 />
+                <p className="text-[10px] text-gray-400 italic text-center mt-2">
+                  The first day of messaging was October 12 &lt;333
+                </p>
               </div>
             </div>
           </div>
@@ -335,7 +412,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Mobile footer bear */}
-        <div className="flex justify-center pb-24 pointer-events-none">
+        <div className="flex justify-center pb-8 pointer-events-none">
           <Image
             src="/assets-new-design/footer_bear_love_forever.png"
             alt="Love bear"
@@ -343,28 +420,6 @@ export default function DashboardPage() {
             height={170}
             className="object-contain opacity-90"
           />
-        </div>
-
-        {/* Bottom navigation */}
-        <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-pink-100 shadow-lg z-40">
-          <div className="flex justify-around items-center py-2">
-            {([
-              { key: 'albums' as Tab, label: 'Trang chủ', icon: '🏠' },
-              { key: 'letters' as Tab, label: 'Yêu thương', icon: '❤️' },
-              { key: 'events' as Tab, label: 'Khoảnh khắc', icon: '⭐' },
-            ]).map(({ key, label, icon }) => (
-              <button
-                key={key}
-                onClick={() => setActiveTab(key)}
-                className={`flex flex-col items-center gap-0.5 py-1 px-3 transition-all ${
-                  activeTab === key ? 'text-pink-500' : 'text-gray-400'
-                }`}
-              >
-                <span className="text-xl">{icon}</span>
-                <span className="text-[10px] font-semibold">{label}</span>
-              </button>
-            ))}
-          </div>
         </div>
       </div>
     </div>

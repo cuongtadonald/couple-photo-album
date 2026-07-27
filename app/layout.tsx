@@ -1,10 +1,14 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import { AuthProvider } from '@/lib/auth-context'
-import { Nunito } from 'next/font/google'
+import { Quicksand } from 'next/font/google'
 import './globals.css'
 
-const nunito = Nunito({ subsets: ['latin'] })
+const quicksand = Quicksand({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  display: 'swap',
+})
 
 export const metadata: Metadata = {
   title: 'Cuong <3 Vy\'s Home',
@@ -30,7 +34,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={nunito.className}>
+    <html lang="en" className={quicksand.className}>
       <body className="antialiased font-sans">
         <AuthProvider>
           {children}

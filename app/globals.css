@@ -193,6 +193,24 @@
   }
 }
 
+@keyframes heartbeat-fast {
+  0%, 100% {
+    transform: scale(1);
+  }
+  15% {
+    transform: scale(1.25);
+  }
+  30% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.15);
+  }
+  60% {
+    transform: scale(1);
+  }
+}
+
 @keyframes sparkle {
   0%, 100% {
     opacity: 0.3;
@@ -214,6 +232,10 @@
 
 .animate-heartbeat {
   animation: heartbeat 1.5s ease-in-out infinite;
+}
+
+.animate-heartbeat-fast {
+  animation: heartbeat-fast 1s ease-in-out infinite;
 }
 
 .animate-sparkle {
@@ -288,7 +310,7 @@ input[type="date"],
 input[type="time"],
 textarea,
 select {
-  font-family: 'Nunito', sans-serif;
+  font-family: 'Quicksand', sans-serif;
   color: #374151;
   font-weight: 500;
 }

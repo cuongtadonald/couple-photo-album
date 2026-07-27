@@ -6,7 +6,7 @@ import { useAuth } from '@/lib/auth-context';
 import AlbumList from '@/components/AlbumList';
 import LetterList from '@/components/LetterList';
 import EventList from '@/components/EventList';
-import { LogOut, Camera, Mail, PartyPopper } from 'lucide-react';
+import Image from 'next/image';
 
 type Tab = 'albums' | 'letters' | 'events';
 
@@ -14,16 +14,14 @@ export default function DashboardPage() {
   const { user, token, loading, logout } = useAuth();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>('albums');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    // Chỉ chuyển về login khi đã xác thực xong (loading=false) mà vẫn không có user.
-    // Tránh việc F5/back bị văng ra login trong lúc còn đang kiểm tra token.
     if (!loading && !user) {
       router.replace('/login');
     }
   }, [user, loading, router]);
 
-  // Màn hình chờ dễ thương trong lúc xác thực phiên đăng nhập
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-rose-50 via-pink-50 to-rose-50">
@@ -33,99 +31,342 @@ export default function DashboardPage() {
     );
   }
 
-  if (!user) {
-    return null;
-  }
+  if (!user) return null;
 
-  const tabs: { key: Tab; label: string; icon: typeof Camera }[] = [
-    { key: 'albums', label: 'Ảnh Kỷ Niệm', icon: Camera },
-    { key: 'letters', label: 'Thư Tay', icon: Mail },
-    { key: 'events', label: 'Sự Kiện', icon: PartyPopper },
+  const tabs: { key: Tab; label: string; icon: string }[] = [
+    { key: 'albums', label: 'Ảnh Kỷ Niệm', icon: '📷' },
+    { key: 'letters', label: 'Thư Tay', icon: '💌' },
+    { key: 'events', label: 'Sự Kiện', icon: '🎉' },
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-rose-50 via-pink-50 to-rose-50 relative overflow-hidden">
-      {/* Animated background elements */}
-      <div className="fixed top-0 left-0 w-full h-full pointer-events-none">
-        <div className="absolute top-20 left-10 w-32 h-32 bg-rose-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-float" />
-        <div className="absolute bottom-20 right-10 w-40 h-40 bg-pink-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-float" style={{ animationDelay: '2s' }} />
-        <div className="absolute top-1/3 right-1/4 w-36 h-36 bg-red-100 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-float" style={{ animationDelay: '4s' }} />
-      </div>
+    <div className="min-h-screen bg-[#FFF5F7] relative overflow-x-hidden">
+      {/* ============ DESKTOP LAYOUT ============ */}
+      <div className="hidden lg:flex min-h-screen">
+        {/* LEFT SIDEBAR */}
+        <aside className="w-[300px] shrink-0 relative">
+          {/* Notebook background */}
+          <div
+            className="absolute inset-0 bg-cover bg-center"
+            style={{ backgroundImage: 'url(/assets-new-design/header_notebook_bg.png)' }}
+          />
+          {/* Spiral binding left edge */}
+          <div className="absolute left-0 top-0 bottom-0 w-[38px] flex flex-col items-center justify-start pt-4 gap-6 z-10">
+            {Array.from({ length: 18 }).map((_, i) => (
+              <div key={i} className="w-5 h-5 rounded-full border-[3px] border-[#D4A0A0] bg-[#FFF5F7]" />
+            ))}
+          </div>
 
-      {/* Header */}
-      <header className="bg-white/80 backdrop-blur-md shadow-md border-b border-rose-100 relative z-10">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-5 lg:px-8 flex justify-between items-center gap-3">
-          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-            <span className="text-3xl sm:text-4xl animate-heartbeat shrink-0">💕</span>
-            <div className="min-w-0">
-              <h1 className="text-xl sm:text-3xl font-bold bg-gradient-to-r from-rose-500 to-pink-500 bg-clip-text text-transparent truncate">
-                Cuong {'<'}3 Vy{'\''}s Home
+          {/* Sidebar content */}
+          <div className="relative z-10 pt-8 px-4 pl-12 flex flex-col h-full">
+            {/* Couple photo placeholder */}
+            <div className="relative mx-auto w-[200px]">
+              {/* Bow sticker on top */}
+              <Image
+                src="/assets-new-design/bow_pink_large.png"
+                alt="bow"
+                width={70}
+                height={40}
+                className="absolute -top-5 left-1/2 -translate-x-1/2 z-10"
+              />
+              {/* Photo frame */}
+              <div className="bg-white p-2 shadow-md rotate-[-2deg]">
+                <div className="w-full aspect-square bg-gradient-to-br from-rose-200 to-pink-100 rounded-sm flex items-center justify-center overflow-hidden">
+                  <span className="text-5xl">💕</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Title */}
+            <div className="text-center mt-4">
+              <h1 className="text-[22px] font-extrabold text-[#E8548E] leading-tight">
+                Cuong {'<'}3 Vy's Home
               </h1>
-              <p className="text-gray-600 mt-1 text-xs sm:text-sm line-clamp-2">
-                👋 {user.role === 'em'
-                  ? 'Xin chào, em xãa hãy iuu anh xãa nhiều hơn mỗi ngày nhé <3'
-                  : 'Xin chào, anh xãa hãy iuu em xãa nhiều hơn mỗi ngày nhé <3'}
-              </p>
+              <p className="text-[13px] text-gray-400 mt-1 italic">Our little memory space ~</p>
+            </div>
+
+            {/* Navigation */}
+            <nav className="mt-8 flex flex-col gap-2">
+              {tabs.map(({ key, label, icon }) => (
+                <button
+                  key={key}
+                  onClick={() => setActiveTab(key)}
+                  className={`flex items-center gap-3 py-2.5 px-4 rounded-xl text-sm font-semibold transition-all text-left ${
+                    activeTab === key
+                      ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-md'
+                      : 'text-gray-500 hover:bg-pink-50 hover:text-rose-500'
+                  }`}
+                >
+                  <span>{icon}</span>
+                  {label}
+                </button>
+              ))}
+            </nav>
+
+            {/* Spacer */}
+            <div className="flex-1" />
+
+            {/* Milestone card */}
+            <div className="mb-8 bg-white/70 backdrop-blur-sm rounded-2xl p-4 border border-pink-100 shadow-sm">
+              <h3 className="text-sm font-bold text-[#E8548E] text-center mb-3">
+                ❤️ Ngày đặc biệt của hai đứa
+              </h3>
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center gap-2">
+                  <span>📅</span>
+                  <span className="text-gray-500">Ngày quen nhau:</span>
+                  <span className="font-bold text-gray-700">17/07/2024</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span>💑</span>
+                  <span className="text-gray-500">Đã bên nhau:</span>
+                  <span className="font-bold text-pink-500">365 ngày</span>
+                </div>
+                <p className="text-xs text-gray-400 pl-7">1 năm, 0 tháng, 0 ngày</p>
+              </div>
+              {/* Bears sticker */}
+              <div className="mt-3 flex justify-center">
+                <Image
+                  src="/assets-new-design/bears_couple_365days.png"
+                  alt="Bears couple"
+                  width={120}
+                  height={80}
+                  className="object-contain"
+                />
+              </div>
             </div>
           </div>
-          <button
-            onClick={logout}
-            title="Đăng xuất"
-            aria-label="Đăng xuất"
-            className="group shrink-0 grid place-items-center w-11 h-11 rounded-cute bg-white text-rose-500 border-2 border-rose-200 shadow-sm hover:bg-rose-500 hover:text-white hover:border-rose-500 hover:shadow-lg transition-all duration-300 hover:-rotate-12 active:scale-90"
-          >
-            <LogOut size={20} className="transition-transform group-hover:scale-110" />
-          </button>
-        </div>
-      </header>
+        </aside>
 
-      {/* Navigation Tabs */}
-      <div className="bg-white/60 backdrop-blur-md border-b border-rose-100 relative z-10 sticky top-0">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
-          <nav className="flex gap-2 sm:gap-4 overflow-x-auto py-2" aria-label="Tabs">
-            {tabs.map(({ key, label, icon: Icon }) => (
-              <button
-                key={key}
-                onClick={() => setActiveTab(key)}
-                className={`flex items-center gap-2 py-2 px-4 rounded-cute font-semibold text-xs sm:text-sm transition-all duration-300 transform hover:scale-105 whitespace-nowrap border-2 ${
-                  activeTab === key
-                    ? 'bg-gradient-to-r from-rose-500 to-pink-500 text-white border-transparent shadow-md'
-                    : 'bg-white/70 text-gray-600 border-rose-100 hover:border-rose-300 hover:text-rose-600'
-                }`}
-              >
-                <Icon size={18} />
-                <span className="hidden xs:inline sm:inline">{label}</span>
-              </button>
-            ))}
-          </nav>
+        {/* MAIN CONTENT */}
+        <div className="flex-1 relative">
+          {/* Floating decorations */}
+          <div className="fixed top-0 right-0 w-full h-full pointer-events-none z-0 overflow-hidden">
+            <Image src="/assets-new-design/heart_pink_solid_01.png" alt="" width={30} height={30} className="absolute top-[8%] right-[15%] animate-float opacity-50" />
+            <Image src="/assets-new-design/heart_pink_solid_02.png" alt="" width={24} height={24} className="absolute top-[25%] left-[10%] animate-float opacity-40" style={{ animationDelay: '1s' }} />
+            <Image src="/assets-new-design/heart_pink_solid_03_small.png" alt="" width={18} height={18} className="absolute top-[60%] right-[8%] animate-float opacity-35" style={{ animationDelay: '2s' }} />
+            <Image src="/assets-new-design/flower_pink_small.png" alt="" width={28} height={28} className="absolute top-[15%] left-[25%] animate-float opacity-40" style={{ animationDelay: '0.5s' }} />
+            <Image src="/assets-new-design/flower_cherry_tiny_01.png" alt="" width={20} height={20} className="absolute top-[45%] right-[20%] animate-float opacity-30" style={{ animationDelay: '1.5s' }} />
+          </div>
+
+          {/* Top bar */}
+          <div className="relative z-10 flex justify-between items-center px-8 pt-6 pb-2">
+            <div />
+            <button
+              onClick={logout}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm text-gray-500 bg-white/80 border border-pink-100 hover:bg-pink-50 hover:text-rose-500 transition-all shadow-sm"
+            >
+              <span>↪</span> Đăng xuất
+            </button>
+          </div>
+
+          {/* Greeting section */}
+          <div className="relative z-10 px-8 pt-4 pb-6">
+            <div className="flex items-start justify-between">
+              <div>
+                <h2 className="text-3xl font-extrabold text-gray-800">
+                  Xin chào, {user.role === 'em' ? 'em xã' : 'anh xã'} ❤️
+                </h2>
+                <p className="text-gray-400 mt-2 text-sm">
+                  Hãy lưu giữ những khoảnh khắc đẹp nhất của chúng mình nhé &lt;3
+                </p>
+              </div>
+              {/* Header decoration - envelope + flowers + note */}
+              <div className="relative w-[280px] h-[180px] shrink-0">
+                {/* Note paper with message */}
+                <div
+                  className="absolute left-0 top-2 w-[160px] h-[100px] bg-cover bg-center"
+                  style={{ backgroundImage: 'url(/assets-new-design/note_paper_maiiuanhxa_pin_heart.png)' }}
+                />
+                {/* Envelope with flowers */}
+                <Image
+                  src="/assets-new-design/header_envelope_flowers_photo.png"
+                  alt="envelope"
+                  width={200}
+                  height={160}
+                  className="absolute right-0 top-0 object-contain"
+                />
+              </div>
+            </div>
+            {/* Heart trail decoration */}
+            <Image
+              src="/assets-new-design/heart_trail_dashed_line.png"
+              alt=""
+              width={300}
+              height={40}
+              className="mt-2 opacity-60"
+            />
+          </div>
+
+          {/* Content area */}
+          <div className="relative z-10 px-8 pb-12">
+            {activeTab === 'albums' && <AlbumList token={token} currentUserId={user.id} />}
+            {activeTab === 'letters' && <LetterList token={token} currentUserId={user.id} />}
+            {activeTab === 'events' && <EventList token={token} />}
+          </div>
+
+          {/* Footer decoration - bear */}
+          <div className="relative z-10 flex justify-end px-8 pb-8 pointer-events-none">
+            <div className="relative">
+              <Image
+                src="/assets-new-design/footer_bear_love_forever.png"
+                alt="Love bear"
+                width={260}
+                height={220}
+                className="object-contain"
+              />
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Content */}
-      <main className="max-w-7xl mx-auto px-3 py-6 sm:px-4 sm:py-8 lg:px-8 relative z-10">
-        <div className="animate-fade-in">
-          {activeTab === 'albums' && <AlbumList token={token} />}
+      {/* ============ MOBILE LAYOUT ============ */}
+      <div className="lg:hidden">
+        {/* Mobile header banner */}
+        <div className="relative w-full" style={{ minHeight: '200px' }}>
+          <Image
+            src="/assets-new-design/header_mobile_banner.png"
+            alt="header"
+            fill
+            className="object-cover"
+            priority
+          />
+          {/* Top bar overlay */}
+          <div className="absolute top-0 left-0 right-0 flex justify-between items-center px-4 pt-3 pb-1">
+            {/* Hamburger */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="w-10 h-10 flex flex-col items-center justify-center gap-1 rounded-xl bg-white/60 backdrop-blur-sm"
+            >
+              <span className="block w-5 h-0.5 bg-pink-500 rounded" />
+              <span className="block w-5 h-0.5 bg-pink-500 rounded" />
+              <span className="block w-5 h-0.5 bg-pink-500 rounded" />
+            </button>
+            {/* Logout */}
+            <button
+              onClick={logout}
+              className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs text-pink-500 bg-white/80 border border-pink-200 shadow-sm"
+            >
+              <span>↪</span> Đăng xuất
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile tab buttons */}
+        <div className="flex justify-center gap-2 px-4 -mt-4 relative z-20">
+          {tabs.map(({ key, label, icon }) => (
+            <button
+              key={key}
+              onClick={() => setActiveTab(key)}
+              className={`flex items-center gap-1.5 py-2 px-4 rounded-full text-xs font-semibold transition-all shadow-sm ${
+                activeTab === key
+                  ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-md'
+                  : 'bg-white text-pink-500 border border-pink-100'
+              }`}
+            >
+              <span>{icon}</span>
+              <span className="hidden min-[360px]:inline">{label}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Mobile menu overlay */}
+        {mobileMenuOpen && (
+          <div className="fixed inset-0 z-50 bg-black/30" onClick={() => setMobileMenuOpen(false)}>
+            <div
+              className="absolute left-0 top-0 bottom-0 w-[260px] bg-[#FFF5F7] shadow-xl p-6"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="text-center mb-6">
+                <h2 className="text-lg font-extrabold text-[#E8548E]">Cuong {'<'}3 Vy's Home</h2>
+                <p className="text-xs text-gray-400 italic">Our little memory space ~</p>
+              </div>
+              <nav className="flex flex-col gap-2">
+                {tabs.map(({ key, label, icon }) => (
+                  <button
+                    key={key}
+                    onClick={() => { setActiveTab(key); setMobileMenuOpen(false); }}
+                    className={`flex items-center gap-3 py-2.5 px-4 rounded-xl text-sm font-semibold text-left transition-all ${
+                      activeTab === key
+                        ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white'
+                        : 'text-gray-500 hover:bg-pink-50'
+                    }`}
+                  >
+                    <span>{icon}</span>
+                    {label}
+                  </button>
+                ))}
+              </nav>
+
+              {/* Milestone in mobile menu */}
+              <div className="mt-8 bg-white/70 rounded-2xl p-4 border border-pink-100">
+                <h3 className="text-sm font-bold text-[#E8548E] text-center mb-3">
+                  ❤️ Ngày đặc biệt của hai đứa
+                </h3>
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center gap-2">
+                    <span>📅</span>
+                    <span className="text-gray-500 text-xs">Ngày quen:</span>
+                    <span className="font-bold text-gray-700 text-xs">17/07/2024</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span>💑</span>
+                    <span className="text-gray-500 text-xs">Bên nhau:</span>
+                    <span className="font-bold text-pink-500 text-xs">365 ngày</span>
+                  </div>
+                </div>
+                <Image
+                  src="/assets-new-design/bears_couple_365days.png"
+                  alt="Bears"
+                  width={100}
+                  height={70}
+                  className="mx-auto mt-2 object-contain"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Mobile content */}
+        <div className="px-4 py-6 relative z-10">
+          {activeTab === 'albums' && <AlbumList token={token} currentUserId={user.id} />}
           {activeTab === 'letters' && <LetterList token={token} currentUserId={user.id} />}
           {activeTab === 'events' && <EventList token={token} />}
         </div>
-      </main>
 
-      <style jsx>{`
-        @keyframes fade-in {
-          from {
-            opacity: 0;
-            transform: translateY(10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
+        {/* Mobile footer bear */}
+        <div className="flex justify-center pb-24 pointer-events-none">
+          <Image
+            src="/assets-new-design/footer_bear_love_forever.png"
+            alt="Love bear"
+            width={200}
+            height={170}
+            className="object-contain opacity-90"
+          />
+        </div>
 
-        .animate-fade-in {
-          animation: fade-in 0.5s ease-out;
-        }
-      `}</style>
+        {/* Bottom navigation */}
+        <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-pink-100 shadow-lg z-40">
+          <div className="flex justify-around items-center py-2">
+            {([
+              { key: 'albums' as Tab, label: 'Trang chủ', icon: '🏠' },
+              { key: 'letters' as Tab, label: 'Yêu thương', icon: '❤️' },
+              { key: 'events' as Tab, label: 'Khoảnh khắc', icon: '⭐' },
+            ]).map(({ key, label, icon }) => (
+              <button
+                key={key}
+                onClick={() => setActiveTab(key)}
+                className={`flex flex-col items-center gap-0.5 py-1 px-3 transition-all ${
+                  activeTab === key ? 'text-pink-500' : 'text-gray-400'
+                }`}
+              >
+                <span className="text-xl">{icon}</span>
+                <span className="text-[10px] font-semibold">{label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

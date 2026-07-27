@@ -1,14 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Button } from '@/components/ui/button';
 import AlbumModal from './AlbumModal';
 import AlbumDetail from './AlbumDetail';
-import { Plus, Lock, Globe, Pencil, Trash2, ImageIcon } from 'lucide-react';
+import { Plus, Lock, Globe, Pencil, Trash2, ImageIcon, MoreHorizontal } from 'lucide-react';
 import { formatDateVN } from '@/lib/datetime';
 import LocationBadge from './LocationBadge';
 import { useSessionState, clearSessionKey } from '@/lib/use-session-state';
 import { useSeen } from '@/lib/use-seen';
+import Image from 'next/image';
 
 type Visibility = 'private' | 'public';
 
@@ -27,6 +27,13 @@ interface Album {
   uploader_name?: string | null;
 }
 
+const CARD_STICKERS = [
+  { src: '/assets-new-design/heart_pink_solid_01.png', w: 36, h: 36, pos: 'bottom-2 right-2' },
+  { src: '/assets-new-design/flower_pink_medium.png', w: 40, h: 40, pos: 'bottom-1 right-1' },
+  { src: '/assets-new-design/bow_pink_small.png', w: 40, h: 28, pos: 'bottom-1 right-1' },
+  { src: '/assets-new-design/heart_pink_solid_02.png', w: 34, h: 34, pos: 'bottom-2 right-2' },
+];
+
 export default function AlbumList({ token, currentUserId }: { token: string | null; currentUserId?: number | null }) {
   const [albums, setAlbums] = useState<Album[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,7 +43,6 @@ export default function AlbumList({ token, currentUserId }: { token: string | nu
   const [tab, setTab] = useSessionState<Visibility>('albums:tab', 'private');
   const { badge, markSeen } = useSeen('album');
 
-  // Resolve selectedAlbum from loaded albums list
   const selectedAlbum = albums.find((a) => a.id === selectedAlbumId) ?? null;
 
   useEffect(() => {
@@ -88,7 +94,6 @@ export default function AlbumList({ token, currentUserId }: { token: string | nu
           setTab(visibility);
         }
       }
-      // Clear create-mode draft after successful save
       clearSessionKey('albums:draft:title');
       clearSessionKey('albums:draft:desc');
       clearSessionKey('albums:draft:visibility');
@@ -115,20 +120,11 @@ export default function AlbumList({ token, currentUserId }: { token: string | nu
     }
   };
 
-  const openCreate = () => {
-    setEditing(null);
-    setShowModal(true);
-  };
-
-  const openEdit = (album: Album) => {
-    setEditing(album);
-    setShowModal(true);
-  };
-
+  const openCreate = () => { setEditing(null); setShowModal(true); };
+  const openEdit = (album: Album) => { setEditing(album); setShowModal(true); };
   const closeModal = () => {
     setShowModal(false);
     setEditing(null);
-    // Clear create-mode draft when explicitly closing
     clearSessionKey('albums:draft:title');
     clearSessionKey('albums:draft:desc');
     clearSessionKey('albums:draft:visibility');
@@ -148,47 +144,55 @@ export default function AlbumList({ token, currentUserId }: { token: string | nu
   }
 
   const visibleAlbums = albums.filter((a) => a.visibility === tab);
-  const tabs: { key: Visibility; label: string; icon: typeof Lock }[] = [
+  const tabsFilter: { key: Visibility; label: string; icon: typeof Lock }[] = [
     { key: 'private', label: 'Riêng tư', icon: Lock },
     { key: 'public', label: 'Công khai', icon: Globe },
   ];
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6 gap-3 flex-wrap">
-        <h2 className="text-3xl font-bold bg-gradient-to-r from-rose-500 to-pink-500 bg-clip-text text-transparent">
-          📷 Ảnh Kỷ Niệm
-        </h2>
-        <Button
+      {/* Section header */}
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <div className="flex items-center gap-2">
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-[#E8548E]">
+            📷 Ảnh Kỷ Niệm
+          </h2>
+          <Image
+            src="/assets-new-design/heart_doodle_scribble.png"
+            alt=""
+            width={28}
+            height={28}
+            className="opacity-70"
+          />
+        </div>
+        <button
           onClick={openCreate}
-          className="bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white flex items-center gap-2 shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
+          className="flex items-center gap-2 py-2.5 px-5 rounded-full text-sm font-bold text-white bg-gradient-to-r from-pink-500 to-rose-500 shadow-md hover:shadow-lg transition-all hover:scale-105"
         >
-          <Plus size={20} />
+          <Plus size={18} />
           Tạo Album Mới
-        </Button>
+        </button>
       </div>
 
-      {/* Private / Public tabs */}
-      <div className="flex gap-2 mb-8">
-        {tabs.map(({ key, label, icon: Icon }) => {
+      {/* Filter tabs */}
+      <div className="flex gap-2 mb-6 flex-wrap">
+        {tabsFilter.map(({ key, label, icon: Icon }) => {
           const count = albums.filter((a) => a.visibility === key).length;
           return (
             <button
               key={key}
               onClick={() => setTab(key)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-cute text-sm font-semibold border-2 transition-all ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold border-2 transition-all ${
                 tab === key
-                  ? 'bg-gradient-to-r from-rose-500 to-pink-500 text-white border-transparent shadow-md'
-                  : 'bg-white/70 text-gray-600 border-rose-100 hover:border-rose-300 hover:text-rose-600'
+                  ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white border-transparent shadow-md'
+                  : 'bg-white/80 text-gray-500 border-pink-100 hover:border-pink-300 hover:text-rose-500'
               }`}
             >
-              <Icon size={16} />
+              <Icon size={15} />
               {label}
-              <span
-                className={`text-xs px-2 py-0.5 rounded-full ${
-                  tab === key ? 'bg-white/25' : 'bg-rose-50 text-rose-500'
-                }`}
-              >
+              <span className={`text-xs px-2 py-0.5 rounded-full ${
+                tab === key ? 'bg-white/25' : 'bg-pink-50 text-rose-400'
+              }`}>
                 {count}
               </span>
             </button>
@@ -196,114 +200,129 @@ export default function AlbumList({ token, currentUserId }: { token: string | nu
         })}
       </div>
 
+      {/* Content */}
       {loading ? (
         <div className="flex justify-center py-12">
           <div className="w-8 h-8 border-4 border-rose-200 border-t-rose-500 rounded-full animate-spin" />
         </div>
       ) : visibleAlbums.length === 0 ? (
-        <div className="text-center py-16 bg-white/70 backdrop-blur-sm rounded-2xl border-2 border-dashed border-rose-200 transform transition-all hover:bg-white/80">
+        <div className="text-center py-16 bg-white/70 backdrop-blur-sm rounded-2xl border-2 border-dashed border-pink-200">
           <div className="text-6xl mb-4">🎞️</div>
-          <p className="text-gray-600 mb-6 text-lg">
+          <p className="text-gray-500 mb-6 text-lg">
             {tab === 'private' ? 'Chưa có album riêng tư nào' : 'Chưa có album công khai nào'}
           </p>
-          <Button
+          <button
             onClick={openCreate}
-            className="bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white shadow-lg hover:shadow-xl transition-all"
+            className="py-2.5 px-6 rounded-full text-sm font-bold text-white bg-gradient-to-r from-pink-500 to-rose-500 shadow-md hover:shadow-lg transition-all"
           >
             ✨ Tạo Album Đầu Tiên
-          </Button>
+          </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {visibleAlbums.map((album) => (
-            <div
-              key={album.id}
-              className="group bg-white/80 backdrop-blur-sm rounded-2xl shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden transform hover:-translate-y-1 border border-rose-100"
-            >
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+          {visibleAlbums.map((album, idx) => {
+            const sticker = CARD_STICKERS[idx % CARD_STICKERS.length];
+            return (
               <div
-                onClick={() => { setSelectedAlbumId(album.id); markSeen(album.id); }}
-                className="h-48 bg-gradient-to-br from-rose-200 via-pink-100 to-rose-100 flex items-center justify-center overflow-hidden relative cursor-pointer"
+                key={album.id}
+                className="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-pink-50 hover:-translate-y-1"
               >
-                {album.cover_image_url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={album.cover_image_url || '/placeholder.svg'}
-                    alt={album.title}
-                    loading="lazy"
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                ) : (
-                  <div className="text-center relative z-10">
-                    <ImageIcon className="mx-auto text-rose-400" size={48} />
-                    <p className="text-sm font-semibold text-rose-700 mt-2">Chưa có ảnh</p>
-                  </div>
-                )}
-                <span className="absolute top-3 left-3 flex items-center gap-1 text-xs font-semibold text-white bg-black/40 backdrop-blur-sm px-2 py-1 rounded-full">
-                  {album.visibility === 'private' ? <Lock size={12} /> : <Globe size={12} />}
-                  {album.visibility === 'private' ? 'Riêng tư' : 'Công khai'}
-                </span>
-                <span className="absolute bottom-3 right-3 text-xs font-semibold text-rose-700 bg-white/80 px-3 py-1 rounded-full">
-                  {album.photo_count} ✨ ảnh
-                </span>
-              </div>
-              <div className="p-5">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <h3
-                      onClick={() => { setSelectedAlbumId(album.id); markSeen(album.id); }}
-                      className="font-bold text-lg text-rose-600 group-hover:text-pink-600 transition-colors cursor-pointer line-clamp-1"
-                    >
-                      {album.title}
-                    </h3>
-                    {(() => {
-                      const b = badge(album.id, album.created_at);
-                      if (!b) return null;
-                      return (
-                        <span className={`shrink-0 text-xs font-bold px-2 py-0.5 rounded-full ${b === 'new' ? 'bg-rose-500 text-white' : 'bg-amber-400 text-white'}`}>
-                          {b === 'new' ? 'Mới' : 'Chưa xem'}
-                        </span>
-                      );
-                    })()}
-                  </div>
-                  {currentUserId === album.user_id && (
-                    <div className="flex gap-1 shrink-0">
-                      <button
-                        onClick={() => openEdit(album)}
-                        aria-label="Sửa album"
-                        className="grid place-items-center w-8 h-8 rounded-full text-gray-400 hover:text-rose-500 hover:bg-rose-50 transition-colors"
-                      >
-                        <Pencil size={16} />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(album)}
-                        aria-label="Xóa album"
-                        className="grid place-items-center w-8 h-8 rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-                      >
-                        <Trash2 size={16} />
-                      </button>
+                {/* Thumbnail */}
+                <div
+                  onClick={() => { setSelectedAlbumId(album.id); markSeen(album.id); }}
+                  className="h-44 bg-gradient-to-br from-rose-100 via-pink-50 to-rose-50 flex items-center justify-center overflow-hidden relative cursor-pointer"
+                >
+                  {album.cover_image_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={album.cover_image_url}
+                      alt={album.title}
+                      loading="lazy"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                  ) : (
+                    <div className="text-center relative z-10">
+                      <ImageIcon className="mx-auto text-rose-300" size={40} />
+                      <p className="text-xs font-semibold text-rose-400 mt-2">Chưa có ảnh</p>
                     </div>
                   )}
-                </div>
-                {album.description && (
-                  <p className="text-gray-600 text-sm mt-2 line-clamp-2">{album.description}</p>
-                )}
-                {(album.location_name || album.location_url) && (
-                  <div className="mt-2">
-                    <LocationBadge
-                      locationName={album.location_name}
-                      locationUrl={album.location_url}
-                    />
+                  {/* Photo count badge */}
+                  <span className="absolute top-2.5 left-2.5 flex items-center gap-1 text-xs font-bold text-rose-600 bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-full shadow-sm border border-pink-100">
+                    <Image src="/assets-new-design/icon_camera_album_badge.png" alt="" width={14} height={14} />
+                    {album.photo_count} ảnh
+                  </span>
+                  {/* Decorative sticker on card */}
+                  <div className={`absolute ${sticker.pos} pointer-events-none`}>
+                    <Image src={sticker.src} alt="" width={sticker.w} height={sticker.h} className="opacity-80" />
                   </div>
-                )}
-                <p className="text-xs text-gray-500 mt-3">📅 {formatDateVN(album.created_at)}</p>
-                {album.uploader_name && (
-                  <p className="text-xs text-gray-400 mt-1">
-                    Được đăng bởi: <span className="font-semibold text-rose-400">{album.uploader_name}</span>
+                </div>
+
+                {/* Card body */}
+                <div className="p-4 relative">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <h3
+                        onClick={() => { setSelectedAlbumId(album.id); markSeen(album.id); }}
+                        className="font-bold text-base text-[#E8548E] hover:text-pink-600 transition-colors cursor-pointer line-clamp-1"
+                      >
+                        {album.title}
+                      </h3>
+                      {(() => {
+                        const b = badge(album.id, album.created_at);
+                        if (!b) return null;
+                        return (
+                          <span className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full ${b === 'new' ? 'bg-rose-500 text-white' : 'bg-amber-400 text-white'}`}>
+                            {b === 'new' ? 'Mới' : 'Chưa xem'}
+                          </span>
+                        );
+                      })()}
+                    </div>
+                    {currentUserId === album.user_id && (
+                      <div className="relative shrink-0 group/menu">
+                        <button className="grid place-items-center w-7 h-7 rounded-full text-gray-300 hover:text-pink-400 hover:bg-pink-50 transition-colors">
+                          <MoreHorizontal size={16} />
+                        </button>
+                        <div className="hidden group-hover/menu:flex absolute right-0 top-8 bg-white rounded-xl shadow-lg border border-pink-100 py-1 z-30 min-w-[100px]">
+                          <button
+                            onClick={() => openEdit(album)}
+                            className="flex items-center gap-2 px-3 py-1.5 text-xs text-gray-600 hover:bg-pink-50 hover:text-rose-500 w-full text-left"
+                          >
+                            <Pencil size={13} /> Sửa
+                          </button>
+                          <button
+                            onClick={() => handleDelete(album)}
+                            className="flex items-center gap-2 px-3 py-1.5 text-xs text-gray-600 hover:bg-red-50 hover:text-red-500 w-full text-left"
+                          >
+                            <Trash2 size={13} /> Xóa
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {album.description && (
+                    <p className="text-gray-500 text-xs mt-1.5 line-clamp-2">{album.description}</p>
+                  )}
+                  {(album.location_name || album.location_url) && (
+                    <div className="mt-1.5">
+                      <LocationBadge
+                        locationName={album.location_name}
+                        locationUrl={album.location_url}
+                      />
+                    </div>
+                  )}
+                  <p className="text-xs text-gray-400 mt-2 flex items-center gap-1">
+                    📅 {formatDateVN(album.created_at)}
                   </p>
-                )}
+                  {album.uploader_name && (
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      Được đăng bởi: <span className="font-semibold text-pink-400">{album.uploader_name}</span>
+                    </p>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

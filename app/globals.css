@@ -193,6 +193,17 @@
   }
 }
 
+@keyframes sparkle {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
 .animate-float {
   animation: float 3s ease-in-out infinite;
 }
@@ -205,6 +216,10 @@
   animation: heartbeat 1.5s ease-in-out infinite;
 }
 
+.animate-sparkle {
+  animation: sparkle 2s ease-in-out infinite;
+}
+
 /* Cute font family */
 .font-cute {
   font-family: inherit;
@@ -214,6 +229,53 @@
 /* Cute rounded corners */
 .rounded-cute {
   border-radius: 0.875rem;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #f0b0c0;
+  border-radius: 10px;
+}
+
+/* Global background for the app */
+body {
+  background: linear-gradient(135deg, #FFF5F7 0%, #FFE8EE 50%, #FFF0F5 100%);
+}
+
+/* Card hover effects */
+.album-card-hover {
+  transition: all 0.3s ease;
+}
+.album-card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(232, 84, 142, 0.12);
+}
+
+/* Notebook sidebar style */
+.notebook-sidebar {
+  background-image: url('/assets-new-design/header_notebook_bg.png');
+  background-size: cover;
+  background-position: center;
+}
+
+/* Washi tape decorations */
+.washi-tape-pink {
+  background-image: url('/assets-new-design/tape_washi_pink_solid.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+}
+
+/* Paper clip decoration */
+.clip-decoration {
+  background-image: url('/assets-new-design/clip_paperclip_thin.png');
+  background-size: contain;
+  background-repeat: no-repeat;
 }
 
 /* Input styling */

@@ -1,21 +1,14 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import { AuthProvider } from '@/lib/auth-context'
-import { Caveat, Quicksand } from 'next/font/google'
+import { Corinthia } from 'next/font/google'
 import './globals.css'
 
-const quicksand = Quicksand({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
+const corinthia = Corinthia({
+  subsets: ['latin', 'vietnamese'],
+  weight: ['400', '700'],
   display: 'swap',
-  variable: '--font-body',
-})
-
-const caveat = Caveat({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-  display: 'swap',
-  variable: '--font-handwriting',
+  variable: '--font-corinthia',
 })
 
 export const metadata: Metadata = {
@@ -42,8 +35,8 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`${quicksand.variable} ${caveat.variable}`}>
-      <body className="antialiased font-[family-name:var(--font-body)]">
+    <html lang="vi" className={corinthia.variable}>
+      <body className="antialiased font-[family-name:var(--font-corinthia)]">
         <AuthProvider>
           {children}
           {process.env.NODE_ENV === 'production' && <Analytics />}

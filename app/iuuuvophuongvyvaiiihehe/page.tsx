@@ -11,7 +11,7 @@ import Image from 'next/image';
 type Tab = 'albums' | 'letters' | 'events';
 
 // Relationship start date
-const RELATIONSHIP_START = new Date('2026-11-02T00:00:00');
+const RELATIONSHIP_START = new Date('2025-11-02T00:00:00');
 
 function useDurationCounter(startDate: Date) {
   const [duration, setDuration] = useState({ years: 0, months: 0, days: 0, totalDays: 0 });
@@ -156,7 +156,7 @@ export default function DashboardPage() {
                 <div className="flex items-center gap-2">
                   <span>📅</span>
                   <span className="text-gray-500 text-xs">Ngày quen nhau:</span>
-                  <span className="font-bold text-gray-700 text-xs">02/11/2026</span>
+                  <span className="font-bold text-gray-700 text-xs">02/11/2025</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Image
@@ -167,16 +167,16 @@ export default function DashboardPage() {
                     className="animate-heartbeat"
                   />
                   <span className="text-gray-500 text-xs">Đã bên nhau:</span>
+                  <span className="font-bold text-pink-500 text-base ml-1">{duration.totalDays} ngày</span>
                 </div>
                 <div className="pl-10">
-                  <span className="font-bold text-pink-500 text-base">{duration.totalDays} ngày</span>
-                  <span className="text-xs text-gray-400 ml-1">({duration.years} năm, {duration.months} tháng, {duration.days} ngày)</span>
+                  <span className="text-xs text-gray-400">({duration.years} năm, {duration.months} tháng, {duration.days} ngày)</span>
                 </div>
               </div>
               {/* Bears sticker */}
               <div className="mt-3 flex justify-center">
                 <Image
-                  src="/assets-new-design/bears_couple_365days.png"
+                  src="/assets-new-design/bears_couple_365days_alt.png"
                   alt="Bears couple"
                   width={120}
                   height={80}
@@ -368,7 +368,7 @@ export default function DashboardPage() {
                   <div className="flex items-center gap-2">
                     <span>📅</span>
                     <span className="text-gray-500 text-xs">Ngày quen:</span>
-                    <span className="font-bold text-gray-700 text-xs">02/11/2026</span>
+                    <span className="font-bold text-gray-700 text-xs">02/11/2025</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Image
@@ -379,14 +379,14 @@ export default function DashboardPage() {
                       className="animate-heartbeat"
                     />
                     <span className="text-gray-500 text-xs">Bên nhau:</span>
+                    <span className="font-bold text-pink-500 text-sm ml-1">{duration.totalDays} ngày</span>
                   </div>
                   <div className="pl-10">
-                    <span className="font-bold text-pink-500 text-sm">{duration.totalDays} ngày</span>
-                    <span className="text-[10px] text-gray-400 ml-1">({duration.years} năm, {duration.months} tháng, {duration.days} ngày)</span>
+                    <span className="text-[10px] text-gray-400">({duration.years} năm, {duration.months} tháng, {duration.days} ngày)</span>
                   </div>
                 </div>
                 <Image
-                  src="/assets-new-design/bears_couple_365days.png"
+                  src="/assets-new-design/bears_couple_365days_alt.png"
                   alt="Bears"
                   width={100}
                   height={70}

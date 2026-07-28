@@ -35,30 +35,32 @@ const WASHI_TAPES = [
   '/assets-new-design/tape_washi_blue.png',
 ];
 
-// Corner decoration options (hearts, flowers, bows) - will be in text area bottom-left
+// Corner decoration options (hearts, flowers, bows) - bigger stickers
 const CORNER_STICKERS = [
-  { src: '/assets-new-design/heart_pink_solid_01.png', w: 36, h: 36 },
-  { src: '/assets-new-design/heart_pink_solid_02.png', w: 32, h: 32 },
-  { src: '/assets-new-design/flower_pink_medium.png', w: 38, h: 38 },
-  { src: '/assets-new-design/bow_pink_small.png', w: 40, h: 28 },
-  { src: '/assets-new-design/flower_pink_small.png', w: 34, h: 34 },
+  { src: '/assets-new-design/heart_pink_solid_01.png', w: 52, h: 52 },
+  { src: '/assets-new-design/heart_pink_solid_02.png', w: 48, h: 48 },
+  { src: '/assets-new-design/flower_pink_medium.png', w: 56, h: 56 },
+  { src: '/assets-new-design/bow_pink_small.png', w: 58, h: 42 },
+  { src: '/assets-new-design/flower_pink_small.png', w: 50, h: 50 },
 ];
 
-// Tape positions - offset outside corners (like taping to wall)
-const TAPE_POSITIONS = [
-  { top: '-8px', left: '-6px', rotate: -25 },
-  { top: '-8px', right: '-6px', rotate: 20 },
+// Tape positions - thinner, longer, extend 40% outside the card
+const TAPE_CONFIGS = [
+  { top: '-12px', left: '-18px', rotate: -35, width: 90, height: 18 },
+  { top: '-12px', right: '-18px', rotate: 30, width: 90, height: 18 },
 ];
 
-// Sticker positions - in bottom-left of text area
-const STICKER_POSITIONS = [
-  { rotate: 8 },
-  { rotate: -12 },
+// Sticker positions - random between image bottom-right and text area bottom-right
+const STICKER_CONFIGS = [
+  { location: 'image', rotate: 12 },
+  { location: 'text', rotate: -8 },
+  { location: 'image', rotate: 15 },
+  { location: 'text', rotate: -12 },
 ];
 
 function getCardDecoration(index: number) {
-  const tapeConfig = TAPE_POSITIONS[index % 2];
-  const stickerConfig = STICKER_POSITIONS[index % 2];
+  const tapeConfig = TAPE_CONFIGS[index % 2];
+  const stickerConfig = STICKER_CONFIGS[index % STICKER_CONFIGS.length];
   const tapeImage = WASHI_TAPES[index % WASHI_TAPES.length];
   const sticker = CORNER_STICKERS[index % CORNER_STICKERS.length];
   return { tapeConfig, stickerConfig, tapeImage, sticker };
@@ -252,28 +254,25 @@ export default function AlbumList({ token, currentUserId }: { token: string | nu
         <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-5">
           {visibleAlbums.map((album, idx) => {
             const decoration = getCardDecoration(idx);
-            // Determine tape side: left or right
-            const isTapeLeft = idx % 2 === 0;
             return (
               <div
                 key={album.id}
                 className="group relative bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-visible border border-pink-50 hover:-translate-y-1"
               >
-                {/* Washi tape - offset outside corner like taped to wall */}
+                {/* Washi tape - thinner, longer, extend 40% outside */}
                 <div
                   className="absolute z-30 pointer-events-none"
                   style={{
-                    top: '-10px',
-                    ...(isTapeLeft ? { left: '-4px' } : { right: '-4px' }),
-                    transform: `rotate(${isTapeLeft ? -25 : 20}deg)`,
+                    top: decoration.tapeConfig.top,
+                    ...(decoration.tapeConfig.left ? { left: decoration.tapeConfig.left } : { right: decoration.tapeConfig.right }),
+                    transform: `rotate(${decoration.tapeConfig.rotate}deg)`,
                   }}
                 >
                   <Image
                     src={decoration.tapeImage}
                     alt=""
-                    width={65}
-                    height={26}
-                    className="opacity-90"
+                    width={decoration.tapeConfig.width}
+                    height={decoration.tapeConfig.height}
                   />
                 </div>
 
@@ -302,6 +301,21 @@ export default function AlbumList({ token, currentUserId }: { token: string | nu
                     <Image src="/assets-new-design/icon_camera_album_badge.png" alt="" width={12} height={12} />
                     {album.photo_count} ảnh
                   </span>
+                  
+                  {/* Corner sticker on image */}
+                  {decoration.stickerConfig.location === 'image' && (
+                    <div
+                      className="absolute bottom-2 right-2 pointer-events-none z-10"
+                      style={{ transform: `rotate(${decoration.stickerConfig.rotate}deg)` }}
+                    >
+                      <Image
+                        src={decoration.sticker.src}
+                        alt=""
+                        width={decoration.sticker.w}
+                        height={decoration.sticker.h}
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {/* Card body */}
@@ -367,19 +381,20 @@ export default function AlbumList({ token, currentUserId }: { token: string | nu
                     </p>
                   )}
                   
-                  {/* Corner sticker decoration - in text area bottom-left */}
-                  <div
-                    className="absolute bottom-2 left-2 pointer-events-none"
-                    style={{ transform: `rotate(${decoration.stickerConfig.rotate}deg)` }}
-                  >
-                    <Image
-                      src={decoration.sticker.src}
-                      alt=""
-                      width={decoration.sticker.w}
-                      height={decoration.sticker.h}
-                      className="opacity-70"
-                    />
-                  </div>
+                  {/* Corner sticker decoration - random position */}
+                  {decoration.stickerConfig.location === 'text' && (
+                    <div
+                      className="absolute bottom-2 right-2 pointer-events-none"
+                      style={{ transform: `rotate(${decoration.stickerConfig.rotate}deg)` }}
+                    >
+                      <Image
+                        src={decoration.sticker.src}
+                        alt=""
+                        width={decoration.sticker.w}
+                        height={decoration.sticker.h}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             );

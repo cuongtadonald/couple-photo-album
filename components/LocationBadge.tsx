@@ -27,14 +27,14 @@ export default function LocationBadge({
   const label = locationName || fallbackLabel;
 
   const inner = (
-    <span className="flex items-center gap-1">
+    <span className="flex items-center gap-1 min-w-0">
       <MapPin size={11} className="shrink-0" />
-      <span className="truncate max-w-[180px]">{label}</span>
+      <span className="truncate max-w-[120px] sm:max-w-[160px]" title={locationUrl || label}>{label}</span>
     </span>
   );
 
   const base =
-    'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ' + className;
+    'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium truncate ' + className;
 
   if (locationUrl) {
     return (

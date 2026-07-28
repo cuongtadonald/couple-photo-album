@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import AlbumModal from './AlbumModal';
 import AlbumDetail from './AlbumDetail';
@@ -10,6 +10,42 @@ import LocationBadge from './LocationBadge';
 import { useSessionState, clearSessionKey } from '@/lib/use-session-state';
 import { useSeen } from '@/lib/use-seen';
 import Image from 'next/image';
+
+// Dropdown menu component that closes when clicking outside
+function DropdownMenu({ children, trigger }: { children: React.ReactNode; trigger: React.ReactNode }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen]);
+
+  return (
+    <div className="relative" ref={menuRef} onClick={(e) => e.stopPropagation()}>
+      <div onClick={() => setIsOpen(!isOpen)} className="cursor-pointer">
+        {trigger}
+      </div>
+      {isOpen && (
+        <div className="absolute right-0 top-8 bg-white rounded-xl shadow-lg border border-pink-100 py-1 z-50 min-w-[120px]">
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
 
 type Visibility = 'private' | 'public';
 
@@ -341,33 +377,26 @@ export default function AlbumList({ token, currentUserId }: { token: string | nu
                       })()}
                     </div>
                     {currentUserId === album.user_id && (
-                      <div className="relative shrink-0" onClick={(e) => e.stopPropagation()}>
-                        <input
-                          type="checkbox"
-                          id={`menu-${album.id}`}
-                          className="peer hidden"
-                        />
-                        <label
-                          htmlFor={`menu-${album.id}`}
-                          className="grid place-items-center w-7 h-7 rounded-full text-gray-400 hover:text-pink-500 hover:bg-pink-50 transition-colors cursor-pointer"
+                      <DropdownMenu
+                        trigger={
+                          <div className="grid place-items-center w-7 h-7 rounded-full text-gray-400 hover:text-pink-500 hover:bg-pink-50 transition-colors">
+                            <MoreHorizontal size={16} />
+                          </div>
+                        }
+                      >
+                        <button
+                          onClick={() => { openEdit(album); }}
+                          className="flex items-center gap-2 px-3 py-1.5 text-xs text-gray-600 hover:bg-pink-50 hover:text-rose-500 w-full text-left"
                         >
-                          <MoreHorizontal size={16} />
-                        </label>
-                        <div className="hidden peer-checked:flex absolute right-0 top-8 bg-white rounded-xl shadow-lg border border-pink-100 py-1 z-30 min-w-[100px]">
-                          <button
-                            onClick={() => { openEdit(album); (document.getElementById(`menu-${album.id}`) as HTMLInputElement).checked = false; }}
-                            className="flex items-center gap-2 px-3 py-1.5 text-xs text-gray-600 hover:bg-pink-50 hover:text-rose-500 w-full text-left"
-                          >
-                            <Pencil size={13} /> Sửa
-                          </button>
-                          <button
-                            onClick={() => { handleDelete(album); (document.getElementById(`menu-${album.id}`) as HTMLInputElement).checked = false; }}
-                            className="flex items-center gap-2 px-3 py-1.5 text-xs text-gray-600 hover:bg-red-50 hover:text-red-500 w-full text-left"
-                          >
-                            <Trash2 size={13} /> Xóa
-                          </button>
-                        </div>
-                      </div>
+                          <Pencil size={13} /> Sửa
+                        </button>
+                        <button
+                          onClick={() => { handleDelete(album); }}
+                          className="flex items-center gap-2 px-3 py-1.5 text-xs text-gray-600 hover:bg-red-50 hover:text-red-500 w-full text-left"
+                        >
+                          <Trash2 size={13} /> Xóa
+                        </button>
+                      </DropdownMenu>
                     )}
                   </div>
 

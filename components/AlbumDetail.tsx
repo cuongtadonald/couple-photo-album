@@ -10,6 +10,44 @@ import LocationPicker from './LocationPicker';
 import LocationBadge from './LocationBadge';
 import Image from 'next/image';
 
+// Dropdown menu component that closes when clicking outside
+function DropdownMenu({ children, trigger }: { children: React.ReactNode; trigger: React.ReactNode }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen]);
+
+  return (
+    <div className="relative" ref={menuRef} onClick={(e) => e.stopPropagation()}>
+      <div onClick={() => setIsOpen(!isOpen)} className="cursor-pointer">
+        {trigger}
+      </div>
+      {isOpen && (
+        <div className="absolute right-0 top-8 bg-white rounded-xl shadow-lg border border-pink-100 p-2 z-50 min-w-[180px]">
+          <div className="grid grid-cols-2 gap-2">
+            {children}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
 interface Album {
   id: number;
   title: string;
@@ -683,11 +721,24 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
                           </div>
                         ) : (
                           <>
+                            {/* User stickers */}
+                            {(() => {
+                              const stickers = photoStickers.get(photo.id) || [];
+                              return stickers.length > 0 ? (
+                                <div className="flex items-center gap-1 flex-wrap mb-1">
+                                  {stickers.map((s) => (
+                                    <span key={s.id} style={{ fontSize: '16px', lineHeight: 1 }} title={s.emoji}>
+                                      {s.emoji}
+                                    </span>
+                                  ))}
+                                </div>
+                              ) : null;
+                            })()}
                             <p className="text-gray-700 text-xs sm:text-sm line-clamp-2 min-h-[2.5rem]">
                               {photo.caption || <span className="text-gray-400 italic">Chưa có chú thích</span>}
                             </p>
                             {(photo.location_name || photo.location_url) && (
-                              <div className="mt-1">
+                              <div className="mt-1 truncate">
                                 <LocationBadge
                                   locationName={photo.location_name}
                                   locationUrl={photo.location_url}
@@ -703,45 +754,38 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
                       
                       {/* Action menu */}
                       {editingId !== photo.id && (
-                        <div className="relative shrink-0" onClick={(e) => e.stopPropagation()}>
-                          <input
-                            type="checkbox"
-                            id={`photo-menu-${photo.id}`}
-                            className="peer hidden"
-                          />
-                          <label
-                            htmlFor={`photo-menu-${photo.id}`}
-                            className="grid place-items-center w-7 h-7 rounded-full text-gray-400 hover:text-pink-500 hover:bg-pink-50 transition-colors cursor-pointer"
+                        <DropdownMenu
+                          trigger={
+                            <div className="grid place-items-center w-7 h-7 rounded-full text-gray-400 hover:text-pink-500 hover:bg-pink-50 transition-colors">
+                              <MoreHorizontal size={16} />
+                            </div>
+                          }
+                        >
+                          <button
+                            onClick={() => { setAsCover(photo.id); }}
+                            className="flex flex-col items-center gap-1 p-2 rounded-lg text-gray-600 hover:bg-pink-50 hover:text-rose-500 text-xs"
                           >
-                            <MoreHorizontal size={16} />
-                          </label>
-                          <div className="hidden peer-checked:flex absolute right-0 top-8 bg-white rounded-xl shadow-lg border border-pink-100 py-1 z-30 min-w-[120px]">
-                            <button
-                              onClick={() => { setAsCover(photo.id); (document.getElementById(`photo-menu-${photo.id}`) as HTMLInputElement).checked = false; }}
-                              className="flex items-center gap-2 px-3 py-1.5 text-xs text-gray-600 hover:bg-pink-50 hover:text-rose-500 w-full text-left"
-                            >
-                              <Star size={13} /> Ảnh bìa
-                            </button>
-                            <button
-                              onClick={() => { downloadPhoto(photo); (document.getElementById(`photo-menu-${photo.id}`) as HTMLInputElement).checked = false; }}
-                              className="flex items-center gap-2 px-3 py-1.5 text-xs text-gray-600 hover:bg-blue-50 hover:text-blue-500 w-full text-left"
-                            >
-                              <Download size={13} /> Tải về
-                            </button>
-                            <button
-                              onClick={() => { startEdit(photo); (document.getElementById(`photo-menu-${photo.id}`) as HTMLInputElement).checked = false; }}
-                              className="flex items-center gap-2 px-3 py-1.5 text-xs text-gray-600 hover:bg-pink-50 hover:text-rose-500 w-full text-left"
-                            >
-                              <Pencil size={13} /> Sửa
-                            </button>
-                            <button
-                              onClick={() => { deletePhoto(photo.id); (document.getElementById(`photo-menu-${photo.id}`) as HTMLInputElement).checked = false; }}
-                              className="flex items-center gap-2 px-3 py-1.5 text-xs text-gray-600 hover:bg-red-50 hover:text-red-500 w-full text-left"
-                            >
-                              <Trash2 size={13} /> Xóa
-                            </button>
-                          </div>
-                        </div>
+                            <Star size={16} /> Ảnh bìa
+                          </button>
+                          <button
+                            onClick={() => { downloadPhoto(photo); }}
+                            className="flex flex-col items-center gap-1 p-2 rounded-lg text-gray-600 hover:bg-blue-50 hover:text-blue-500 text-xs"
+                          >
+                            <Download size={16} /> Tải về
+                          </button>
+                          <button
+                            onClick={() => { startEdit(photo); }}
+                            className="flex flex-col items-center gap-1 p-2 rounded-lg text-gray-600 hover:bg-pink-50 hover:text-rose-500 text-xs"
+                          >
+                            <Pencil size={16} /> Sửa
+                          </button>
+                          <button
+                            onClick={() => { deletePhoto(photo.id); }}
+                            className="flex flex-col items-center gap-1 p-2 rounded-lg text-gray-600 hover:bg-red-50 hover:text-red-500 text-xs"
+                          >
+                            <Trash2 size={16} /> Xóa
+                          </button>
+                        </DropdownMenu>
                       )}
                     </div>
                     

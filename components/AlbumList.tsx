@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { Button } from '@/components/ui/button';
 import AlbumModal from './AlbumModal';
 import AlbumDetail from './AlbumDetail';
 import { Plus, Lock, Globe, Pencil, Trash2, ImageIcon, MoreHorizontal } from 'lucide-react';
@@ -197,13 +198,13 @@ export default function AlbumList({ token, currentUserId }: { token: string | nu
             className="opacity-70"
           />
         </div>
-        <button
+        <Button
           onClick={openCreate}
-          className="flex items-center gap-2 py-2.5 px-5 rounded-full text-sm font-bold text-white bg-gradient-to-r from-pink-500 to-rose-500 shadow-md hover:shadow-lg transition-all hover:scale-105"
+          className="bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white flex items-center gap-2 shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
         >
-          <Plus size={18} />
+          <Plus size={20} />
           Tạo Album Mới
-        </button>
+        </Button>
       </div>
 
       {/* Filter tabs */}

@@ -10,7 +10,6 @@ import Image from 'next/image';
 
 type Tab = 'albums' | 'letters' | 'events';
 
-// Relationship start date
 const RELATIONSHIP_START = new Date('2025-11-02T00:00:00');
 
 function useDurationCounter(startDate: Date) {
@@ -21,31 +20,78 @@ function useDurationCounter(startDate: Date) {
       const now = new Date();
       const diff = now.getTime() - startDate.getTime();
       const totalDays = Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24)));
-
-      // Calculate years, months, days
       let years = now.getFullYear() - startDate.getFullYear();
       let months = now.getMonth() - startDate.getMonth();
       let days = now.getDate() - startDate.getDate();
-
-      if (days < 0) {
-        months--;
-        const lastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
-        days += lastMonth.getDate();
-      }
-      if (months < 0) {
-        years--;
-        months += 12;
-      }
-
+      if (days < 0) { months--; const lastMonth = new Date(now.getFullYear(), now.getMonth(), 0); days += lastMonth.getDate(); }
+      if (months < 0) { years--; months += 12; }
       setDuration({ years: Math.max(0, years), months: Math.max(0, months), days: Math.max(0, days), totalDays });
     };
-
     calculate();
-    const interval = setInterval(calculate, 60000); // Update every minute
+    const interval = setInterval(calculate, 60000);
     return () => clearInterval(interval);
   }, [startDate]);
 
   return duration;
+}
+
+/* ── Milestone card (shared desktop + mobile menu) ── */
+function MilestoneCard({ duration, size = 'desktop' }: { duration: { years: number; months: number; days: number; totalDays: number }; size?: 'desktop' | 'mobile' }) {
+  const calSize = size === 'desktop' ? 28 : 24;
+  const heartSize = calSize; // same as calendar
+  return (
+    <div className={`bg-white/70 backdrop-blur-sm rounded-2xl border border-pink-100 shadow-sm ${size === 'desktop' ? 'p-4' : 'p-3'}`}>
+      <h3 className={`font-bold text-[#E8548E] text-center mb-3 ${size === 'desktop' ? 'text-sm' : 'text-xs'}`}>
+        ❤️ Our special day
+      </h3>
+
+      {/* Two rows: calendar | text  then  heart | text – aligned */}
+      <div className="flex items-start gap-2">
+        {/* Left column: stickers stacked */}
+        <div className="flex flex-col items-center gap-1 shrink-0" style={{ width: calSize }}>
+          <Image src="/assets-new-design/calendar-sticker.png" alt="calendar" width={calSize} height={calSize} />
+          <span className="relative inline-flex" style={{ width: heartSize, height: heartSize }}>
+            <Image
+              src="/assets-new-design/heart_badge_album_corner.png"
+              alt="heart"
+              width={heartSize}
+              height={heartSize}
+              className="absolute inset-0 animate-heartbeat"
+              style={{ transformOrigin: 'center center' }}
+            />
+          </span>
+        </div>
+
+        {/* Right column: text rows */}
+        <div className="flex-1 space-y-1">
+          <div className="flex items-baseline gap-1.5">
+            <span className={`text-gray-500 ${size === 'desktop' ? 'text-xs' : 'text-[10px]'}`}>Ngày quen nhau:</span>
+            <span className={`font-bold text-gray-700 ${size === 'desktop' ? 'text-xs' : 'text-[10px]'}`}>02/11/2025</span>
+          </div>
+          <div className="flex items-baseline gap-1.5 flex-wrap">
+            <span className={`text-gray-500 ${size === 'desktop' ? 'text-xs' : 'text-[10px]'}`}>Đã bên nhau:</span>
+            <span className={`font-bold text-pink-500 ${size === 'desktop' ? 'text-base' : 'text-sm'}`}>{duration.totalDays} ngày</span>
+            <span className={`text-gray-400 ${size === 'desktop' ? 'text-xs' : 'text-[10px]'}`}>({duration.years} năm, {duration.months} tháng, {duration.days} ngày)</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Bears */}
+      <div className="mt-2 flex justify-center">
+        <Image
+          src="/assets-new-design/bears_couple_365days_alt.png"
+          alt="Bears couple"
+          width={size === 'desktop' ? 110 : 80}
+          height={size === 'desktop' ? 72 : 56}
+          className="object-contain"
+        />
+      </div>
+
+      <p className={`text-gray-400 italic text-center mt-1.5 ${size === 'desktop' ? 'text-[11px]' : 'text-[10px]'}`}>
+        The first day of messaging was October 12 &lt;333
+      </p>
+    </div>
+  );
 }
 
 export default function DashboardPage() {
@@ -56,9 +102,7 @@ export default function DashboardPage() {
   const duration = useDurationCounter(RELATIONSHIP_START);
 
   useEffect(() => {
-    if (!loading && !user) {
-      router.replace('/login');
-    }
+    if (!loading && !user) router.replace('/login');
   }, [user, loading, router]);
 
   if (loading) {
@@ -69,7 +113,6 @@ export default function DashboardPage() {
       </div>
     );
   }
-
   if (!user) return null;
 
   const tabs: { key: Tab; label: string; icon: string }[] = [
@@ -84,31 +127,18 @@ export default function DashboardPage() {
       <div className="hidden lg:flex min-h-screen">
         {/* LEFT SIDEBAR */}
         <aside className="w-[300px] shrink-0 relative">
-          {/* Notebook background */}
-          <div
-            className="absolute inset-0 bg-cover bg-center"
-            style={{ backgroundImage: 'url(/assets-new-design/header_notebook_bg.png)' }}
-          />
-          {/* Spiral binding left edge */}
+          <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: 'url(/assets-new-design/header_notebook_bg.png)' }} />
+          {/* Spiral binding */}
           <div className="absolute left-0 top-0 bottom-0 w-[38px] flex flex-col items-center justify-start pt-4 gap-6 z-10">
             {Array.from({ length: 18 }).map((_, i) => (
               <div key={i} className="w-5 h-5 rounded-full border-[3px] border-[#D4A0A0] bg-[#FFF5F7]" />
             ))}
           </div>
 
-          {/* Sidebar content */}
           <div className="relative z-10 pt-8 px-4 pl-12 flex flex-col h-full">
-            {/* Couple photo placeholder */}
+            {/* Couple photo */}
             <div className="relative mx-auto w-[200px]">
-              {/* Bow sticker on top */}
-              <Image
-                src="/assets-new-design/bow_pink_large.png"
-                alt="bow"
-                width={70}
-                height={40}
-                className="absolute -top-5 left-1/2 -translate-x-1/2 z-10"
-              />
-              {/* Photo frame */}
+              <Image src="/assets-new-design/bow_pink_large.png" alt="bow" width={70} height={40} className="absolute -top-5 left-1/2 -translate-x-1/2 z-10" />
               <div className="bg-white p-2 shadow-md rotate-[-2deg]">
                 <div className="w-full aspect-square bg-gradient-to-br from-rose-200 to-pink-100 rounded-sm flex items-center justify-center overflow-hidden">
                   <span className="text-5xl">💕</span>
@@ -126,7 +156,7 @@ export default function DashboardPage() {
               </p>
             </div>
 
-            {/* Navigation */}
+            {/* Navigation tabs */}
             <nav className="mt-6 flex flex-col gap-2">
               {tabs.map(({ key, label, icon }) => (
                 <button
@@ -144,59 +174,9 @@ export default function DashboardPage() {
               ))}
             </nav>
 
-            {/* Spacer */}
-            <div className="flex-1" />
-
-            {/* Milestone card */}
-            <div className="mb-4 bg-white/70 backdrop-blur-sm rounded-2xl p-4 border border-pink-100 shadow-sm">
-              <h3 className="text-sm font-bold text-[#E8548E] text-center mb-3">
-                ❤️ Our special day
-              </h3>
-              <div className="space-y-2 text-sm">
-                <div className="flex items-start gap-2">
-                  <Image
-                    src="/assets-new-design/calendar-sticker.png"
-                    alt="calendar"
-                    width={28}
-                    height={28}
-                    className="shrink-0 mt-0.5"
-                  />
-                  <div className="flex-1">
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-gray-500 text-xs">Ngày quen nhau:</span>
-                      <span className="font-bold text-gray-700 text-xs">02/11/2025</span>
-                    </div>
-                    <div className="flex items-baseline gap-2 mt-1">
-                      <Image
-                        src="/assets-new-design/heart_badge_album_corner.png"
-                        alt="heart"
-                        width={20}
-                        height={20}
-                        className="animate-heartbeat shrink-0 -ml-[30px]"
-                      />
-                      <span className="text-gray-500 text-xs">Đã bên nhau:</span>
-                      <span className="font-bold text-pink-500 text-base ml-1">{duration.totalDays} ngày</span>
-                    </div>
-                    <div className="pl-[30px]">
-                      <span className="text-xs text-gray-400">({duration.years} năm, {duration.months} tháng, {duration.days} ngày)</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              {/* Bears sticker */}
-              <div className="mt-3 flex justify-center">
-                <Image
-                  src="/assets-new-design/bears_couple_365days_alt.png"
-                  alt="Bears couple"
-                  width={120}
-                  height={80}
-                  className="object-contain"
-                />
-              </div>
-              {/* First message note */}
-              <p className="text-[11px] text-gray-400 italic text-center mt-2">
-                The first day of messaging was October 12 &lt;333
-              </p>
+            {/* Our special day card — right below tabs */}
+            <div className="mt-4">
+              <MilestoneCard duration={duration} size="desktop" />
             </div>
           </div>
         </aside>
@@ -212,13 +192,21 @@ export default function DashboardPage() {
             <Image src="/assets-new-design/flower_cherry_tiny_01.png" alt="" width={20} height={20} className="absolute top-[45%] right-[20%] animate-float opacity-30" style={{ animationDelay: '1.5s' }} />
           </div>
 
-          {/* Top bar */}
-          <div className="relative z-10 flex justify-between items-center px-8 pt-6 pb-2">
-            <div />
+          {/* Desktop header banner */}
+          <div className="relative z-10 mx-8 mt-6 rounded-2xl overflow-hidden shadow-md" style={{ maxHeight: '260px' }}>
+            <Image
+              src="/assets-new-design/header-cuongvy.png"
+              alt="header"
+              width={900}
+              height={260}
+              className="w-full object-cover"
+              style={{ objectPosition: 'center 30%' }}
+            />
+            {/* Logout button overlay */}
             <button
               onClick={logout}
               title="Đăng xuất"
-              className="group grid place-items-center w-11 h-11 rounded-xl bg-white/80 text-pink-400 border border-pink-100 shadow-sm hover:bg-pink-500 hover:text-white hover:border-pink-500 hover:shadow-lg transition-all duration-300 hover:-rotate-12 active:scale-90"
+              className="absolute top-3 right-3 group grid place-items-center w-11 h-11 rounded-xl bg-white/80 text-pink-400 border border-pink-100 shadow-sm hover:bg-pink-500 hover:text-white hover:border-pink-500 hover:shadow-lg transition-all duration-300 hover:-rotate-12 active:scale-90"
             >
               <svg className="w-5 h-5 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -226,62 +214,16 @@ export default function DashboardPage() {
             </button>
           </div>
 
-          {/* Greeting section */}
-          <div className="relative z-10 px-8 pt-4 pb-6">
-            <div className="flex items-start justify-between">
-              <div>
-                <h2 className="text-3xl font-extrabold text-gray-800">
-                  Xin chào, {user.role === 'em' ? 'em xã' : 'anh xã'} ❤️
-                </h2>
-                <p className="text-gray-400 mt-2 text-sm">
-                  Hãy lưu giữ những khoảnh khắc đẹp nhất của chúng mình nhé &lt;3
-                </p>
-              </div>
-              {/* Header decoration - envelope + flowers + note */}
-              <div className="relative w-[280px] h-[180px] shrink-0">
-                {/* Note paper with message */}
-                <div
-                  className="absolute left-0 top-2 w-[160px] h-[100px] bg-cover bg-center"
-                  style={{ backgroundImage: 'url(/assets-new-design/note_paper_maiiuanhxa_pin_heart.png)' }}
-                />
-                {/* Envelope with flowers */}
-                <Image
-                  src="/assets-new-design/header_envelope_flowers_photo.png"
-                  alt="envelope"
-                  width={200}
-                  height={160}
-                  className="absolute right-0 top-0 object-contain"
-                />
-              </div>
-            </div>
-            {/* Heart trail decoration */}
-            <Image
-              src="/assets-new-design/heart_trail_dashed_line.png"
-              alt=""
-              width={300}
-              height={40}
-              className="mt-2 opacity-60"
-            />
-          </div>
-
           {/* Content area */}
-          <div className="relative z-10 px-8 pb-12">
+          <div className="relative z-10 px-8 py-6 pb-12">
             {activeTab === 'albums' && <AlbumList token={token} currentUserId={user.id} />}
             {activeTab === 'letters' && <LetterList token={token} currentUserId={user.id} />}
             {activeTab === 'events' && <EventList token={token} />}
           </div>
 
-          {/* Footer decoration - bear */}
+          {/* Footer decoration */}
           <div className="relative z-10 flex justify-end px-8 pb-8 pointer-events-none">
-            <div className="relative">
-              <Image
-                src="/assets-new-design/footer_bear_love_forever.png"
-                alt="Love bear"
-                width={260}
-                height={220}
-                className="object-contain"
-              />
-            </div>
+            <Image src="/assets-new-design/footer_bear_love_forever.png" alt="Love bear" width={260} height={220} className="object-contain" />
           </div>
         </div>
       </div>
@@ -289,40 +231,31 @@ export default function DashboardPage() {
       {/* ============ MOBILE LAYOUT ============ */}
       <div className="lg:hidden">
         {/* Mobile header banner */}
-        <div className="relative w-full" style={{ minHeight: '200px' }}>
-          <Image
-            src="/assets-new-design/header-cuongvy.png"
-            alt="header"
-            fill
-            className="object-cover"
-            priority
-          />
+        <div className="relative w-full" style={{ minHeight: '220px' }}>
+          <Image src="/assets-new-design/header-cuongvy.png" alt="header" fill className="object-cover" priority />
           {/* Top bar overlay */}
           <div className="absolute top-0 left-0 right-0 flex justify-between items-center px-4 pt-3 pb-1">
-            {/* Hamburger */}
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="w-10 h-10 flex flex-col items-center justify-center gap-1 rounded-xl bg-white/60 backdrop-blur-sm"
-            >
+            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="w-10 h-10 flex flex-col items-center justify-center gap-1 rounded-xl bg-white/60 backdrop-blur-sm">
               <span className="block w-5 h-0.5 bg-pink-500 rounded" />
               <span className="block w-5 h-0.5 bg-pink-500 rounded" />
               <span className="block w-5 h-0.5 bg-pink-500 rounded" />
             </button>
-            {/* Logout - icon only */}
-            <button
-              onClick={logout}
-              title="Đăng xuất"
-              className="group grid place-items-center w-10 h-10 rounded-xl bg-white/80 text-pink-400 border border-pink-200 shadow-sm active:bg-pink-500 active:text-white active:scale-90 transition-all duration-200"
-            >
+            <button onClick={logout} title="Đăng xuất" className="group grid place-items-center w-10 h-10 rounded-xl bg-white/80 text-pink-400 border border-pink-200 shadow-sm active:bg-pink-500 active:text-white active:scale-90 transition-all duration-200">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
               </svg>
             </button>
           </div>
+          {/* Title overlay */}
+          <div className="absolute bottom-3 left-0 right-0 text-center pointer-events-none">
+            <h1 className="text-[36px] font-bold text-[#E8548E] leading-tight font-[family-name:var(--font-corinthia)] drop-shadow-md">
+              Cuong {'<'}3 Vy's Home
+            </h1>
+          </div>
         </div>
 
         {/* Mobile tab buttons */}
-        <div className="flex justify-center gap-2 px-4 -mt-4 relative z-20">
+        <div className="flex justify-center gap-2 px-4 -mt-3 relative z-20">
           {tabs.map(({ key, label, icon }) => (
             <button
               key={key}
@@ -342,15 +275,10 @@ export default function DashboardPage() {
         {/* Mobile menu overlay */}
         {mobileMenuOpen && (
           <div className="fixed inset-0 z-50 bg-black/30" onClick={() => setMobileMenuOpen(false)}>
-            <div
-              className="absolute left-0 top-0 bottom-0 w-[260px] bg-[#FFF5F7] shadow-xl p-6"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="text-center mb-6">
-                <h2 className="text-lg font-extrabold text-[#E8548E] font-[family-name:var(--font-corinthia)]">Cuong {'<'}3 Vy's Home</h2>
-                <p className="text-[10px] text-gray-400 italic mt-1">
-                  Xin chào, em xãa hãy iuu anh xãa nhìu thêm mỗi ngày nhé &lt;333
-                </p>
+            <div className="absolute left-0 top-0 bottom-0 w-[260px] bg-[#FFF5F7] shadow-xl p-5 overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+              <div className="text-center mb-5">
+                <h2 className="text-2xl font-bold text-[#E8548E] font-[family-name:var(--font-corinthia)]">Cuong {'<'}3 Vy's Home</h2>
+                <p className="text-[10px] text-gray-400 italic mt-1">Xin chào, em xãa hãy iuu anh xãa nhìu thêm mỗi ngày nhé &lt;333</p>
               </div>
               <nav className="flex flex-col gap-2">
                 {tabs.map(({ key, label, icon }) => (
@@ -358,9 +286,7 @@ export default function DashboardPage() {
                     key={key}
                     onClick={() => { setActiveTab(key); setMobileMenuOpen(false); }}
                     className={`flex items-center gap-3 py-2.5 px-4 rounded-xl text-sm font-semibold text-left transition-all ${
-                      activeTab === key
-                        ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white'
-                        : 'text-gray-500 hover:bg-pink-50'
+                      activeTab === key ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white' : 'text-gray-500 hover:bg-pink-50'
                     }`}
                   >
                     <span>{icon}</span>
@@ -368,60 +294,15 @@ export default function DashboardPage() {
                   </button>
                 ))}
               </nav>
-
-              {/* Milestone in mobile menu */}
-              <div className="mt-6 bg-white/70 rounded-2xl p-4 border border-pink-100">
-                <h3 className="text-sm font-bold text-[#E8548E] text-center mb-3">
-                  ❤️ Our special day
-                </h3>
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-start gap-2">
-                    <Image
-                      src="/assets-new-design/calendar-sticker.png"
-                      alt="calendar"
-                      width={24}
-                      height={24}
-                      className="shrink-0 mt-0.5"
-                    />
-                    <div className="flex-1">
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-gray-500 text-xs">Ngày quen:</span>
-                        <span className="font-bold text-gray-700 text-xs">02/11/2025</span>
-                      </div>
-                      <div className="flex items-baseline gap-2 mt-1">
-                        <Image
-                          src="/assets-new-design/heart_badge_album_corner.png"
-                          alt="heart"
-                          width={18}
-                          height={18}
-                          className="animate-heartbeat shrink-0 -ml-[26px]"
-                        />
-                        <span className="text-gray-500 text-xs">Bên nhau:</span>
-                        <span className="font-bold text-pink-500 text-sm ml-1">{duration.totalDays} ngày</span>
-                      </div>
-                      <div className="pl-[24px]">
-                        <span className="text-[10px] text-gray-400">({duration.years} năm, {duration.months} tháng, {duration.days} ngày)</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <Image
-                  src="/assets-new-design/bears_couple_365days_alt.png"
-                  alt="Bears"
-                  width={100}
-                  height={70}
-                  className="mx-auto mt-2 object-contain"
-                />
-                <p className="text-[10px] text-gray-400 italic text-center mt-2">
-                  The first day of messaging was October 12 &lt;333
-                </p>
+              <div className="mt-5">
+                <MilestoneCard duration={duration} size="mobile" />
               </div>
             </div>
           </div>
         )}
 
         {/* Mobile content */}
-        <div className="px-4 py-6 relative z-10">
+        <div className="px-4 py-5 relative z-10">
           {activeTab === 'albums' && <AlbumList token={token} currentUserId={user.id} />}
           {activeTab === 'letters' && <LetterList token={token} currentUserId={user.id} />}
           {activeTab === 'events' && <EventList token={token} />}
@@ -429,13 +310,7 @@ export default function DashboardPage() {
 
         {/* Mobile footer bear */}
         <div className="flex justify-center pb-8 pointer-events-none">
-          <Image
-            src="/assets-new-design/footer_bear_love_forever.png"
-            alt="Love bear"
-            width={200}
-            height={170}
-            className="object-contain opacity-90"
-          />
+          <Image src="/assets-new-design/footer_bear_love_forever.png" alt="Love bear" width={200} height={170} className="object-contain opacity-90" />
         </div>
       </div>
     </div>

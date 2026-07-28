@@ -35,19 +35,19 @@ const WASHI_TAPES = [
   '/assets-new-design/tape_washi_blue.png',
 ];
 
-// Corner decoration options (hearts, flowers, bows) - bigger stickers
+// Corner decoration options (hearts, flowers, bows) - 44-46px
 const CORNER_STICKERS = [
-  { src: '/assets-new-design/heart_pink_solid_01.png', w: 52, h: 52 },
-  { src: '/assets-new-design/heart_pink_solid_02.png', w: 48, h: 48 },
-  { src: '/assets-new-design/flower_pink_medium.png', w: 56, h: 56 },
-  { src: '/assets-new-design/bow_pink_small.png', w: 58, h: 42 },
-  { src: '/assets-new-design/flower_pink_small.png', w: 50, h: 50 },
+  { src: '/assets-new-design/heart_pink_solid_01.png', w: 44, h: 44 },
+  { src: '/assets-new-design/heart_pink_solid_02.png', w: 45, h: 45 },
+  { src: '/assets-new-design/flower_pink_medium.png', w: 46, h: 46 },
+  { src: '/assets-new-design/bow_pink_small.png', w: 46, h: 34 },
+  { src: '/assets-new-design/flower_pink_small.png', w: 44, h: 44 },
 ];
 
-// Tape positions - thinner, longer, extend 40% outside the card
+// Tape positions - thinner, longer, extend ~40% outside the card
 const TAPE_CONFIGS = [
-  { top: '-12px', left: '-18px', rotate: -35, width: 90, height: 18 },
-  { top: '-12px', right: '-18px', rotate: 30, width: 90, height: 18 },
+  { top: '-15px', left: '-24px', rotate: -35, width: 80, height: 14 },
+  { top: '-15px', right: '-24px', rotate: 30, width: 80, height: 14 },
 ];
 
 // Sticker positions - random between image bottom-right and text area bottom-right
@@ -273,6 +273,7 @@ export default function AlbumList({ token, currentUserId }: { token: string | nu
                     alt=""
                     width={decoration.tapeConfig.width}
                     height={decoration.tapeConfig.height}
+                    className="opacity-85"
                   />
                 </div>
 

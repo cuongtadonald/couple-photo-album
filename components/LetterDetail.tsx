@@ -252,7 +252,7 @@ export default function LetterDetail({
         {/* Header */}
         <div className="flex items-start justify-between mb-4 gap-3">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 text-balance">{letter.title}</h1>
+            <h1 className="text-3xl font-bold text-gray-900 text-balance font-[family-name:var(--font-corinthia)]">{letter.title}</h1>
             <p className="text-gray-500 mt-1 text-sm">Từ: {letter.from_user_name}</p>
             <p className="text-gray-400 text-xs mt-0.5">
               {formatDateVN(letter.created_at, { year: 'numeric', month: 'long', day: 'numeric' })}
@@ -294,7 +294,7 @@ export default function LetterDetail({
         {/* Content */}
         {letter.text_content && (
           <div className="mb-8 p-5 bg-rose-50 rounded-xl border border-rose-100">
-            <p className="whitespace-pre-wrap text-gray-800 leading-relaxed text-base">
+            <p className="whitespace-pre-wrap text-gray-800 leading-relaxed text-base font-[family-name:var(--font-corinthia)]">
               {letter.text_content}
             </p>
           </div>

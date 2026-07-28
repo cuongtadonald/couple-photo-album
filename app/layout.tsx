@@ -1,8 +1,15 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import { AuthProvider } from '@/lib/auth-context'
-import { Corinthia } from 'next/font/google'
+import { Itim, Corinthia } from 'next/font/google'
 import './globals.css'
+
+const itim = Itim({
+  subsets: ['latin', 'vietnamese'],
+  weight: ['400'],
+  display: 'swap',
+  variable: '--font-itim',
+})
 
 const corinthia = Corinthia({
   subsets: ['latin', 'vietnamese'],
@@ -35,8 +42,8 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="vi" className={corinthia.variable}>
-      <body className="antialiased font-[family-name:var(--font-corinthia)]">
+    <html lang="vi" className={`${itim.variable} ${corinthia.variable}`}>
+      <body className="antialiased font-[family-name:var(--font-itim)]">
         <AuthProvider>
           {children}
           {process.env.NODE_ENV === 'production' && <Analytics />}

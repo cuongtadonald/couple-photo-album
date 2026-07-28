@@ -248,15 +248,9 @@
   font-weight: 600;
 }
 
-/* Handwriting font for titles and decorative text */
+/* Handwriting font for specific decorative text */
 .font-handwriting {
   font-family: var(--font-corinthia), cursive;
-}
-
-/* Apply handwriting to specific elements */
-h1, h2, h3 {
-  font-family: var(--font-corinthia), cursive;
-  font-weight: 700;
 }
 
 /* Cute rounded corners */
@@ -321,7 +315,7 @@ input[type="date"],
 input[type="time"],
 textarea,
 select {
-  font-family: var(--font-corinthia), cursive;
+  font-family: var(--font-itim), cursive;
   color: #374151;
   font-weight: 500;
 }

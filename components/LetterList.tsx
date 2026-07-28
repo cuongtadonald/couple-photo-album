@@ -237,7 +237,7 @@ export default function LetterList({ token, currentUserId }: LetterListProps) {
                     onClick={() => { if (canOpen) { setSelectedLetterId(letter.id); } }}
                   >
                     <div className="flex items-center gap-3 flex-wrap">
-                      <h3 className="text-lg font-bold bg-gradient-to-r from-rose-500 to-pink-500 bg-clip-text text-transparent">
+                      <h3 className="text-lg font-bold bg-gradient-to-r from-rose-500 to-pink-500 bg-clip-text text-transparent font-[family-name:var(--font-corinthia)]">
                         {letter.title}
                       </h3>
                       {canOpen && !owner && (() => {

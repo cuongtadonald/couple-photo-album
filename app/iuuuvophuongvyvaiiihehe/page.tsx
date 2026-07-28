@@ -118,10 +118,10 @@ export default function DashboardPage() {
 
             {/* Title */}
             <div className="text-center mt-4">
-              <h1 className="text-[22px] font-extrabold text-[#E8548E] leading-tight">
+              <h1 className="text-[44px] font-bold text-[#E8548E] leading-tight font-[family-name:var(--font-corinthia)]">
                 Cuong {'<'}3 Vy's Home
               </h1>
-              <p className="text-[12px] text-gray-400 mt-1 italic leading-tight">
+              <p className="text-[24px] text-gray-400 mt-1 italic leading-tight font-[family-name:var(--font-corinthia)]">
                 Xin chào, em xãa hãy iuu anh xãa nhìu thêm mỗi ngày nhé &lt;333
               </p>
             </div>

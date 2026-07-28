@@ -153,24 +153,34 @@ export default function DashboardPage() {
                 ❤️ Our special day
               </h3>
               <div className="space-y-2 text-sm">
-                <div className="flex items-center gap-2">
-                  <span>📅</span>
-                  <span className="text-gray-500 text-xs">Ngày quen nhau:</span>
-                  <span className="font-bold text-gray-700 text-xs">02/11/2025</span>
-                </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-start gap-2">
                   <Image
-                    src="/assets-new-design/heart_badge_album_corner.png"
-                    alt="heart"
-                    width={32}
-                    height={32}
-                    className="animate-heartbeat"
+                    src="/assets-new-design/calendar-sticker.png"
+                    alt="calendar"
+                    width={28}
+                    height={28}
+                    className="shrink-0 mt-0.5"
                   />
-                  <span className="text-gray-500 text-xs">Đã bên nhau:</span>
-                  <span className="font-bold text-pink-500 text-base ml-1">{duration.totalDays} ngày</span>
-                </div>
-                <div className="pl-10">
-                  <span className="text-xs text-gray-400">({duration.years} năm, {duration.months} tháng, {duration.days} ngày)</span>
+                  <div className="flex-1">
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-gray-500 text-xs">Ngày quen nhau:</span>
+                      <span className="font-bold text-gray-700 text-xs">02/11/2025</span>
+                    </div>
+                    <div className="flex items-baseline gap-2 mt-1">
+                      <Image
+                        src="/assets-new-design/heart_badge_album_corner.png"
+                        alt="heart"
+                        width={20}
+                        height={20}
+                        className="animate-heartbeat shrink-0 -ml-[30px]"
+                      />
+                      <span className="text-gray-500 text-xs">Đã bên nhau:</span>
+                      <span className="font-bold text-pink-500 text-base ml-1">{duration.totalDays} ngày</span>
+                    </div>
+                    <div className="pl-[30px]">
+                      <span className="text-xs text-gray-400">({duration.years} năm, {duration.months} tháng, {duration.days} ngày)</span>
+                    </div>
+                  </div>
                 </div>
               </div>
               {/* Bears sticker */}
@@ -281,7 +291,7 @@ export default function DashboardPage() {
         {/* Mobile header banner */}
         <div className="relative w-full" style={{ minHeight: '200px' }}>
           <Image
-            src="/assets-new-design/header_mobile_banner.png"
+            src="/assets-new-design/header-cuongvy.png"
             alt="header"
             fill
             className="object-cover"
@@ -337,7 +347,7 @@ export default function DashboardPage() {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="text-center mb-6">
-                <h2 className="text-lg font-extrabold text-[#E8548E]">Cuong {'<'}3 Vy's Home</h2>
+                <h2 className="text-lg font-extrabold text-[#E8548E] font-[family-name:var(--font-corinthia)]">Cuong {'<'}3 Vy's Home</h2>
                 <p className="text-[10px] text-gray-400 italic mt-1">
                   Xin chào, em xãa hãy iuu anh xãa nhìu thêm mỗi ngày nhé &lt;333
                 </p>
@@ -365,24 +375,34 @@ export default function DashboardPage() {
                   ❤️ Our special day
                 </h3>
                 <div className="space-y-2 text-sm">
-                  <div className="flex items-center gap-2">
-                    <span>📅</span>
-                    <span className="text-gray-500 text-xs">Ngày quen:</span>
-                    <span className="font-bold text-gray-700 text-xs">02/11/2025</span>
-                  </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-start gap-2">
                     <Image
-                      src="/assets-new-design/heart_badge_album_corner.png"
-                      alt="heart"
-                      width={28}
-                      height={28}
-                      className="animate-heartbeat"
+                      src="/assets-new-design/calendar-sticker.png"
+                      alt="calendar"
+                      width={24}
+                      height={24}
+                      className="shrink-0 mt-0.5"
                     />
-                    <span className="text-gray-500 text-xs">Bên nhau:</span>
-                    <span className="font-bold text-pink-500 text-sm ml-1">{duration.totalDays} ngày</span>
-                  </div>
-                  <div className="pl-10">
-                    <span className="text-[10px] text-gray-400">({duration.years} năm, {duration.months} tháng, {duration.days} ngày)</span>
+                    <div className="flex-1">
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-gray-500 text-xs">Ngày quen:</span>
+                        <span className="font-bold text-gray-700 text-xs">02/11/2025</span>
+                      </div>
+                      <div className="flex items-baseline gap-2 mt-1">
+                        <Image
+                          src="/assets-new-design/heart_badge_album_corner.png"
+                          alt="heart"
+                          width={18}
+                          height={18}
+                          className="animate-heartbeat shrink-0 -ml-[26px]"
+                        />
+                        <span className="text-gray-500 text-xs">Bên nhau:</span>
+                        <span className="font-bold text-pink-500 text-sm ml-1">{duration.totalDays} ngày</span>
+                      </div>
+                      <div className="pl-[24px]">
+                        <span className="text-[10px] text-gray-400">({duration.years} năm, {duration.months} tháng, {duration.days} ngày)</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
                 <Image

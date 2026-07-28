@@ -3,11 +3,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ChangeEvent, DragEvent } from 'react';
 import type { StickerItem } from './StickerOverlay';
-import { ArrowLeft, Star, Pencil, Trash2, Check, X, Lock, Globe, Download } from 'lucide-react';
+import { ArrowLeft, Star, Pencil, Trash2, Check, X, Lock, Globe, Download, MoreHorizontal } from 'lucide-react';
 import PhotoViewer from './PhotoViewer';
 import { formatDateVN } from '@/lib/datetime';
 import LocationPicker from './LocationPicker';
 import LocationBadge from './LocationBadge';
+import Image from 'next/image';
 
 interface Album {
   id: number;
@@ -369,6 +370,42 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
     }
   };
 
+  // Sticker decoration logic for photo cards
+  const WASHI_TAPES = [
+    '/assets-new-design/tape_washi_pink_solid.png',
+    '/assets-new-design/tape_washi_pink_dotted.png',
+    '/assets-new-design/tape_washi_pink_light.png',
+    '/assets-new-design/tape_washi_blue.png',
+  ];
+
+  const CORNER_STICKERS = [
+    { src: '/assets-new-design/heart_pink_solid_01.png', w: 44, h: 44 },
+    { src: '/assets-new-design/heart_pink_solid_02.png', w: 45, h: 45 },
+    { src: '/assets-new-design/flower_pink_medium.png', w: 46, h: 46 },
+    { src: '/assets-new-design/bow_pink_small.png', w: 46, h: 34 },
+    { src: '/assets-new-design/flower_pink_small.png', w: 44, h: 44 },
+  ];
+
+  const TAPE_CONFIGS = [
+    { top: '-15px', left: '-24px', rotate: -35, width: 80, height: 14 },
+    { top: '-15px', right: '-24px', rotate: 30, width: 80, height: 14 },
+  ];
+
+  const STICKER_CONFIGS = [
+    { location: 'image' as const, rotate: 12 },
+    { location: 'text' as const, rotate: -8 },
+    { location: 'image' as const, rotate: 15 },
+    { location: 'text' as const, rotate: -12 },
+  ];
+
+  function getCardDecoration(index: number) {
+    const tapeConfig = TAPE_CONFIGS[index % 2];
+    const stickerConfig = STICKER_CONFIGS[index % STICKER_CONFIGS.length];
+    const tapeImage = WASHI_TAPES[index % WASHI_TAPES.length];
+    const sticker = CORNER_STICKERS[index % CORNER_STICKERS.length];
+    return { tapeConfig, stickerConfig, tapeImage, sticker };
+  }
+
   return (
     <div>
       <button
@@ -547,131 +584,185 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            {photos.map((photo, idx) => (
-              <div
-                key={photo.id}
-                className="group bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition"
-              >
-                <div className="relative h-48 sm:h-64 bg-gray-100">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={photo.image_url || '/placeholder.svg'}
-                    alt={photo.caption || 'Ảnh'}
-                    loading="lazy"
-                    onClick={() => setViewerIndex(idx)}
-                    className="w-full h-full object-cover cursor-zoom-in"
-                  />
-                  {coverPhotoId === photo.id && (
-                    <span className="absolute top-2 left-2 flex items-center gap-1 text-xs font-semibold text-white bg-rose-500/90 px-2 py-1 rounded-full">
-                      <Star size={12} className="fill-white" />
-                      Ảnh bìa
-                    </span>
-                  )}
-                  {/* Hover actions */}
-                  <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={() => setAsCover(photo.id)}
-                      aria-label="Đặt làm ảnh bìa"
-                      title="Đặt làm ảnh bìa"
-                      className="grid place-items-center w-8 h-8 rounded-full bg-white/90 text-gray-600 hover:text-rose-500 shadow transition-colors"
-                    >
-                      <Star size={15} className={coverPhotoId === photo.id ? 'fill-rose-500 text-rose-500' : ''} />
-                    </button>
-                    <button
-                      onClick={() => downloadPhoto(photo)}
-                      aria-label="Tải ảnh về"
-                      title="Tải ảnh về"
-                      className="grid place-items-center w-8 h-8 rounded-full bg-white/90 text-gray-600 hover:text-blue-500 shadow transition-colors"
-                    >
-                      <Download size={15} />
-                    </button>
-                    <button
-                      onClick={() => startEdit(photo)}
-                      aria-label="Sửa chú thích"
-                      title="Sửa chú thích"
-                      className="grid place-items-center w-8 h-8 rounded-full bg-white/90 text-gray-600 hover:text-rose-500 shadow transition-colors"
-                    >
-                      <Pencil size={15} />
-                    </button>
-                    <button
-                      onClick={() => deletePhoto(photo.id)}
-                      aria-label="Xóa ảnh"
-                      title="Xóa ảnh"
-                      className="grid place-items-center w-8 h-8 rounded-full bg-white/90 text-gray-600 hover:text-red-500 shadow transition-colors"
-                    >
-                      <Trash2 size={15} />
-                    </button>
+          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-5">
+            {photos.map((photo, idx) => {
+              const decoration = getCardDecoration(idx);
+              return (
+                <div
+                  key={photo.id}
+                  className="group relative bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-visible border border-pink-50 hover:-translate-y-1"
+                >
+                  {/* Washi tape - thinner, longer, extend ~40% outside */}
+                  <div
+                    className="absolute z-30 pointer-events-none"
+                    style={{
+                      top: decoration.tapeConfig.top,
+                      ...(decoration.tapeConfig.left ? { left: decoration.tapeConfig.left } : { right: decoration.tapeConfig.right }),
+                      transform: `rotate(${decoration.tapeConfig.rotate}deg)`,
+                    }}
+                  >
+                    <Image
+                      src={decoration.tapeImage}
+                      alt=""
+                      width={decoration.tapeConfig.width}
+                      height={decoration.tapeConfig.height}
+                      className="opacity-85"
+                    />
                   </div>
-                </div>
 
-                <div className="p-3 sm:p-4">
-                  {editingId === photo.id ? (
-                    <div className="space-y-2">
-                      <textarea
-                        value={editCaption}
-                        onChange={(e) => setEditCaption(e.target.value)}
-                        rows={3}
-                        className="w-full px-3 py-2 border-2 border-rose-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 text-sm text-gray-700 resize-y"
-                        placeholder="Chú thích cho ảnh..."
-                      />
-                      <LocationPicker
-                        locationName={editLocationName}
-                        locationUrl={editLocationUrl}
-                        onLocationNameChange={setEditLocationName}
-                        onLocationUrlChange={setEditLocationUrl}
-                      />
-                      <div className="flex gap-2 mt-2">
-                        <button
-                          onClick={() => saveCaption(photo.id)}
-                          className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 bg-rose-500 hover:bg-rose-600 text-white rounded-lg text-sm transition-colors"
-                        >
-                          <Check size={15} /> Lưu
-                        </button>
-                        <button
-                          onClick={() => setEditingId(null)}
-                          className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-sm transition-colors"
-                        >
-                          <X size={15} /> Hủy
-                        </button>
+                  {/* Thumbnail */}
+                  <div
+                    onClick={() => setViewerIndex(idx)}
+                    className="h-36 sm:h-44 bg-gradient-to-br from-rose-100 via-pink-50 to-rose-50 flex items-center justify-center overflow-hidden relative cursor-pointer rounded-t-2xl"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={photo.image_url || '/placeholder.svg'}
+                      alt={photo.caption || 'Ảnh'}
+                      loading="lazy"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    
+                    {/* Cover badge */}
+                    {coverPhotoId === photo.id && (
+                      <span className="absolute top-2.5 left-2.5 flex items-center gap-1 text-[10px] sm:text-xs font-bold text-white bg-rose-500/90 backdrop-blur-sm px-2 py-1 rounded-full shadow-sm z-10">
+                        <Star size={10} className="fill-white" />
+                        Ảnh bìa
+                      </span>
+                    )}
+                    
+                    {/* Corner sticker on image */}
+                    {decoration.stickerConfig.location === 'image' && (
+                      <div
+                        className="absolute bottom-2 right-2 pointer-events-none z-10"
+                        style={{ transform: `rotate(${decoration.stickerConfig.rotate}deg)` }}
+                      >
+                        <Image
+                          src={decoration.sticker.src}
+                          alt=""
+                          width={decoration.sticker.w}
+                          height={decoration.sticker.h}
+                        />
                       </div>
-                    </div>
-                  ) : (
-                    <>
-                      {/* Dòng title: sticker strip + caption */}
-                      {(() => {
-                        const stickers = photoStickers.get(photo.id) || [];
-                        return stickers.length > 0 ? (
-                          <div className="flex items-center gap-1 flex-wrap mb-1">
-                            {stickers.map((s) => (
-                              <span key={s.id} style={{ fontSize: '18px', lineHeight: 1 }} title={s.emoji}>
-                                {s.emoji}
-                              </span>
-                            ))}
+                    )}
+                  </div>
+
+                  {/* Card body */}
+                  <div className="p-3 sm:p-4 relative">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        {editingId === photo.id ? (
+                          <div className="space-y-2">
+                            <textarea
+                              value={editCaption}
+                              onChange={(e) => setEditCaption(e.target.value)}
+                              rows={2}
+                              className="w-full px-2 py-1.5 border border-rose-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 text-xs sm:text-sm text-gray-700 resize-y"
+                              placeholder="Chú thích cho ảnh..."
+                            />
+                            <LocationPicker
+                              locationName={editLocationName}
+                              locationUrl={editLocationUrl}
+                              onLocationNameChange={setEditLocationName}
+                              onLocationUrlChange={setEditLocationUrl}
+                            />
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => saveCaption(photo.id)}
+                                className="flex-1 flex items-center justify-center gap-1 px-2 py-1 bg-rose-500 hover:bg-rose-600 text-white rounded-lg text-xs transition-colors"
+                              >
+                                <Check size={12} /> Lưu
+                              </button>
+                              <button
+                                onClick={() => setEditingId(null)}
+                                className="flex-1 flex items-center justify-center gap-1 px-2 py-1 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-xs transition-colors"
+                              >
+                                <X size={12} /> Hủy
+                              </button>
+                            </div>
                           </div>
-                        ) : null;
-                      })()}
-                      {photo.caption ? (
-                        <p className="text-gray-700 text-sm sm:text-base whitespace-pre-line">
-                          {photo.caption}
-                        </p>
-                      ) : (
-                        <p className="text-gray-400 text-sm italic">Chưa có chú thích</p>
-                      )}
-                      {(photo.location_name || photo.location_url) && (
-                        <div className="mt-1.5">
-                          <LocationBadge
-                            locationName={photo.location_name}
-                            locationUrl={photo.location_url}
+                        ) : (
+                          <>
+                            <p className="text-gray-700 text-xs sm:text-sm line-clamp-2 min-h-[2.5rem]">
+                              {photo.caption || <span className="text-gray-400 italic">Chưa có chú thích</span>}
+                            </p>
+                            {(photo.location_name || photo.location_url) && (
+                              <div className="mt-1">
+                                <LocationBadge
+                                  locationName={photo.location_name}
+                                  locationUrl={photo.location_url}
+                                />
+                              </div>
+                            )}
+                            <p className="text-[10px] sm:text-xs text-gray-400 mt-1.5">
+                              📅 {formatDateVN(photo.created_at)}
+                            </p>
+                          </>
+                        )}
+                      </div>
+                      
+                      {/* Action menu */}
+                      {editingId !== photo.id && (
+                        <div className="relative shrink-0" onClick={(e) => e.stopPropagation()}>
+                          <input
+                            type="checkbox"
+                            id={`photo-menu-${photo.id}`}
+                            className="peer hidden"
                           />
+                          <label
+                            htmlFor={`photo-menu-${photo.id}`}
+                            className="grid place-items-center w-7 h-7 rounded-full text-gray-400 hover:text-pink-500 hover:bg-pink-50 transition-colors cursor-pointer"
+                          >
+                            <MoreHorizontal size={16} />
+                          </label>
+                          <div className="hidden peer-checked:flex absolute right-0 top-8 bg-white rounded-xl shadow-lg border border-pink-100 py-1 z-30 min-w-[120px]">
+                            <button
+                              onClick={() => { setAsCover(photo.id); (document.getElementById(`photo-menu-${photo.id}`) as HTMLInputElement).checked = false; }}
+                              className="flex items-center gap-2 px-3 py-1.5 text-xs text-gray-600 hover:bg-pink-50 hover:text-rose-500 w-full text-left"
+                            >
+                              <Star size={13} /> Ảnh bìa
+                            </button>
+                            <button
+                              onClick={() => { downloadPhoto(photo); (document.getElementById(`photo-menu-${photo.id}`) as HTMLInputElement).checked = false; }}
+                              className="flex items-center gap-2 px-3 py-1.5 text-xs text-gray-600 hover:bg-blue-50 hover:text-blue-500 w-full text-left"
+                            >
+                              <Download size={13} /> Tải về
+                            </button>
+                            <button
+                              onClick={() => { startEdit(photo); (document.getElementById(`photo-menu-${photo.id}`) as HTMLInputElement).checked = false; }}
+                              className="flex items-center gap-2 px-3 py-1.5 text-xs text-gray-600 hover:bg-pink-50 hover:text-rose-500 w-full text-left"
+                            >
+                              <Pencil size={13} /> Sửa
+                            </button>
+                            <button
+                              onClick={() => { deletePhoto(photo.id); (document.getElementById(`photo-menu-${photo.id}`) as HTMLInputElement).checked = false; }}
+                              className="flex items-center gap-2 px-3 py-1.5 text-xs text-gray-600 hover:bg-red-50 hover:text-red-500 w-full text-left"
+                            >
+                              <Trash2 size={13} /> Xóa
+                            </button>
+                          </div>
                         </div>
                       )}
-                      <p className="text-xs text-gray-500 mt-2">{formatDateVN(photo.created_at)}</p>
-                    </>
-                  )}
+                    </div>
+                    
+                    {/* Corner sticker in text area */}
+                    {editingId !== photo.id && decoration.stickerConfig.location === 'text' && (
+                      <div
+                        className="absolute bottom-2 right-2 pointer-events-none"
+                        style={{ transform: `rotate(${decoration.stickerConfig.rotate}deg)` }}
+                      >
+                        <Image
+                          src={decoration.sticker.src}
+                          alt=""
+                          width={decoration.sticker.w}
+                          height={decoration.sticker.h}
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Sentinel + trạng thái tải thêm (lazy load) */}

@@ -185,9 +185,9 @@ export default function AlbumList({ token, currentUserId }: { token: string | nu
   return (
     <div>
       {/* Section header */}
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+      <div className="flex justify-between items-center mb-8 gap-3 flex-wrap">
         <div className="flex items-center gap-2">
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-[#E8548E]">
+          <h2 className="text-3xl font-bold bg-gradient-to-r from-rose-500 to-pink-500 bg-clip-text text-transparent">
             📷 Ảnh Kỷ Niệm
           </h2>
           <Image
@@ -341,19 +341,27 @@ export default function AlbumList({ token, currentUserId }: { token: string | nu
                       })()}
                     </div>
                     {currentUserId === album.user_id && (
-                      <div className="relative shrink-0 group/menu">
-                        <button className="grid place-items-center w-7 h-7 rounded-full text-gray-300 hover:text-pink-400 hover:bg-pink-50 transition-colors">
+                      <div className="relative shrink-0" onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          id={`menu-${album.id}`}
+                          className="peer hidden"
+                        />
+                        <label
+                          htmlFor={`menu-${album.id}`}
+                          className="grid place-items-center w-7 h-7 rounded-full text-gray-400 hover:text-pink-500 hover:bg-pink-50 transition-colors cursor-pointer"
+                        >
                           <MoreHorizontal size={16} />
-                        </button>
-                        <div className="hidden group-hover/menu:flex absolute right-0 top-8 bg-white rounded-xl shadow-lg border border-pink-100 py-1 z-30 min-w-[100px]">
+                        </label>
+                        <div className="hidden peer-checked:flex absolute right-0 top-8 bg-white rounded-xl shadow-lg border border-pink-100 py-1 z-30 min-w-[100px]">
                           <button
-                            onClick={() => openEdit(album)}
+                            onClick={() => { openEdit(album); (document.getElementById(`menu-${album.id}`) as HTMLInputElement).checked = false; }}
                             className="flex items-center gap-2 px-3 py-1.5 text-xs text-gray-600 hover:bg-pink-50 hover:text-rose-500 w-full text-left"
                           >
                             <Pencil size={13} /> Sửa
                           </button>
                           <button
-                            onClick={() => handleDelete(album)}
+                            onClick={() => { handleDelete(album); (document.getElementById(`menu-${album.id}`) as HTMLInputElement).checked = false; }}
                             className="flex items-center gap-2 px-3 py-1.5 text-xs text-gray-600 hover:bg-red-50 hover:text-red-500 w-full text-left"
                           >
                             <Trash2 size={13} /> Xóa

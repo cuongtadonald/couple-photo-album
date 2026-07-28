@@ -246,12 +246,6 @@ export default function DashboardPage() {
               </svg>
             </button>
           </div>
-          {/* Title overlay */}
-          <div className="absolute bottom-3 left-0 right-0 text-center pointer-events-none">
-            <h1 className="text-[36px] font-bold text-[#E8548E] leading-tight font-[family-name:var(--font-corinthia)] drop-shadow-md">
-              Cuong {'<'}3 Vy's Home
-            </h1>
-          </div>
         </div>
 
         {/* Mobile tab buttons */}

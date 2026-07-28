@@ -192,12 +192,12 @@ export default function DashboardPage() {
           </div>
 
           {/* Desktop header banner */}
-          <div className="relative z-10 mx-8 mt-6 rounded-2xl overflow-hidden shadow-md" style={{ maxHeight: '260px' }}>
+          <div className="relative z-10 mx-8 mt-6 rounded-2xl overflow-hidden shadow-md" style={{ maxHeight: '650px' }}>
             <Image
               src="/assets-new-design/header-cuongvy.png"
               alt="header"
               width={900}
-              height={260}
+              height={650}
               className="w-full object-cover"
               style={{ objectPosition: 'center 30%' }}
             />

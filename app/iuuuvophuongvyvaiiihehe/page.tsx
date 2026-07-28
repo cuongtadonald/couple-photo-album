@@ -162,17 +162,15 @@ export default function DashboardPage() {
                   <Image
                     src="/assets-new-design/heart_badge_album_corner.png"
                     alt="heart"
-                    width={20}
-                    height={20}
-                    className="animate-heartbeat-fast"
+                    width={32}
+                    height={32}
+                    className="animate-heartbeat"
                   />
                   <span className="text-gray-500 text-xs">Đã bên nhau:</span>
                 </div>
-                <div className="pl-7">
+                <div className="pl-10">
                   <span className="font-bold text-pink-500 text-base">{duration.totalDays} ngày</span>
-                  <p className="text-xs text-gray-400 mt-0.5">
-                    ({duration.years} năm, {duration.months} tháng, {duration.days} ngày)
-                  </p>
+                  <span className="text-xs text-gray-400 ml-1">({duration.years} năm, {duration.months} tháng, {duration.days} ngày)</span>
                 </div>
               </div>
               {/* Bears sticker */}
@@ -376,17 +374,15 @@ export default function DashboardPage() {
                     <Image
                       src="/assets-new-design/heart_badge_album_corner.png"
                       alt="heart"
-                      width={18}
-                      height={18}
-                      className="animate-heartbeat-fast"
+                      width={28}
+                      height={28}
+                      className="animate-heartbeat"
                     />
                     <span className="text-gray-500 text-xs">Bên nhau:</span>
                   </div>
-                  <div className="pl-7">
+                  <div className="pl-10">
                     <span className="font-bold text-pink-500 text-sm">{duration.totalDays} ngày</span>
-                    <p className="text-[10px] text-gray-400">
-                      ({duration.years} năm, {duration.months} tháng, {duration.days} ngày)
-                    </p>
+                    <span className="text-[10px] text-gray-400 ml-1">({duration.years} năm, {duration.months} tháng, {duration.days} ngày)</span>
                   </div>
                 </div>
                 <Image

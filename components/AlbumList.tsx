@@ -35,30 +35,33 @@ const WASHI_TAPES = [
   '/assets-new-design/tape_washi_blue.png',
 ];
 
-// Corner decoration options (hearts, flowers, bows)
+// Corner decoration options (hearts, flowers, bows) - will be in text area bottom-left
 const CORNER_STICKERS = [
-  { src: '/assets-new-design/heart_pink_solid_01.png', w: 44, h: 44 },
-  { src: '/assets-new-design/heart_pink_solid_02.png', w: 40, h: 40 },
-  { src: '/assets-new-design/flower_pink_medium.png', w: 48, h: 48 },
-  { src: '/assets-new-design/bow_pink_small.png', w: 48, h: 34 },
-  { src: '/assets-new-design/flower_pink_small.png', w: 42, h: 42 },
+  { src: '/assets-new-design/heart_pink_solid_01.png', w: 36, h: 36 },
+  { src: '/assets-new-design/heart_pink_solid_02.png', w: 32, h: 32 },
+  { src: '/assets-new-design/flower_pink_medium.png', w: 38, h: 38 },
+  { src: '/assets-new-design/bow_pink_small.png', w: 40, h: 28 },
+  { src: '/assets-new-design/flower_pink_small.png', w: 34, h: 34 },
 ];
 
-// Corner positions with rotation offsets
-const CORNER_POSITIONS = [
-  { pos: 'top-1 left-1', rotate: -15 },
-  { pos: 'top-1 right-1', rotate: 12 },
-  { pos: 'bottom-1 left-1', rotate: 8 },
-  { pos: 'bottom-1 right-1', rotate: -10 },
+// Tape positions - offset outside corners (like taping to wall)
+const TAPE_POSITIONS = [
+  { top: '-8px', left: '-6px', rotate: -25 },
+  { top: '-8px', right: '-6px', rotate: 20 },
+];
+
+// Sticker positions - in bottom-left of text area
+const STICKER_POSITIONS = [
+  { rotate: 8 },
+  { rotate: -12 },
 ];
 
 function getCardDecoration(index: number) {
-  // Alternate between tape on different corners and sticker on opposite corner
-  const tapePosition = index % 2 === 0 ? CORNER_POSITIONS[0] : CORNER_POSITIONS[1]; // top-left or top-right
-  const stickerPosition = index % 2 === 0 ? CORNER_POSITIONS[3] : CORNER_POSITIONS[2]; // bottom-right or bottom-left
+  const tapeConfig = TAPE_POSITIONS[index % 2];
+  const stickerConfig = STICKER_POSITIONS[index % 2];
   const tapeImage = WASHI_TAPES[index % WASHI_TAPES.length];
   const sticker = CORNER_STICKERS[index % CORNER_STICKERS.length];
-  return { tapePosition, stickerPosition, tapeImage, sticker };
+  return { tapeConfig, stickerConfig, tapeImage, sticker };
 }
 
 export default function AlbumList({ token, currentUserId }: { token: string | null; currentUserId?: number | null }) {
@@ -249,15 +252,35 @@ export default function AlbumList({ token, currentUserId }: { token: string | nu
         <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-5">
           {visibleAlbums.map((album, idx) => {
             const decoration = getCardDecoration(idx);
+            // Determine tape side: left or right
+            const isTapeLeft = idx % 2 === 0;
             return (
               <div
                 key={album.id}
-                className="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-pink-50 hover:-translate-y-1"
+                className="group relative bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-visible border border-pink-50 hover:-translate-y-1"
               >
+                {/* Washi tape - offset outside corner like taped to wall */}
+                <div
+                  className="absolute z-30 pointer-events-none"
+                  style={{
+                    top: '-10px',
+                    ...(isTapeLeft ? { left: '-4px' } : { right: '-4px' }),
+                    transform: `rotate(${isTapeLeft ? -25 : 20}deg)`,
+                  }}
+                >
+                  <Image
+                    src={decoration.tapeImage}
+                    alt=""
+                    width={65}
+                    height={26}
+                    className="opacity-90"
+                  />
+                </div>
+
                 {/* Thumbnail */}
                 <div
                   onClick={() => { setSelectedAlbumId(album.id); markSeen(album.id); }}
-                  className="h-36 sm:h-44 bg-gradient-to-br from-rose-100 via-pink-50 to-rose-50 flex items-center justify-center overflow-hidden relative cursor-pointer"
+                  className="h-36 sm:h-44 bg-gradient-to-br from-rose-100 via-pink-50 to-rose-50 flex items-center justify-center overflow-hidden relative cursor-pointer rounded-t-2xl"
                 >
                   {album.cover_image_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -279,30 +302,6 @@ export default function AlbumList({ token, currentUserId }: { token: string | nu
                     <Image src="/assets-new-design/icon_camera_album_badge.png" alt="" width={12} height={12} />
                     {album.photo_count} ảnh
                   </span>
-                  
-                  {/* Washi tape decoration - positioned on corner */}
-                  <div className={`absolute ${decoration.tapePosition.pos} z-20 pointer-events-none`}>
-                    <Image
-                      src={decoration.tapeImage}
-                      alt=""
-                      width={60}
-                      height={24}
-                      className="opacity-85"
-                      style={{ transform: `rotate(${decoration.tapePosition.rotate}deg)` }}
-                    />
-                  </div>
-                  
-                  {/* Corner sticker decoration */}
-                  <div className={`absolute ${decoration.stickerPosition.pos} z-20 pointer-events-none`}>
-                    <Image
-                      src={decoration.sticker.src}
-                      alt=""
-                      width={decoration.sticker.w}
-                      height={decoration.sticker.h}
-                      className="opacity-80"
-                      style={{ transform: `rotate(${decoration.stickerPosition.rotate}deg)` }}
-                    />
-                  </div>
                 </div>
 
                 {/* Card body */}
@@ -367,6 +366,20 @@ export default function AlbumList({ token, currentUserId }: { token: string | nu
                       Được đăng bởi: <span className="font-semibold text-pink-400">{album.uploader_name}</span>
                     </p>
                   )}
+                  
+                  {/* Corner sticker decoration - in text area bottom-left */}
+                  <div
+                    className="absolute bottom-2 left-2 pointer-events-none"
+                    style={{ transform: `rotate(${decoration.stickerConfig.rotate}deg)` }}
+                  >
+                    <Image
+                      src={decoration.sticker.src}
+                      alt=""
+                      width={decoration.sticker.w}
+                      height={decoration.sticker.h}
+                      className="opacity-70"
+                    />
+                  </div>
                 </div>
               </div>
             );

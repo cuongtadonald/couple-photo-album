@@ -248,6 +248,17 @@
   font-weight: 600;
 }
 
+/* Handwriting font for titles and decorative text */
+.font-handwriting {
+  font-family: 'Caveat', cursive;
+}
+
+/* Apply handwriting to specific elements */
+h1, h2, h3 {
+  font-family: 'Caveat', cursive;
+  font-weight: 700;
+}
+
 /* Cute rounded corners */
 .rounded-cute {
   border-radius: 0.875rem;
@@ -310,7 +321,7 @@ input[type="date"],
 input[type="time"],
 textarea,
 select {
-  font-family: 'Quicksand', sans-serif;
+  font-family: var(--font-body), sans-serif;
   color: #374151;
   font-weight: 500;
 }

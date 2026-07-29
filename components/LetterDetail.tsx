@@ -248,102 +248,107 @@ export default function LetterDetail({
         Quay Lại
       </button>
 
-      <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 max-w-3xl">
-        {/* Header */}
-        <div className="flex items-start justify-between mb-4 gap-3">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 text-balance font-[family-name:var(--font-corinthia)]">{letter.title}</h1>
-            <p className="text-gray-500 mt-1 text-sm">Từ: {letter.from_user_name}</p>
-            <p className="text-gray-400 text-xs mt-0.5">
-              {formatDateVN(letter.created_at, { year: 'numeric', month: 'long', day: 'numeric' })}
-            </p>
+      <div className="relative bg-white rounded-2xl shadow-lg p-6 sm:p-8 max-w-3xl">
+        {/* Note paper background */}
+        <div className="absolute inset-0 bg-cover bg-center opacity-30 rounded-2xl pointer-events-none" style={{ backgroundImage: 'url(/assets-new-design/note_paper_plain_stack.png)' }} />
+        <div className="relative z-10">
+          {/* Header */}
+          <div className="flex items-start justify-between mb-4 gap-3">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 text-balance font-[family-name:var(--font-corinthia)]">{letter.title}</h1>
+              <p className="text-gray-500 mt-1 text-sm">Từ: {letter.from_user_name}</p>
+              <p className="text-gray-400 text-xs mt-0.5">
+                {formatDateVN(letter.created_at, { year: 'numeric', month: 'long', day: 'numeric' })}
+              </p>
+            </div>
+            {isOwner && (
+              <div className="flex gap-1 shrink-0">
+                {onEdit && (
+                  <button
+                    onClick={onEdit}
+                    aria-label="Sửa thư"
+                    className="grid place-items-center w-9 h-9 rounded-full text-gray-400 hover:text-rose-500 hover:bg-rose-50 transition-colors"
+                  >
+                    <Pencil size={17} />
+                  </button>
+                )}
+                {onDelete && (
+                  <button
+                    onClick={onDelete}
+                    aria-label="Xóa thư"
+                    className="grid place-items-center w-9 h-9 rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                  >
+                    <Trash2 size={17} />
+                  </button>
+                )}
+              </div>
+            )}
           </div>
-          {isOwner && (
-            <div className="flex gap-1 shrink-0">
-              {onEdit && (
-                <button
-                  onClick={onEdit}
-                  aria-label="Sửa thư"
-                  className="grid place-items-center w-9 h-9 rounded-full text-gray-400 hover:text-rose-500 hover:bg-rose-50 transition-colors"
-                >
-                  <Pencil size={17} />
-                </button>
-              )}
-              {onDelete && (
-                <button
-                  onClick={onDelete}
-                  aria-label="Xóa thư"
-                  className="grid place-items-center w-9 h-9 rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-                >
-                  <Trash2 size={17} />
-                </button>
-              )}
+
+          {letter.scheduled_unlock_date && (
+            <div className="bg-rose-50 border border-rose-200 rounded-lg px-4 py-3 mb-5">
+              <p className="text-sm text-rose-700">
+                Thư hẹn mở lúc: {formatDateVN(letter.scheduled_unlock_date)} lúc{' '}
+                {formatTimeVN(letter.scheduled_unlock_date)}
+              </p>
             </div>
           )}
-        </div>
 
-        {letter.scheduled_unlock_date && (
-          <div className="bg-rose-50 border border-rose-200 rounded-lg px-4 py-3 mb-5">
-            <p className="text-sm text-rose-700">
-              Thư hẹn mở lúc: {formatDateVN(letter.scheduled_unlock_date)} lúc{' '}
-              {formatTimeVN(letter.scheduled_unlock_date)}
-            </p>
-          </div>
-        )}
+          {/* Content */}
+          {letter.text_content && (
+            <div className="mb-8 p-5 bg-rose-50/50 rounded-xl border border-rose-100">
+              <p className="whitespace-pre-wrap text-gray-800 leading-relaxed text-base font-[family-name:var(--font-corinthia)]">
+                {letter.text_content}
+              </p>
+            </div>
+          )}
 
-        {/* Content */}
-        {letter.text_content && (
-          <div className="mb-8 p-5 bg-rose-50 rounded-xl border border-rose-100">
-            <p className="whitespace-pre-wrap text-gray-800 leading-relaxed text-base font-[family-name:var(--font-corinthia)]">
-              {letter.text_content}
-            </p>
-          </div>
-        )}
+          {/* Attachments list */}
+          <div className="mb-8">
+            <h2 className="text-base font-semibold text-gray-800 mb-3">Tệp Đính Kèm</h2>
 
-        {/* Attachments list */}
-        <div className="mb-8">
-          <h2 className="text-base font-semibold text-gray-800 mb-3">Tệp Đính Kèm</h2>
-
-          {loadingAttachments ? (
-            <p className="text-sm text-gray-400">Đang tải...</p>
-          ) : attachments.length === 0 ? (
-            <p className="text-sm text-gray-400 italic">Chưa có tệp đính kèm nào.</p>
-          ) : (
-            <div className="space-y-3">
-              {attachments.map((att) => (
-                <div
-                  key={att.id}
-                  className="rounded-xl border border-gray-100 bg-gray-50 overflow-hidden"
-                >
-                  {att.file_type === 'image' ? (
-                    <div className="relative group">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={att.file_url}
-                        alt={att.file_name}
-                        className="w-full max-h-72 object-cover"
-                      />
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
-                      <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => handleDownload(att.file_url, att.file_name)}
-                          aria-label="Tải về ảnh"
-                          className="grid place-items-center w-8 h-8 rounded-full bg-black/50 text-white hover:bg-rose-600 transition-colors"
-                        >
-                          <Download size={14} />
-                        </button>
-                        {isOwner && (
+            {loadingAttachments ? (
+              <p className="text-sm text-gray-400">Đang tải...</p>
+            ) : attachments.length === 0 ? (
+              <p className="text-sm text-gray-400 italic">Chưa có tệp đính kèm nào.</p>
+            ) : (
+              <div className="space-y-3">
+                {attachments.map((att) => (
+                  <div
+                    key={att.id}
+                    className="rounded-xl border border-gray-100 bg-gray-50 overflow-hidden"
+                  >
+                    {att.file_type === 'image' ? (
+                      <div className="relative group">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={att.file_url}
+                          alt={att.file_name}
+                          className="w-full max-h-72 object-cover cursor-pointer sm:cursor-zoom-in"
+                          onClick={() => window.open(att.file_url, '_blank')}
+                        />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
+                        {/* Always visible on mobile, hover on desktop */}
+                        <div className="absolute top-2 right-2 flex gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                           <button
-                            onClick={() => handleDeleteAttachment(att.id)}
-                            aria-label="Xóa ảnh"
-                            className="grid place-items-center w-8 h-8 rounded-full bg-black/50 text-white hover:bg-red-600 transition-colors"
+                            onClick={() => handleDownload(att.file_url, att.file_name)}
+                            aria-label="Tải về ảnh"
+                            className="grid place-items-center w-8 h-8 rounded-full bg-black/50 text-white hover:bg-rose-600 transition-colors"
                           >
-                            <X size={14} />
+                            <Download size={14} />
                           </button>
-                        )}
+                          {isOwner && (
+                            <button
+                              onClick={() => handleDeleteAttachment(att.id)}
+                              aria-label="Xóa ảnh"
+                              className="grid place-items-center w-8 h-8 rounded-full bg-black/50 text-white hover:bg-red-600 transition-colors"
+                            >
+                              <X size={14} />
+                            </button>
+                          )}
+                        </div>
+                        <p className="px-3 py-1.5 text-xs text-gray-500">{att.file_name}</p>
                       </div>
-                      <p className="px-3 py-1.5 text-xs text-gray-500">{att.file_name}</p>
-                    </div>
                   ) : att.file_type === 'audio' ? (
                     <div className="flex items-center gap-3 px-4 py-3">
                       <Music size={18} className="text-rose-400 shrink-0" />
@@ -507,6 +512,7 @@ export default function LetterDetail({
             )}
           </div>
         )}
+        </div>
       </div>
     </div>
   );

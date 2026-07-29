@@ -3,6 +3,15 @@
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
+import Image from 'next/image';
+
+interface FireworkHeart {
+  id: number;
+  x: number;
+  y: number;
+  rotation: number;
+  scale: number;
+}
 
 export default function LoginPage() {
   const [passcode, setPasscode] = useState(['', '', '', '', '', '']);
@@ -10,6 +19,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [shake, setShake] = useState(false);
   const [showPasscode, setShowPasscode] = useState(false);
+  const [fireworks, setFireworks] = useState<FireworkHeart[]>([]);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const { user, loading: authLoading, loginWithPasscode } = useAuth();
   const router = useRouter();
@@ -28,7 +38,25 @@ export default function LoginPage() {
     newPasscode[index] = value.slice(-1);
     setPasscode(newPasscode);
 
-    if (value && index < 5) {
+    // Create firework hearts when typing
+    if (value && index < 6) {
+      const newFireworks: FireworkHeart[] = [];
+      for (let i = 0; i < 3; i++) {
+        newFireworks.push({
+          id: Date.now() + i,
+          x: (index * 52) + 26 + (Math.random() - 0.5) * 40,
+          y: -20 - Math.random() * 30,
+          rotation: (Math.random() - 0.5) * 60,
+          scale: 0.5 + Math.random() * 0.5,
+        });
+      }
+      setFireworks(prev => [...prev, ...newFireworks]);
+      
+      // Remove fireworks after animation
+      setTimeout(() => {
+        setFireworks(prev => prev.filter(f => !newFireworks.includes(f)));
+      }, 1000);
+
       inputRefs.current[index + 1]?.focus();
     }
   };
@@ -114,28 +142,51 @@ export default function LoginPage() {
             </button>
           </div>
 
-          <div className={`flex gap-3 justify-center transition-transform duration-300 ${shake ? 'animate-shake' : ''}`}>
-            {passcode.map((digit, index) => (
-              <input
-                key={index}
-                ref={(el) => {
-                  inputRefs.current[index] = el;
+          <div className="relative">
+            <div className={`flex gap-3 justify-center transition-transform duration-300 ${shake ? 'animate-shake' : ''}`}>
+              {passcode.map((digit, index) => (
+                <input
+                  key={index}
+                  ref={(el) => {
+                    inputRefs.current[index] = el;
+                  }}
+                  type={showPasscode ? 'text' : 'password'}
+                  inputMode="numeric"
+                  maxLength={1}
+                  value={digit}
+                  onChange={(e) => handleInputChange(index, e.target.value)}
+                  onKeyDown={(e) => handleKeyDown(index, e)}
+                  disabled={loading}
+                  className={`w-12 h-12 sm:w-14 sm:h-14 text-center text-2xl font-bold rounded-xl border-2 transition-all duration-300 focus:outline-none cursor-pointer
+                    ${digit ? 'bg-rose-50 border-rose-400' : 'bg-white border-gray-300'}
+                    ${passcode.filter(Boolean).length > index ? 'border-rose-400 shadow-md' : 'border-gray-300'}
+                    focus:border-rose-500 focus:ring-2 focus:ring-rose-200
+                    ${error && shake ? 'border-red-500 bg-red-50' : ''}
+                    disabled:opacity-50 disabled:cursor-not-allowed
+                  `}
+                />
+              ))}
+            </div>
+            
+            {/* Firework hearts */}
+            {fireworks.map(heart => (
+              <div
+                key={heart.id}
+                className="absolute pointer-events-none animate-firework"
+                style={{
+                  left: `${heart.x}px`,
+                  top: `${heart.y}px`,
+                  transform: `rotate(${heart.rotation}deg) scale(${heart.scale})`,
                 }}
-                type={showPasscode ? 'text' : 'password'}
-                inputMode="numeric"
-                maxLength={1}
-                value={digit}
-                onChange={(e) => handleInputChange(index, e.target.value)}
-                onKeyDown={(e) => handleKeyDown(index, e)}
-                disabled={loading}
-                className={`w-12 h-12 sm:w-14 sm:h-14 text-center text-2xl font-bold rounded-xl border-2 transition-all duration-300 focus:outline-none cursor-pointer
-                  ${digit ? 'bg-rose-50 border-rose-400' : 'bg-white border-gray-300'}
-                  ${passcode.filter(Boolean).length > index ? 'border-rose-400 shadow-md' : 'border-gray-300'}
-                  focus:border-rose-500 focus:ring-2 focus:ring-rose-200
-                  ${error && shake ? 'border-red-500 bg-red-50' : ''}
-                  disabled:opacity-50 disabled:cursor-not-allowed
-                `}
-              />
+              >
+                <Image
+                  src="/assets-new-design/heart_pink_solid_01.png"
+                  alt=""
+                  width={24}
+                  height={24}
+                  className="opacity-80"
+                />
+              </div>
             ))}
           </div>
 
@@ -214,12 +265,30 @@ export default function LoginPage() {
           }
         }
 
+        @keyframes firework {
+          0% {
+            opacity: 1;
+            transform: translateY(0) scale(1) rotate(0deg);
+          }
+          50% {
+            opacity: 0.8;
+          }
+          100% {
+            opacity: 0;
+            transform: translateY(-60px) scale(1.5) rotate(180deg);
+          }
+        }
+
         .animate-shake {
           animation: shake 0.5s;
         }
 
         .animate-fade-in {
           animation: fade-in 0.8s ease-out;
+        }
+
+        .animate-firework {
+          animation: firework 1s ease-out forwards;
         }
 
         .delay-100 {

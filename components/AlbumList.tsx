@@ -4,12 +4,14 @@ import { useEffect, useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import AlbumModal from './AlbumModal';
 import AlbumDetail from './AlbumDetail';
-import { Plus, Lock, Globe, Pencil, Trash2, ImageIcon, MoreHorizontal } from 'lucide-react';
+import { Plus, Lock, Globe, Pencil, Trash2, ImageIcon, MoreHorizontal, Calendar } from 'lucide-react';
 import { formatDateVN } from '@/lib/datetime';
 import LocationBadge from './LocationBadge';
 import { useSessionState, clearSessionKey } from '@/lib/use-session-state';
 import { useSeen } from '@/lib/use-seen';
 import Image from 'next/image';
+
+type TimeFilter = 'all' | 'week' | 'month' | 'year';
 
 // Dropdown menu component that closes when clicking outside
 function DropdownMenu({ children, trigger }: { children: React.ReactNode; trigger: React.ReactNode }) {
@@ -110,6 +112,7 @@ export default function AlbumList({ token, currentUserId }: { token: string | nu
   const [editing, setEditing] = useState<Album | null>(null);
   const [selectedAlbumId, setSelectedAlbumId] = useSessionState<number | null>('albums:selectedId', null);
   const [tab, setTab] = useSessionState<Visibility>('albums:tab', 'private');
+  const [timeFilter, setTimeFilter] = useState<TimeFilter>('all');
   const { badge, markSeen } = useSeen('album');
 
   const selectedAlbum = albums.find((a) => a.id === selectedAlbumId) ?? null;
@@ -212,10 +215,39 @@ export default function AlbumList({ token, currentUserId }: { token: string | nu
     );
   }
 
-  const visibleAlbums = albums.filter((a) => a.visibility === tab);
+  const visibleAlbums = albums.filter((a) => {
+    if (a.visibility !== tab) return false;
+    
+    // Apply time filter
+    if (timeFilter !== 'all') {
+      const createdDate = new Date(a.created_at);
+      const now = new Date();
+      
+      if (timeFilter === 'week') {
+        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        if (createdDate < weekAgo) return false;
+      } else if (timeFilter === 'month') {
+        const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        if (createdDate < monthAgo) return false;
+      } else if (timeFilter === 'year') {
+        const yearAgo = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+        if (createdDate < yearAgo) return false;
+      }
+    }
+    
+    return true;
+  });
+  
   const tabsFilter: { key: Visibility; label: string; icon: typeof Lock }[] = [
     { key: 'private', label: 'Riêng tư', icon: Lock },
     { key: 'public', label: 'Công khai', icon: Globe },
+  ];
+  
+  const timeFilters: { key: TimeFilter; label: string }[] = [
+    { key: 'all', label: 'Tất cả' },
+    { key: 'week', label: 'Tuần này' },
+    { key: 'month', label: 'Tháng này' },
+    { key: 'year', label: 'Năm nay' },
   ];
 
   return (
@@ -267,6 +299,20 @@ export default function AlbumList({ token, currentUserId }: { token: string | nu
             </button>
           );
         })}
+        
+        {/* Time filter */}
+        <div className="flex items-center gap-1 ml-auto">
+          <Calendar size={16} className="text-gray-400" />
+          <select
+            value={timeFilter}
+            onChange={(e) => setTimeFilter(e.target.value as TimeFilter)}
+            className="px-3 py-2 rounded-full text-sm font-semibold bg-white/80 border-2 border-pink-100 text-gray-500 hover:border-pink-300 focus:outline-none focus:border-pink-400 transition-all"
+          >
+            {timeFilters.map(({ key, label }) => (
+              <option key={key} value={key}>{label}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Content */}

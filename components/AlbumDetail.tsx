@@ -3,12 +3,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ChangeEvent, DragEvent } from 'react';
 import type { StickerItem } from './StickerOverlay';
-import { ArrowLeft, Star, Pencil, Trash2, Check, X, Lock, Globe, Download, MoreHorizontal } from 'lucide-react';
+import { ArrowLeft, Star, Pencil, Trash2, Check, X, Lock, Globe, Download, MoreHorizontal, Calendar } from 'lucide-react';
 import PhotoViewer from './PhotoViewer';
 import { formatDateVN } from '@/lib/datetime';
 import LocationPicker from './LocationPicker';
 import LocationBadge from './LocationBadge';
 import Image from 'next/image';
+
+type TimeFilter = 'all' | 'week' | 'month' | 'year';
 
 // Dropdown menu component that closes when clicking outside
 function DropdownMenu({ children, trigger }: { children: React.ReactNode; trigger: React.ReactNode }) {
@@ -107,6 +109,7 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
   const [editCaption, setEditCaption] = useState('');
   const [editLocationName, setEditLocationName] = useState('');
   const [editLocationUrl, setEditLocationUrl] = useState('');
+  const [timeFilter, setTimeFilter] = useState<TimeFilter>('all');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -392,6 +395,43 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
     }
   };
 
+  const downloadAllPhotos = async () => {
+    if (photos.length === 0) return;
+    
+    for (let i = 0; i < photos.length; i++) {
+      const photo = photos[i];
+      await downloadPhoto(photo);
+      // Add delay between downloads to prevent browser blocking
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+  };
+
+  const shareAlbum = async () => {
+    const shareUrl = window.location.href;
+    const shareText = `Xem album "${album.title}" của chúng mình nhé!`;
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: album.title,
+          text: shareText,
+          url: shareUrl,
+        });
+      } catch (error) {
+        console.error('Error sharing:', error);
+      }
+    } else {
+      // Fallback: copy to clipboard
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        alert('Đã sao chép link vào clipboard!');
+      } catch (error) {
+        console.error('Error copying to clipboard:', error);
+        alert(`Link: ${shareUrl}`);
+      }
+    }
+  };
+
   const setAsCover = async (photoId: number) => {
     try {
       const response = await fetch(`/api/albums/${album.id}`, {
@@ -444,6 +484,27 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
     return { tapeConfig, stickerConfig, tapeImage, sticker };
   }
 
+  // Filter photos by time
+  const filteredPhotos = photos.filter((photo) => {
+    if (timeFilter === 'all') return true;
+
+    const photoDate = new Date(photo.created_at);
+    const now = new Date();
+
+    if (timeFilter === 'week') {
+      const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      return photoDate >= weekAgo;
+    } else if (timeFilter === 'month') {
+      const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      return photoDate >= monthAgo;
+    } else if (timeFilter === 'year') {
+      const yearAgo = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+      return photoDate >= yearAgo;
+    }
+
+    return true;
+  });
+
   return (
     <div>
       <button
@@ -471,6 +532,42 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
             <LocationBadge locationName={album.location_name} locationUrl={album.location_url} />
           </div>
         )}
+        {/* Share and Download buttons */}
+        <div className="flex gap-2 mt-4">
+          <button
+            onClick={shareAlbum}
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-rose-300 text-rose-600 rounded-full text-sm font-semibold hover:bg-rose-50 transition-colors shadow-sm"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+            </svg>
+            Chia sẻ
+          </button>
+          <button
+            onClick={downloadAllPhotos}
+            disabled={photos.length === 0}
+            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-rose-500 to-pink-500 text-white rounded-full text-sm font-semibold hover:from-rose-600 hover:to-pink-600 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Download size={16} />
+            Tải tất cả
+          </button>
+        </div>
+      </div>
+
+      {/* Time filter */}
+      <div className="flex items-center gap-2 mb-6">
+        <Calendar size={16} className="text-gray-400" />
+        <select
+          value={timeFilter}
+          onChange={(e) => setTimeFilter(e.target.value as TimeFilter)}
+          className="px-3 py-2 rounded-full text-sm font-semibold bg-white/80 border-2 border-pink-100 text-gray-500 hover:border-pink-300 focus:outline-none focus:border-pink-400 transition-all"
+        >
+          <option value="all">Tất cả</option>
+          <option value="week">Tuần này</option>
+          <option value="month">Tháng này</option>
+          <option value="year">Năm nay</option>
+        </select>
+        <span className="text-xs text-gray-400">({filteredPhotos.length}/{photos.length} ảnh)</span>
       </div>
 
       {/* Floating sticker button to add photos */}
@@ -623,7 +720,7 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
       ) : (
         <>
           <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-5">
-            {photos.map((photo, idx) => {
+            {filteredPhotos.map((photo, idx) => {
               const decoration = getCardDecoration(idx);
               return (
                 <div

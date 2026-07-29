@@ -20,6 +20,7 @@ interface Letter {
   is_opened: boolean;
   is_confirmed: boolean;
   created_at: string;
+  paper_type?: string | null;
 }
 
 interface LetterListProps {
@@ -62,14 +63,15 @@ export default function LetterList({ token, currentUserId }: LetterListProps) {
     title: string,
     textContent: string,
     scheduledUnlockDate: string | null,
-    confirm: boolean
+    confirm: boolean,
+    paperType: string
   ) => {
     try {
       if (editing) {
         const response = await fetch(`/api/letters/${editing.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ title, textContent, scheduledUnlockDate }),
+          body: JSON.stringify({ title, textContent, scheduledUnlockDate, paperType }),
         });
         if (response.ok) {
           // Nếu xác nhận khóa khi sửa, gọi PATCH để set is_confirmed
@@ -90,7 +92,7 @@ export default function LetterList({ token, currentUserId }: LetterListProps) {
         const response = await fetch('/api/letters', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ title, textContent, scheduledUnlockDate }),
+          body: JSON.stringify({ title, textContent, scheduledUnlockDate, paperType }),
         });
         const data = await response.json();
         if (data.letter) {
@@ -111,6 +113,7 @@ export default function LetterList({ token, currentUserId }: LetterListProps) {
       clearSessionKey('letters:draft:content');
       clearSessionKey('letters:draft:date');
       clearSessionKey('letters:draft:time');
+      clearSessionKey('letters:draft:paper');
       closeModal();
     } catch (error) {
       console.error('Error saving letter:', error);

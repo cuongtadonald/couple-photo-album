@@ -10,12 +10,13 @@ interface LetterInitial {
   title: string;
   text_content: string;
   scheduled_unlock_date: string | null;
+  paper_type?: string | null;
 }
 
 interface LetterModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (title: string, textContent: string, scheduledUnlockDate: string | null, confirm: boolean) => Promise<void> | void;
+  onSubmit: (title: string, textContent: string, scheduledUnlockDate: string | null, confirm: boolean, paperType: string) => Promise<void> | void;
   initial?: LetterInitial | null;
   /** sessionStorage prefix used to persist create-mode draft (e.g. "letters:draft") */
   draftKey?: string;
@@ -45,6 +46,7 @@ export default function LetterModal({ isOpen, onClose, onSubmit, initial, draftK
   const [textContent, setTextContent] = useState('');
   const [scheduledDate, setScheduledDate] = useState('');
   const [scheduledTime, setScheduledTime] = useState('');
+  const [paperType, setPaperType] = useState('plain');
   const [loading, setLoading] = useState(false);
   const [confirmStep, setConfirmStep] = useState(false);
 
@@ -55,6 +57,7 @@ export default function LetterModal({ isOpen, onClose, onSubmit, initial, draftK
       // Edit mode — always reset to server values
       setTitle(initial.title);
       setTextContent(initial.text_content || '');
+      setPaperType(initial.paper_type || 'plain');
       const d = parseDate(initial.scheduled_unlock_date);
       if (d) {
         setScheduledDate(`${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`);
@@ -69,11 +72,13 @@ export default function LetterModal({ isOpen, onClose, onSubmit, initial, draftK
       setTextContent(readDraft(draftKey, 'content'));
       setScheduledDate(readDraft(draftKey, 'date'));
       setScheduledTime(readDraft(draftKey, 'time'));
+      setPaperType(readDraft(draftKey, 'paper') || 'plain');
     } else {
       setTitle('');
       setTextContent('');
       setScheduledDate('');
       setScheduledTime('');
+      setPaperType('plain');
     }
   }, [isOpen, initial, draftKey]);
 
@@ -141,7 +146,7 @@ export default function LetterModal({ isOpen, onClose, onSubmit, initial, draftK
     // Không có ngày hẹn — lưu bình thường, không confirm
     setLoading(true);
     try {
-      await onSubmit(title, textContent, null, false);
+      await onSubmit(title, textContent, null, false, paperType);
       clearDraft();
     } finally {
       setLoading(false);
@@ -151,7 +156,7 @@ export default function LetterModal({ isOpen, onClose, onSubmit, initial, draftK
   const handleConfirm = async () => {
     setLoading(true);
     try {
-      await onSubmit(title, textContent, buildScheduledUnlockDate(), true);
+      await onSubmit(title, textContent, buildScheduledUnlockDate(), true, paperType);
       clearDraft();
     } finally {
       setLoading(false);
@@ -264,6 +269,50 @@ export default function LetterModal({ isOpen, onClose, onSubmit, initial, draftK
                 onChange={(e) => setScheduledTime(e.target.value)}
                 className="flex-1 px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 font-cute text-gray-700"
               />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2 font-cute">
+              Chon Mau Giay Thu
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setPaperType('plain')}
+                className={`relative overflow-hidden rounded-xl border-2 p-3 transition-all ${
+                  paperType === 'plain'
+                    ? 'border-rose-500 ring-2 ring-rose-200'
+                    : 'border-gray-200 hover:border-rose-300'
+                }`}
+              >
+                <div
+                  className="absolute inset-0 opacity-30"
+                  style={{ backgroundImage: 'url(/assets-new-design/note_paper_plain_stack.png)', backgroundSize: 'cover' }}
+                />
+                <div className="relative z-10">
+                  <div className="h-16 bg-white/80 rounded mb-2" />
+                  <p className="text-xs font-medium text-gray-700">Giấy trơn</p>
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setPaperType('heart')}
+                className={`relative overflow-hidden rounded-xl border-2 p-3 transition-all ${
+                  paperType === 'heart'
+                    ? 'border-rose-500 ring-2 ring-rose-200'
+                    : 'border-gray-200 hover:border-rose-300'
+                }`}
+              >
+                <div
+                  className="absolute inset-0 opacity-30"
+                  style={{ backgroundImage: 'url(/assets-new-design/note_paper_maiiuanhxa_pin_heart.png)', backgroundSize: 'cover' }}
+                />
+                <div className="relative z-10">
+                  <div className="h-16 bg-white/80 rounded mb-2" />
+                  <p className="text-xs font-medium text-gray-700">Giấy trái tim</p>
+                </div>
+              </button>
             </div>
           </div>
 

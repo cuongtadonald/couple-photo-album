@@ -10,7 +10,7 @@ import LocationPicker from './LocationPicker';
 import LocationBadge from './LocationBadge';
 import Image from 'next/image';
 
-type TimeFilter = 'all' | 'week' | 'month' | 'year';
+type TimeFilter = 'all' | 'week' | 'month' | 'year' | 'custom';
 
 // Dropdown menu component that closes when clicking outside
 function DropdownMenu({ children, trigger }: { children: React.ReactNode; trigger: React.ReactNode }) {
@@ -110,6 +110,8 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
   const [editLocationName, setEditLocationName] = useState('');
   const [editLocationUrl, setEditLocationUrl] = useState('');
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('all');
+  const [customDateFrom, setCustomDateFrom] = useState('');
+  const [customDateTo, setCustomDateTo] = useState('');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -500,6 +502,18 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
     } else if (timeFilter === 'year') {
       const yearAgo = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
       return photoDate >= yearAgo;
+    } else if (timeFilter === 'custom') {
+      if (customDateFrom) {
+        const fromDate = new Date(customDateFrom);
+        fromDate.setHours(0, 0, 0, 0);
+        if (photoDate < fromDate) return false;
+      }
+      if (customDateTo) {
+        const toDate = new Date(customDateTo);
+        toDate.setHours(23, 59, 59, 999);
+        if (photoDate > toDate) return false;
+      }
+      return true;
     }
 
     return true;
@@ -555,7 +569,7 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
       </div>
 
       {/* Time filter */}
-      <div className="flex items-center gap-2 mb-6">
+      <div className="flex items-center gap-2 mb-6 flex-wrap">
         <Calendar size={16} className="text-gray-400" />
         <select
           value={timeFilter}
@@ -566,8 +580,37 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
           <option value="week">Tuần này</option>
           <option value="month">Tháng này</option>
           <option value="year">Năm nay</option>
+          <option value="custom">Tùy chọn</option>
         </select>
         <span className="text-xs text-gray-400">({filteredPhotos.length}/{photos.length} ảnh)</span>
+        {timeFilter === 'custom' && (
+          <div className="flex items-center gap-2 ml-2">
+            <input
+              type="date"
+              value={customDateFrom}
+              onChange={(e) => setCustomDateFrom(e.target.value)}
+              className="px-3 py-2 rounded-lg text-sm border-2 border-pink-100 focus:outline-none focus:border-pink-400 transition-all"
+              placeholder="Từ ngày"
+            />
+            <span className="text-gray-400 text-sm">→</span>
+            <input
+              type="date"
+              value={customDateTo}
+              onChange={(e) => setCustomDateTo(e.target.value)}
+              className="px-3 py-2 rounded-lg text-sm border-2 border-pink-100 focus:outline-none focus:border-pink-400 transition-all"
+              placeholder="Đến ngày"
+            />
+            {(customDateFrom || customDateTo) && (
+              <button
+                onClick={() => { setCustomDateFrom(''); setCustomDateTo(''); }}
+                className="grid place-items-center w-8 h-8 rounded-full text-gray-400 hover:text-rose-500 hover:bg-rose-50 transition-colors"
+                title="Xóa bộ lọc ngày"
+              >
+                <X size={16} />
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Floating sticker button to add photos */}

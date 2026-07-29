@@ -131,40 +131,44 @@ export default function LoginPage() {
 
         {/* Passcode Input Form */}
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Show/Hide Toggle */}
-          <div className="flex justify-end mb-2">
-            <button
-              type="button"
-              onClick={() => setShowPasscode(!showPasscode)}
-              className="text-sm text-gray-600 hover:text-rose-600 transition-colors flex items-center gap-1"
-            >
-              {showPasscode ? '🙈 Ẩn' : '👁️ Hiện'}
-            </button>
-          </div>
-
           <div className="relative">
             <div className={`flex gap-3 justify-center transition-transform duration-300 ${shake ? 'animate-shake' : ''}`}>
               {passcode.map((digit, index) => (
-                <input
-                  key={index}
-                  ref={(el) => {
-                    inputRefs.current[index] = el;
-                  }}
-                  type={showPasscode ? 'text' : 'password'}
-                  inputMode="numeric"
-                  maxLength={1}
-                  value={digit}
-                  onChange={(e) => handleInputChange(index, e.target.value)}
-                  onKeyDown={(e) => handleKeyDown(index, e)}
-                  disabled={loading}
-                  className={`w-12 h-12 sm:w-14 sm:h-14 text-center text-2xl font-bold rounded-xl border-2 transition-all duration-300 focus:outline-none cursor-pointer
-                    ${digit ? 'bg-rose-50 border-rose-400' : 'bg-white border-gray-300'}
-                    ${passcode.filter(Boolean).length > index ? 'border-rose-400 shadow-md' : 'border-gray-300'}
-                    focus:border-rose-500 focus:ring-2 focus:ring-rose-200
-                    ${error && shake ? 'border-red-500 bg-red-50' : ''}
-                    disabled:opacity-50 disabled:cursor-not-allowed
-                  `}
-                />
+                <div key={index} className="relative w-12 h-12 sm:w-14 sm:h-14">
+                  <input
+                    ref={(el) => {
+                      inputRefs.current[index] = el;
+                    }}
+                    type="password"
+                    inputMode="numeric"
+                    maxLength={1}
+                    value={digit}
+                    onChange={(e) => handleInputChange(index, e.target.value)}
+                    onKeyDown={(e) => handleKeyDown(index, e)}
+                    disabled={loading}
+                    className={`absolute inset-0 w-full h-full text-center text-2xl font-bold rounded-xl border-2 transition-all duration-300 focus:outline-none cursor-pointer bg-transparent z-10
+                      ${digit ? 'border-rose-400 shadow-md' : 'border-gray-300'}
+                      focus:border-rose-500 focus:ring-2 focus:ring-rose-200
+                      ${error && shake ? 'border-red-500 bg-red-50' : ''}
+                      disabled:opacity-50 disabled:cursor-not-allowed
+                    `}
+                  />
+                  {digit && (
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
+                      <img
+                        src="/assets-new-design/heart_badge_album_corner.png"
+                        alt="*"
+                        className="w-8 h-8 sm:w-10 sm:h-10 animate-heartbeat-fast"
+                      />
+                    </div>
+                  )}
+                  {!digit && (
+                    <div className={`absolute inset-0 rounded-xl border-2 transition-all duration-300 pointer-events-none
+                      ${passcode.filter(Boolean).length > index ? 'border-rose-400 shadow-md' : 'border-gray-300'}
+                      ${error && shake ? 'border-red-500 bg-red-50' : ''}
+                    `} />
+                  )}
+                </div>
               ))}
             </div>
             

@@ -4,14 +4,14 @@ import { useEffect, useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import AlbumModal from './AlbumModal';
 import AlbumDetail from './AlbumDetail';
-import { Plus, Lock, Globe, Pencil, Trash2, ImageIcon, MoreHorizontal, Calendar } from 'lucide-react';
+import { Plus, Lock, Globe, Pencil, Trash2, ImageIcon, MoreHorizontal, Calendar, X } from 'lucide-react';
 import { formatDateVN } from '@/lib/datetime';
 import LocationBadge from './LocationBadge';
 import { useSessionState, clearSessionKey } from '@/lib/use-session-state';
 import { useSeen } from '@/lib/use-seen';
 import Image from 'next/image';
 
-type TimeFilter = 'all' | 'week' | 'month' | 'year';
+type TimeFilter = 'all' | 'week' | 'month' | 'year' | 'custom';
 
 // Dropdown menu component that closes when clicking outside
 function DropdownMenu({ children, trigger }: { children: React.ReactNode; trigger: React.ReactNode }) {
@@ -113,6 +113,8 @@ export default function AlbumList({ token, currentUserId }: { token: string | nu
   const [selectedAlbumId, setSelectedAlbumId] = useSessionState<number | null>('albums:selectedId', null);
   const [tab, setTab] = useSessionState<Visibility>('albums:tab', 'private');
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('all');
+  const [customDateFrom, setCustomDateFrom] = useState('');
+  const [customDateTo, setCustomDateTo] = useState('');
   const { badge, markSeen } = useSeen('album');
 
   const selectedAlbum = albums.find((a) => a.id === selectedAlbumId) ?? null;
@@ -232,6 +234,17 @@ export default function AlbumList({ token, currentUserId }: { token: string | nu
       } else if (timeFilter === 'year') {
         const yearAgo = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
         if (createdDate < yearAgo) return false;
+      } else if (timeFilter === 'custom') {
+        if (customDateFrom) {
+          const fromDate = new Date(customDateFrom);
+          fromDate.setHours(0, 0, 0, 0);
+          if (createdDate < fromDate) return false;
+        }
+        if (customDateTo) {
+          const toDate = new Date(customDateTo);
+          toDate.setHours(23, 59, 59, 999);
+          if (createdDate > toDate) return false;
+        }
       }
     }
     
@@ -248,6 +261,7 @@ export default function AlbumList({ token, currentUserId }: { token: string | nu
     { key: 'week', label: 'Tuần này' },
     { key: 'month', label: 'Tháng này' },
     { key: 'year', label: 'Năm nay' },
+    { key: 'custom', label: 'Tùy chọn' },
   ];
 
   return (
@@ -301,7 +315,7 @@ export default function AlbumList({ token, currentUserId }: { token: string | nu
         })}
         
         {/* Time filter */}
-        <div className="flex items-center gap-1 ml-auto">
+        <div className="flex items-center gap-2 ml-auto flex-wrap">
           <Calendar size={16} className="text-gray-400" />
           <select
             value={timeFilter}
@@ -312,6 +326,34 @@ export default function AlbumList({ token, currentUserId }: { token: string | nu
               <option key={key} value={key}>{label}</option>
             ))}
           </select>
+          {timeFilter === 'custom' && (
+            <div className="flex items-center gap-2 ml-2">
+              <input
+                type="date"
+                value={customDateFrom}
+                onChange={(e) => setCustomDateFrom(e.target.value)}
+                className="px-3 py-2 rounded-lg text-sm border-2 border-pink-100 focus:outline-none focus:border-pink-400 transition-all"
+                placeholder="Từ ngày"
+              />
+              <span className="text-gray-400 text-sm">→</span>
+              <input
+                type="date"
+                value={customDateTo}
+                onChange={(e) => setCustomDateTo(e.target.value)}
+                className="px-3 py-2 rounded-lg text-sm border-2 border-pink-100 focus:outline-none focus:border-pink-400 transition-all"
+                placeholder="Đến ngày"
+              />
+              {(customDateFrom || customDateTo) && (
+                <button
+                  onClick={() => { setCustomDateFrom(''); setCustomDateTo(''); }}
+                  className="grid place-items-center w-8 h-8 rounded-full text-gray-400 hover:text-rose-500 hover:bg-rose-50 transition-colors"
+                  title="Xóa bộ lọc ngày"
+                >
+                  <X size={16} />
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

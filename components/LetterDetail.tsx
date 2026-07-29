@@ -27,6 +27,7 @@ interface Letter {
   is_opened: boolean;
   is_confirmed: boolean;
   created_at: string;
+  paper_type?: string | null;
 }
 
 interface Attachment {
@@ -249,8 +250,13 @@ export default function LetterDetail({
       </button>
 
       <div className="relative bg-white rounded-2xl shadow-lg p-6 sm:p-8 max-w-3xl">
-        {/* Note paper background */}
-        <div className="absolute inset-0 bg-cover bg-center opacity-30 rounded-2xl pointer-events-none" style={{ backgroundImage: 'url(/assets-new-design/note_paper_plain_stack.png)' }} />
+        {/* Note paper background - dynamic based on paper_type */}
+        <div
+          className="absolute inset-0 bg-cover bg-center opacity-30 rounded-2xl pointer-events-none"
+          style={{
+            backgroundImage: `url(/assets-new-design/${letter.paper_type === 'heart' ? 'note_paper_maiiuanhxa_pin_heart.png' : 'note_paper_plain_stack.png'})`
+          }}
+        />
         <div className="relative z-10">
           {/* Header */}
           <div className="flex items-start justify-between mb-4 gap-3">

@@ -242,10 +242,10 @@
   animation: sparkle 2s ease-in-out infinite;
 }
 
-/* Cute font family */
+/* Cute font family - now uses Itim */
 .font-cute {
-  font-family: var(--font-corinthia), cursive;
-  font-weight: 600;
+  font-family: var(--font-itim), cursive;
+  font-weight: 400;
 }
 
 /* Handwriting font for specific decorative text */

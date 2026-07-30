@@ -250,24 +250,23 @@ export default function LetterDetail({
         Quay Lại
       </button>
 
-      <div className="relative bg-white rounded-2xl shadow-lg p-6 sm:p-8 max-w-3xl">
-        {/* Note paper background - dynamic based on paper_type */}
-        <div
-          className="absolute inset-0 bg-cover bg-center rounded-2xl pointer-events-none"
-          style={{
-            backgroundImage: `url(/assets-new-design/${
-              letter.paper_type === 'heart' ? 'note_paper_maiiuanhxa_pin_heart.png' :
-              letter.paper_type === 'bg1' ? 'background-letter-1.png' :
-              letter.paper_type === 'bg2' ? 'background-letter-2.png' :
-              letter.paper_type === 'bg3' ? 'background-letter-3.png' :
-              letter.paper_type === 'bg4' ? 'background-letter-4.png' :
-              'note_paper_plain_stack.png'
-            })`
-          }}
-        />
+      <div className="relative rounded-2xl shadow-lg p-6 sm:p-8 max-w-3xl overflow-hidden"
+        style={{
+          backgroundImage: `url(/assets-new-design/${
+            letter.paper_type === 'heart' ? 'note_paper_maiiuanhxa_pin_heart.png' :
+            letter.paper_type === 'bg1' ? 'background-letter-1.png' :
+            letter.paper_type === 'bg2' ? 'background-letter-2.png' :
+            letter.paper_type === 'bg3' ? 'background-letter-3.png' :
+            letter.paper_type === 'bg4' ? 'background-letter-4.png' :
+            'note_paper_plain_stack.png'
+          })`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center'
+        }}
+      >
         <div className="relative z-10">
           {/* Header */}
-          <div className="flex items-start justify-between mb-4 gap-3">
+          <div className="flex items-start justify-between mb-4 gap-3 bg-white/60 backdrop-blur-sm rounded-xl p-4">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 text-balance font-[family-name:var(--font-corinthia)]">{letter.title}</h1>
               <p className="text-gray-500 mt-1 text-sm">Từ: {letter.from_user_name}</p>
@@ -300,7 +299,7 @@ export default function LetterDetail({
           </div>
 
           {letter.scheduled_unlock_date && (
-            <div className="bg-rose-50 border border-rose-200 rounded-lg px-4 py-3 mb-5">
+            <div className="bg-rose-50/80 backdrop-blur-sm border border-rose-200 rounded-lg px-4 py-3 mb-5">
               <p className="text-sm text-rose-700">
                 Thư hẹn mở lúc: {formatDateVN(letter.scheduled_unlock_date)} lúc{' '}
                 {formatTimeVN(letter.scheduled_unlock_date)}
@@ -310,7 +309,7 @@ export default function LetterDetail({
 
           {/* Content */}
           {letter.text_content && (
-            <div className="mb-8 p-5 bg-rose-50/50 rounded-xl border border-rose-100">
+            <div className="mb-8 p-5 bg-white/60 backdrop-blur-sm rounded-xl">
               <p className="whitespace-pre-wrap text-gray-800 leading-relaxed text-base font-[family-name:var(--font-corinthia)]">
                 {letter.text_content}
               </p>

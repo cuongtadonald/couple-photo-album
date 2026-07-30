@@ -274,9 +274,9 @@ export default function LetterModal({ isOpen, onClose, onSubmit, initial, draftK
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2 font-cute">
-              Chon Mau Giay Thu
+              Chọn Nền Thư
             </label>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               <button
                 type="button"
                 onClick={() => setPaperType('plain')}
@@ -287,11 +287,11 @@ export default function LetterModal({ isOpen, onClose, onSubmit, initial, draftK
                 }`}
               >
                 <div
-                  className="absolute inset-0 opacity-30"
+                  className="absolute inset-0"
                   style={{ backgroundImage: 'url(/assets-new-design/note_paper_plain_stack.png)', backgroundSize: 'cover' }}
                 />
                 <div className="relative z-10">
-                  <div className="h-16 bg-white/80 rounded mb-2" />
+                  <div className="h-20 rounded mb-2" style={{ backgroundImage: 'url(/assets-new-design/note_paper_plain_stack.png)', backgroundSize: 'cover' }} />
                   <p className="text-xs font-medium text-gray-700">Giấy trơn</p>
                 </div>
               </button>
@@ -305,12 +305,84 @@ export default function LetterModal({ isOpen, onClose, onSubmit, initial, draftK
                 }`}
               >
                 <div
-                  className="absolute inset-0 opacity-30"
+                  className="absolute inset-0"
                   style={{ backgroundImage: 'url(/assets-new-design/note_paper_maiiuanhxa_pin_heart.png)', backgroundSize: 'cover' }}
                 />
                 <div className="relative z-10">
-                  <div className="h-16 bg-white/80 rounded mb-2" />
-                  <p className="text-xs font-medium text-gray-700">Giấy trái tim</p>
+                  <div className="h-20 rounded mb-2" style={{ backgroundImage: 'url(/assets-new-design/note_paper_maiiuanhxa_pin_heart.png)', backgroundSize: 'cover' }} />
+                  <p className="text-xs font-medium text-gray-700">Trái tim</p>
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setPaperType('bg1')}
+                className={`relative overflow-hidden rounded-xl border-2 p-3 transition-all ${
+                  paperType === 'bg1'
+                    ? 'border-rose-500 ring-2 ring-rose-200'
+                    : 'border-gray-200 hover:border-rose-300'
+                }`}
+              >
+                <div
+                  className="absolute inset-0"
+                  style={{ backgroundImage: 'url(/assets-new-design/background-letter-1.png)', backgroundSize: 'cover' }}
+                />
+                <div className="relative z-10">
+                  <div className="h-20 rounded mb-2" style={{ backgroundImage: 'url(/assets-new-design/background-letter-1.png)', backgroundSize: 'cover' }} />
+                  <p className="text-xs font-medium text-gray-700">Nền 1</p>
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setPaperType('bg2')}
+                className={`relative overflow-hidden rounded-xl border-2 p-3 transition-all ${
+                  paperType === 'bg2'
+                    ? 'border-rose-500 ring-2 ring-rose-200'
+                    : 'border-gray-200 hover:border-rose-300'
+                }`}
+              >
+                <div
+                  className="absolute inset-0"
+                  style={{ backgroundImage: 'url(/assets-new-design/background-letter-2.png)', backgroundSize: 'cover' }}
+                />
+                <div className="relative z-10">
+                  <div className="h-20 rounded mb-2" style={{ backgroundImage: 'url(/assets-new-design/background-letter-2.png)', backgroundSize: 'cover' }} />
+                  <p className="text-xs font-medium text-gray-700">Nền 2</p>
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setPaperType('bg3')}
+                className={`relative overflow-hidden rounded-xl border-2 p-3 transition-all ${
+                  paperType === 'bg3'
+                    ? 'border-rose-500 ring-2 ring-rose-200'
+                    : 'border-gray-200 hover:border-rose-300'
+                }`}
+              >
+                <div
+                  className="absolute inset-0"
+                  style={{ backgroundImage: 'url(/assets-new-design/background-letter-3.png)', backgroundSize: 'cover' }}
+                />
+                <div className="relative z-10">
+                  <div className="h-20 rounded mb-2" style={{ backgroundImage: 'url(/assets-new-design/background-letter-3.png)', backgroundSize: 'cover' }} />
+                  <p className="text-xs font-medium text-gray-700">Nền 3</p>
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setPaperType('bg4')}
+                className={`relative overflow-hidden rounded-xl border-2 p-3 transition-all ${
+                  paperType === 'bg4'
+                    ? 'border-rose-500 ring-2 ring-rose-200'
+                    : 'border-gray-200 hover:border-rose-300'
+                }`}
+              >
+                <div
+                  className="absolute inset-0"
+                  style={{ backgroundImage: 'url(/assets-new-design/background-letter-4.png)', backgroundSize: 'cover' }}
+                />
+                <div className="relative z-10">
+                  <div className="h-20 rounded mb-2" style={{ backgroundImage: 'url(/assets-new-design/background-letter-4.png)', backgroundSize: 'cover' }} />
+                  <p className="text-xs font-medium text-gray-700">Nền 4</p>
                 </div>
               </button>
             </div>

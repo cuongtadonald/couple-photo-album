@@ -115,6 +115,7 @@ export default function AlbumList({ token, currentUserId }: { token: string | nu
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('all');
   const [customDateFrom, setCustomDateFrom] = useState('');
   const [customDateTo, setCustomDateTo] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
   const { badge, markSeen } = useSeen('album');
 
   const selectedAlbum = albums.find((a) => a.id === selectedAlbumId) ?? null;
@@ -220,6 +221,12 @@ export default function AlbumList({ token, currentUserId }: { token: string | nu
   const visibleAlbums = albums.filter((a) => {
     if (a.visibility !== tab) return false;
     
+    // Apply search filter
+    if (searchTerm) {
+      const search = searchTerm.toLowerCase();
+      if (!a.title.toLowerCase().includes(search)) return false;
+    }
+    
     // Apply time filter
     if (timeFilter !== 'all') {
       const createdDate = new Date(a.created_at);
@@ -289,6 +296,17 @@ export default function AlbumList({ token, currentUserId }: { token: string | nu
         </Button>
       </div>
 
+      {/* Search and Filter tabs */}
+      <div className="mb-4">
+        <input
+          type="text"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          placeholder="Tìm kiếm album..."
+          className="w-full px-4 py-2 border-2 border-pink-100 rounded-xl focus:outline-none focus:border-pink-400 transition-all"
+        />
+      </div>
+
       {/* Filter tabs */}
       <div className="flex gap-2 mb-6 flex-wrap">
         {tabsFilter.map(({ key, label, icon: Icon }) => {
@@ -315,7 +333,7 @@ export default function AlbumList({ token, currentUserId }: { token: string | nu
         })}
         
         {/* Time filter */}
-        <div className="flex items-center gap-2 ml-auto flex-wrap">
+        <div className="flex items-center gap-2 ml-0 lg:ml-auto flex-wrap">
           <Calendar size={16} className="text-gray-400" />
           <select
             value={timeFilter}

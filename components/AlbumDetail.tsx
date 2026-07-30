@@ -112,6 +112,7 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('all');
   const [customDateFrom, setCustomDateFrom] = useState('');
   const [customDateTo, setCustomDateTo] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -486,8 +487,14 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
     return { tapeConfig, stickerConfig, tapeImage, sticker };
   }
 
-  // Filter photos by time
+  // Filter photos by time and search
   const filteredPhotos = photos.filter((photo) => {
+    // Apply search filter
+    if (searchTerm) {
+      const search = searchTerm.toLowerCase();
+      if (!(photo.caption || '').toLowerCase().includes(search)) return false;
+    }
+
     if (timeFilter === 'all') return true;
 
     const photoDate = new Date(photo.created_at);
@@ -568,6 +575,17 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
         </div>
       </div>
 
+      {/* Search */}
+      <div className="mb-4">
+        <input
+          type="text"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          placeholder="Tìm kiếm ảnh theo chú thích..."
+          className="w-full px-4 py-2 border-2 border-pink-100 rounded-xl focus:outline-none focus:border-pink-400 transition-all"
+        />
+      </div>
+
       {/* Time filter */}
       <div className="flex items-center gap-2 mb-6 flex-wrap">
         <Calendar size={16} className="text-gray-400" />
@@ -618,9 +636,15 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
         onClick={() => setShowAddPhoto(true)}
         aria-label="Thêm ảnh mới"
         title="Thêm ảnh mới"
-        className="fixed bottom-6 right-6 z-40 w-16 h-16 rounded-full bg-gradient-to-br from-rose-400 to-pink-500 shadow-2xl flex items-center justify-center text-2xl hover:scale-110 active:scale-95 transition-transform select-none"
+        className="fixed bottom-6 right-6 z-40 hover:scale-110 active:scale-95 transition-transform select-none"
       >
-        📷
+        <Image
+          src="/assets-new-design/sticker-add-pictures.png"
+          alt="Thêm ảnh"
+          width={100}
+          height={100}
+          className="drop-shadow-2xl"
+        />
       </button>
 
       {/* Add Photo Popup */}

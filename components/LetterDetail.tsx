@@ -13,6 +13,7 @@ import {
   X,
   Play,
   Download,
+  Eye,
 } from 'lucide-react';
 import { formatDateVN, formatTimeVN } from '@/lib/datetime';
 import { useSeen } from '@/lib/use-seen';
@@ -252,9 +253,16 @@ export default function LetterDetail({
       <div className="relative bg-white rounded-2xl shadow-lg p-6 sm:p-8 max-w-3xl">
         {/* Note paper background - dynamic based on paper_type */}
         <div
-          className="absolute inset-0 bg-cover bg-center opacity-30 rounded-2xl pointer-events-none"
+          className="absolute inset-0 bg-cover bg-center rounded-2xl pointer-events-none"
           style={{
-            backgroundImage: `url(/assets-new-design/${letter.paper_type === 'heart' ? 'note_paper_maiiuanhxa_pin_heart.png' : 'note_paper_plain_stack.png'})`
+            backgroundImage: `url(/assets-new-design/${
+              letter.paper_type === 'heart' ? 'note_paper_maiiuanhxa_pin_heart.png' :
+              letter.paper_type === 'bg1' ? 'background-letter-1.png' :
+              letter.paper_type === 'bg2' ? 'background-letter-2.png' :
+              letter.paper_type === 'bg3' ? 'background-letter-3.png' :
+              letter.paper_type === 'bg4' ? 'background-letter-4.png' :
+              'note_paper_plain_stack.png'
+            })`
           }}
         />
         <div className="relative z-10">
@@ -336,6 +344,13 @@ export default function LetterDetail({
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
                         {/* Always visible on mobile, hover on desktop */}
                         <div className="absolute top-2 right-2 flex gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={() => window.open(att.file_url, '_blank')}
+                            aria-label="Xem ảnh"
+                            className="grid place-items-center w-8 h-8 rounded-full bg-black/50 text-white hover:bg-rose-600 transition-colors"
+                          >
+                            <Eye size={14} />
+                          </button>
                           <button
                             onClick={() => handleDownload(att.file_url, att.file_name)}
                             aria-label="Tải về ảnh"

@@ -351,26 +351,6 @@ export default function LetterModal({ isOpen, onClose, onSubmit, initial, draftK
               </button>
             </div>
           </div>
-              <button
-                type="button"
-                onClick={() => setPaperType('bg4')}
-                className={`relative overflow-hidden rounded-xl border-2 p-3 transition-all ${
-                  paperType === 'bg4'
-                    ? 'border-rose-500 ring-2 ring-rose-200'
-                    : 'border-gray-200 hover:border-rose-300'
-                }`}
-              >
-                <div
-                  className="absolute inset-0"
-                  style={{ backgroundImage: 'url(/assets-new-design/background-letter-4.png)', backgroundSize: 'cover' }}
-                />
-                <div className="relative z-10">
-                  <div className="h-20 rounded mb-2" style={{ backgroundImage: 'url(/assets-new-design/background-letter-4.png)', backgroundSize: 'cover' }} />
-                  <p className="text-xs font-medium text-gray-700">Nền 4</p>
-                </div>
-              </button>
-            </div>
-          </div>
 
           <div className="flex gap-3 pt-4">
             <Button

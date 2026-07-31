@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getConnection } from '@/lib/db';
-import { getServerUser } from '@/lib/auth';
+import { verifyToken } from '@/lib/auth';
 import crypto from 'crypto';
 
 export async function POST(
@@ -8,9 +8,15 @@ export async function POST(
   { params }: { params: { albumId: string } }
 ) {
   try {
-    const user = await getServerUser();
-    if (!user) {
+    const token = req.headers.get('authorization')?.replace('Bearer ', '');
+
+    if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const decoded = verifyToken(token);
+    if (!decoded) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
     const albumId = params.albumId;
@@ -28,13 +34,13 @@ export async function POST(
     }
 
     const album = (albums as any[])[0];
-    if (album.user_id !== user.id) {
+    if (album.user_id !== decoded.userId) {
       conn.release();
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     // Generate unique token
-    const token = crypto.randomBytes(32).toString('hex');
+    const shareToken = crypto.randomBytes(32).toString('hex');
     
     // Token expires in 72 hours
     const expiresAt = new Date(Date.now() + 72 * 60 * 60 * 1000);
@@ -54,17 +60,17 @@ export async function POST(
     // Save to database
     await conn.execute(
       'INSERT INTO album_shares (album_id, token, expires_at) VALUES (?, ?, ?)',
-      [albumId, token, expiresAt]
+      [albumId, shareToken, expiresAt]
     );
 
     conn.release();
 
     // Return the share link
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-    const shareLink = `${baseUrl}/shared/${token}`;
+    const shareLink = `${baseUrl}/shared/${shareToken}`;
 
     return NextResponse.json({
-      token,
+      token: shareToken,
       shareLink,
       expiresAt,
     });
@@ -76,4 +82,5 @@ export async function POST(
     );
   }
 }
+
 

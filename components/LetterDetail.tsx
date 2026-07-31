@@ -258,7 +258,7 @@ export default function LetterDetail({
           style={{
             backgroundImage: "url('/assets-new-design/background-letter-3-header.png')",
             backgroundSize: '100% auto',
-            height: '220px',
+            height: '137px',
           }}
         />
 
@@ -271,7 +271,7 @@ export default function LetterDetail({
             backgroundPosition: 'top center',
           }}
         >
-          <div className="px-[30px] pb-[30px] sm:px-[40px] sm:pb-[40px] md:px-[50px] md:pb-[50px]">
+          <div className="mx-[15px] px-[30px] pb-[30px] sm:px-[40px] sm:pb-[40px] md:px-[50px] md:pb-[50px]">
             <div className="relative z-10">
               {/* Header */}
               <div className="flex items-start justify-between mb-4 gap-3">
@@ -550,7 +550,7 @@ export default function LetterDetail({
           style={{
             backgroundImage: "url('/assets-new-design/background-letter-3-bottom.png')",
             backgroundSize: '100% auto',
-            height: '190px',
+            height: '139px',
           }}
         />
       </div>

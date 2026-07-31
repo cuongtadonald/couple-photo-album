@@ -269,7 +269,7 @@ export default function LetterDetail({
           }}
         >
           {/* Content cách bên trái và bên phải 15px */}
-          <div className="px-[15px] pb-[30px] sm:pb-[40px] md:pb-[50px]">
+          <div className="mx-[15px] px-[15px] pb-[30px] sm:pb-[40px] md:pb-[50px]">
 
             <div className="relative z-10">
               {/* Header */}

@@ -544,7 +544,7 @@ export default function LetterDetail({
           </div>
         </div>
 
-        {/* Ảnh cuối thư TVC*/}
+        {/* Ảnh cuối thư TVC dep trai*/}
         <div
           className="w-full bg-bottom bg-no-repeat"
           style={{

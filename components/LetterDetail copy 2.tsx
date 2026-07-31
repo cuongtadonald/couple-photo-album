@@ -249,28 +249,29 @@ export default function LetterDetail({
         <ArrowLeft size={20} />
         Quay Lại
       </button>
+
       <div className="relative max-w-3xl mx-auto">
 
         {/* Ảnh đầu thư */}
-        <img
-          src="/assets-new-design/background-letter-3-header.png"
-          alt=""
-          className="block w-full h-auto"
+        <div
+          className="w-full bg-top bg-no-repeat"
+          style={{
+            backgroundImage: "url('/assets-new-design/background-letter-3-header.png')",
+            backgroundSize: '100% auto',
+            height: '137px',
+          }}
         />
 
-        {/* Phần thân thư - ảnh nền tự lặp theo chiều dài nội dung */}
+        {/* Phần thân thư - tự lặp theo chiều cao nội dung */}
         <div
           className="relative bg-repeat-y"
           style={{
-            backgroundImage:
-              "url('/assets-new-design/background-letter-3-wrap-content.png')",
-            backgroundSize: "100% auto",
-            backgroundPosition: "top center",
+            backgroundImage: "url('/assets-new-design/background-letter-3-wrap-content.png')",
+            backgroundSize: '100% auto',
+            backgroundPosition: 'top center',
           }}
         >
-          {/* Content cách bên trái và bên phải 15px */}
-          <div className="px-[15px] pb-[30px] sm:pb-[40px] md:pb-[50px]">
-
+          <div className="mx-[15px] px-[30px] pb-[30px] sm:px-[40px] sm:pb-[40px] md:px-[50px] md:pb-[50px]">
             <div className="relative z-10">
               {/* Header */}
               <div className="flex items-start justify-between mb-4 gap-3">
@@ -543,13 +544,15 @@ export default function LetterDetail({
           </div>
         </div>
 
-        {/* Ảnh cuối thư */}
-        <img
-          src="/assets-new-design/background-letter-3-bottom.png"
-          alt=""
-          className="block w-full h-auto"
+        {/* Ảnh cuối thư TVC dep trai*/}
+        <div
+          className="w-full bg-bottom bg-no-repeat"
+          style={{
+            backgroundImage: "url('/assets-new-design/background-letter-3-bottom.png')",
+            backgroundSize: '100% auto',
+            height: '139px',
+          }}
         />
-
       </div>
     </div>
   );

@@ -46,7 +46,7 @@ export default function LetterModal({ isOpen, onClose, onSubmit, initial, draftK
   const [textContent, setTextContent] = useState('');
   const [scheduledDate, setScheduledDate] = useState('');
   const [scheduledTime, setScheduledTime] = useState('');
-  const [paperType, setPaperType] = useState('bg3');
+  const [paperType, setPaperType] = useState('plain');
   const [loading, setLoading] = useState(false);
   const [confirmStep, setConfirmStep] = useState(false);
 
@@ -57,7 +57,7 @@ export default function LetterModal({ isOpen, onClose, onSubmit, initial, draftK
       // Edit mode — always reset to server values
       setTitle(initial.title);
       setTextContent(initial.text_content || '');
-      setPaperType(initial.paper_type || 'bg3');
+      setPaperType(initial.paper_type || 'plain');
       const d = parseDate(initial.scheduled_unlock_date);
       if (d) {
         setScheduledDate(`${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`);
@@ -72,13 +72,13 @@ export default function LetterModal({ isOpen, onClose, onSubmit, initial, draftK
       setTextContent(readDraft(draftKey, 'content'));
       setScheduledDate(readDraft(draftKey, 'date'));
       setScheduledTime(readDraft(draftKey, 'time'));
-      setPaperType(readDraft(draftKey, 'paper') || 'bg3');
+      setPaperType(readDraft(draftKey, 'paper') || 'plain');
     } else {
       setTitle('');
       setTextContent('');
       setScheduledDate('');
       setScheduledTime('');
-      setPaperType('bg3');
+      setPaperType('plain');
     }
   }, [isOpen, initial, draftKey]);
 
@@ -276,7 +276,43 @@ export default function LetterModal({ isOpen, onClose, onSubmit, initial, draftK
             <label className="block text-sm font-medium text-gray-700 mb-2 font-cute">
               Chọn Nền Thư
             </label>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
+              <button
+                type="button"
+                onClick={() => setPaperType('plain')}
+                className={`relative overflow-hidden rounded-xl border-2 p-3 transition-all ${
+                  paperType === 'plain'
+                    ? 'border-rose-500 ring-2 ring-rose-200'
+                    : 'border-gray-200 hover:border-rose-300'
+                }`}
+              >
+                <div
+                  className="absolute inset-0"
+                  style={{ backgroundImage: 'url(/assets-new-design/note_paper_plain_stack.png)', backgroundSize: 'cover' }}
+                />
+                <div className="relative z-10">
+                  <div className="h-20 rounded mb-2" style={{ backgroundImage: 'url(/assets-new-design/note_paper_plain_stack.png)', backgroundSize: 'cover' }} />
+                  <p className="text-xs font-medium text-gray-700">Giấy trơn</p>
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setPaperType('heart')}
+                className={`relative overflow-hidden rounded-xl border-2 p-3 transition-all ${
+                  paperType === 'heart'
+                    ? 'border-rose-500 ring-2 ring-rose-200'
+                    : 'border-gray-200 hover:border-rose-300'
+                }`}
+              >
+                <div
+                  className="absolute inset-0"
+                  style={{ backgroundImage: 'url(/assets-new-design/note_paper_maiiuanhxa_pin_heart.png)', backgroundSize: 'cover' }}
+                />
+                <div className="relative z-10">
+                  <div className="h-20 rounded mb-2" style={{ backgroundImage: 'url(/assets-new-design/note_paper_maiiuanhxa_pin_heart.png)', backgroundSize: 'cover' }} />
+                  <p className="text-xs font-medium text-gray-700">Trái tim</p>
+                </div>
+              </button>
               <button
                 type="button"
                 onClick={() => setPaperType('bg1')}
@@ -331,26 +367,6 @@ export default function LetterModal({ isOpen, onClose, onSubmit, initial, draftK
                   <p className="text-xs font-medium text-gray-700">Nền 3</p>
                 </div>
               </button>
-              <button
-                type="button"
-                onClick={() => setPaperType('bg4')}
-                className={`relative overflow-hidden rounded-xl border-2 p-3 transition-all ${
-                  paperType === 'bg4'
-                    ? 'border-rose-500 ring-2 ring-rose-200'
-                    : 'border-gray-200 hover:border-rose-300'
-                }`}
-              >
-                <div
-                  className="absolute inset-0"
-                  style={{ backgroundImage: 'url(/assets-new-design/background-letter-4.png)', backgroundSize: 'cover' }}
-                />
-                <div className="relative z-10">
-                  <div className="h-20 rounded mb-2" style={{ backgroundImage: 'url(/assets-new-design/background-letter-4.png)', backgroundSize: 'cover' }} />
-                  <p className="text-xs font-medium text-gray-700">Nền 4</p>
-                </div>
-              </button>
-            </div>
-          </div>
               <button
                 type="button"
                 onClick={() => setPaperType('bg4')}

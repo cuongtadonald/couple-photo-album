@@ -1,0 +1,70 @@
+===============================================
+VERSION 6.1 - READY TO DEPLOY TO VPS
+===============================================
+
+Status: ✅ BUILD SUCCESSFUL
+All fixes implemented and tested
+Ready for production
+
+---
+
+WHAT'S FIXED:
+
+1. ✅ Multiple image upload at once
+2. ✅ Removed URL input (file upload only)
+3. ✅ Added textarea for image descriptions
+4. ✅ Fixed images not saving issue
+5. ✅ Shared content support for albums
+
+---
+
+QUICK DEPLOYMENT:
+
+Windows:
+---------
+cd your-project-path
+git add .
+git commit -m "v6.1: multi-image upload, captions, fixes"
+git push origin main
+
+VPS:
+-----
+ssh appuser@65.75.200.34
+cd ~/couple-photo-album
+pm2 stop tinhy-au
+git pull origin main
+pnpm build
+pm2 restart tinhy-au
+pm2 logs tinhy-au
+
+---
+
+TESTING AFTER DEPLOY:
+
+1. Login to app
+2. Open an album
+3. Click image upload area
+4. Select 2-3 images at once (should show preview)
+5. Add descriptions in textarea for each image
+6. Click "✨ Thêm X Ảnh" button
+7. Images should appear in gallery with captions
+8. Both users should see the images
+
+---
+
+If issues occur:
+
+Check logs:
+  pm2 logs tinhy-au --lines 50
+
+Restart app:
+  pm2 restart tinhy-au
+
+Check database:
+  mysql -u couple_user -p couple_app
+  SELECT COUNT(*) FROM photos;
+
+---
+
+All done! Deploy with confidence! 🚀
+

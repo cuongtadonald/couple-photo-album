@@ -410,47 +410,28 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
   };
 
   const shareAlbum = async () => {
-    try {
-      // Create share link with 72h expiration
-      const response = await fetch(`/api/albums/${album.id}/share`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Không thể tạo link chia sẻ');
+    const shareUrl = window.location.href;
+    const shareText = `Xem album "${album.title}" của chúng mình nhé!`;
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: album.title,
+          text: shareText,
+          url: shareUrl,
+        });
+      } catch (error) {
+        console.error('Error sharing:', error);
       }
-
-      const data = await response.json();
-      const shareUrl = data.shareLink;
-      const shareText = `Xem album "${album.title}" của chúng mình nhé!`;
-
-      if (navigator.share) {
-        try {
-          await navigator.share({
-            title: album.title,
-            text: shareText,
-            url: shareUrl,
-          });
-        } catch (error) {
-          console.error('Error sharing:', error);
-        }
-      } else {
-        // Fallback: copy to clipboard
-        try {
-          await navigator.clipboard.writeText(shareUrl);
-          alert('Đã sao chép link vào clipboard!\nLink sẽ hết hạn sau 72 giờ.');
-        } catch (error) {
-          console.error('Error copying to clipboard:', error);
-          alert(`Link: ${shareUrl}`);
-        }
+    } else {
+      // Fallback: copy to clipboard
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        alert('Đã sao chép link vào clipboard!');
+      } catch (error) {
+        console.error('Error copying to clipboard:', error);
+        alert(`Link: ${shareUrl}`);
       }
-    } catch (error) {
-      console.error('Error creating share link:', error);
-      alert('Không thể tạo link chia sẻ. Vui lòng thử lại.');
     }
   };
 

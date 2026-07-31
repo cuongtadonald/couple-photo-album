@@ -7,6 +7,7 @@ export async function POST(
   req: NextRequest,
   { params }: { params: { albumId: string } }
 ) {
+  let conn;
   try {
     const token = req.headers.get('authorization')?.replace('Bearer ', '');
 
@@ -20,7 +21,20 @@ export async function POST(
     }
 
     const albumId = params.albumId;
-    const conn = await getConnection();
+    conn = await getConnection();
+
+    // Create table if not exists (chạy trước để đảm bảo bảng tồn tại)
+    await conn.execute(`
+      CREATE TABLE IF NOT EXISTS album_shares (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        album_id INT NOT NULL,
+        token VARCHAR(255) UNIQUE NOT NULL,
+        expires_at DATETIME NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_token (token),
+        INDEX idx_expires (expires_at)
+      )
+    `);
 
     // Check if album exists and belongs to user
     const [albums] = await conn.execute(
@@ -29,13 +43,11 @@ export async function POST(
     );
 
     if (!albums || (albums as any[]).length === 0) {
-      conn.release();
       return NextResponse.json({ error: 'Album not found' }, { status: 404 });
     }
 
     const album = (albums as any[])[0];
     if (album.user_id !== decoded.userId) {
-      conn.release();
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -45,41 +57,29 @@ export async function POST(
     // Token expires in 72 hours
     const expiresAt = new Date(Date.now() + 72 * 60 * 60 * 1000);
 
-    // Create table if not exists
-    await conn.execute(`
-      CREATE TABLE IF NOT EXISTS album_shares (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        album_id INT NOT NULL,
-        token VARCHAR(255) UNIQUE NOT NULL,
-        expires_at DATETIME NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (album_id) REFERENCES albums(id) ON DELETE CASCADE
-      )
-    `);
-
     // Save to database
     await conn.execute(
       'INSERT INTO album_shares (album_id, token, expires_at) VALUES (?, ?, ?)',
       [albumId, shareToken, expiresAt]
     );
 
-    conn.release();
-
     // Return the share link
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || req.nextUrl.origin;
     const shareLink = `${baseUrl}/shared/${shareToken}`;
 
     return NextResponse.json({
       token: shareToken,
       shareLink,
-      expiresAt,
+      expiresAt: expiresAt.toISOString(),
     });
   } catch (error) {
     console.error('Error creating share link:', error);
     return NextResponse.json(
-      { error: 'Failed to create share link' },
+      { error: `Failed to create share link: ${error instanceof Error ? error.message : 'Unknown error'}` },
       { status: 500 }
     );
+  } finally {
+    if (conn) conn.release();
   }
 }
 

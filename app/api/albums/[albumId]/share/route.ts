@@ -5,7 +5,7 @@ import crypto from 'crypto';
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { albumId: string } }
+  { params }: { params: Promise<{ albumId: string }> }
 ) {
   let conn;
   try {
@@ -20,7 +20,7 @@ export async function POST(
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    const albumId = params.albumId;
+    const { albumId } = await params;
     
     // Validate albumId
     if (!albumId) {

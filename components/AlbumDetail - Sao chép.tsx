@@ -421,9 +421,7 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Share API error:', errorData);
-        throw new Error(errorData.error || 'Không thể tạo link chia sẻ');
+        throw new Error('Không thể tạo link chia sẻ');
       }
 
       const data = await response.json();
@@ -452,7 +450,7 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
       }
     } catch (error) {
       console.error('Error creating share link:', error);
-      alert(`Không thể tạo link chia sẻ: ${error instanceof Error ? error.message : 'Lỗi không xác định'}`);
+      alert('Không thể tạo link chia sẻ. Vui lòng thử lại.');
     }
   };
 

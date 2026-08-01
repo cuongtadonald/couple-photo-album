@@ -268,8 +268,8 @@ export default function LetterDetail({
             backgroundPosition: "top center",
           }}
         >
-          {/* Content cách bên trái và bên phải 15px */}
-          <div className="mx-[30px] px-[15px] pb-[30px] sm:pb-[40px] md:pb-[50px]">
+          {/* Content cách bên trái và bên phải 25px */}
+          <div className="!mx-[25px] px-[15px] pb-[30px] sm:pb-[40px] md:pb-[50px]">
 
             <div className="relative z-10">
               {/* Header */}

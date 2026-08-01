@@ -21,6 +21,12 @@ export async function POST(
     }
 
     const albumId = params.albumId;
+    
+    // Validate albumId
+    if (!albumId) {
+      return NextResponse.json({ error: 'Album ID is required' }, { status: 400 });
+    }
+    
     conn = await getConnection();
 
     // Create table if not exists (chạy trước để đảm bảo bảng tồn tại)
@@ -58,10 +64,15 @@ export async function POST(
     const expiresAt = new Date(Date.now() + 72 * 60 * 60 * 1000);
     const expiresAtStr = expiresAt.toISOString().slice(0, 19).replace('T', ' ');
 
-    // Save to database
+    // Save to database - ensure all parameters are defined
+    const albumIdNum = parseInt(albumId);
+    if (isNaN(albumIdNum)) {
+      return NextResponse.json({ error: 'Invalid album ID' }, { status: 400 });
+    }
+    
     await conn.execute(
       'INSERT INTO album_shares (album_id, token, expires_at) VALUES (?, ?, ?)',
-      [parseInt(albumId), shareToken, expiresAtStr]
+      [albumIdNum, shareToken, expiresAtStr]
     );
 
     // Return the share link

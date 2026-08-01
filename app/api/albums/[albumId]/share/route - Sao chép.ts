@@ -54,14 +54,13 @@ export async function POST(
     // Generate unique token
     const shareToken = crypto.randomBytes(32).toString('hex');
     
-    // Token expires in 72 hours - format as MySQL datetime string
+    // Token expires in 72 hours
     const expiresAt = new Date(Date.now() + 72 * 60 * 60 * 1000);
-    const expiresAtStr = expiresAt.toISOString().slice(0, 19).replace('T', ' ');
 
     // Save to database
     await conn.execute(
       'INSERT INTO album_shares (album_id, token, expires_at) VALUES (?, ?, ?)',
-      [parseInt(albumId), shareToken, expiresAtStr]
+      [albumId, shareToken, expiresAt]
     );
 
     // Return the share link

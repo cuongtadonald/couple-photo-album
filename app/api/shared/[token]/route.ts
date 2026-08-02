@@ -3,10 +3,10 @@ import { getConnection } from '@/lib/db';
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: Promise<{ token: string }> }
+  { params }: { params: { token: string } }
 ) {
   try {
-    const { token } = await params;
+    const { token } = params;
     const conn = await getConnection();
 
     // Find share record

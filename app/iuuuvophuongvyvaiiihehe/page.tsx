@@ -163,10 +163,11 @@ export default function DashboardPage() {
                 <button
                   key={key}
                   onClick={() => setActiveTab(key)}
-                  className={`flex items-center gap-3 py-2.5 px-4 rounded-xl text-sm font-semibold transition-all text-left ${activeTab === key
-                    ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-md'
-                    : 'text-gray-500 hover:bg-pink-50 hover:text-rose-500'
-                    }`}
+                  className={`flex items-center gap-3 py-2.5 px-4 rounded-xl text-sm font-semibold transition-all text-left ${
+                    activeTab === key
+                      ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-md'
+                      : 'text-gray-500 hover:bg-pink-50 hover:text-rose-500'
+                  }`}
                 >
                   <span>{icon}</span>
                   {label}
@@ -249,15 +250,16 @@ export default function DashboardPage() {
         </div>
 
         {/* Mobile tab buttons */}
-        <div className="flex justify-center gap-2 px-4 -mt-3 relative z-[9]">
+        <div className="flex justify-center gap-2 px-4 -mt-3 relative z-20">
           {tabs.map(({ key, label, icon }) => (
             <button
               key={key}
               onClick={() => setActiveTab(key)}
-              className={`flex items-center gap-1.5 py-2 px-4 rounded-full text-xs font-semibold transition-all shadow-sm ${activeTab === key
-                ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-md'
-                : 'bg-white text-pink-500 border border-pink-100'
-                }`}
+              className={`flex items-center gap-1.5 py-2 px-4 rounded-full text-xs font-semibold transition-all shadow-sm ${
+                activeTab === key
+                  ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-md'
+                  : 'bg-white text-pink-500 border border-pink-100'
+              }`}
             >
               <span>{icon}</span>
               <span className="hidden min-[360px]:inline">{label}</span>
@@ -278,8 +280,9 @@ export default function DashboardPage() {
                   <button
                     key={key}
                     onClick={() => { setActiveTab(key); setMobileMenuOpen(false); }}
-                    className={`flex items-center gap-3 py-2.5 px-4 rounded-xl text-sm font-semibold text-left transition-all ${activeTab === key ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white' : 'text-gray-500 hover:bg-pink-50'
-                      }`}
+                    className={`flex items-center gap-3 py-2.5 px-4 rounded-xl text-sm font-semibold text-left transition-all ${
+                      activeTab === key ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white' : 'text-gray-500 hover:bg-pink-50'
+                    }`}
                   >
                     <span>{icon}</span>
                     {label}

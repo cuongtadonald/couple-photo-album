@@ -10,6 +10,7 @@ interface ViewerPhoto {
   caption?: string;
   location_name?: string | null;
   location_url?: string | null;
+  is_video?: boolean;
 }
 
 interface PhotoViewerProps {
@@ -216,21 +217,33 @@ export default function PhotoViewer({ photos, startIndex, onClose, albumId, toke
           </button>
         )}
 
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={current.image_url || '/placeholder.svg'}
-          alt={current.caption || `Ảnh ${index + 1}`}
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          onDoubleClick={() => (zoom > 1 ? resetZoom() : setZoom(2))}
-          draggable={false}
-          className="max-h-full max-w-full object-contain transition-transform duration-100"
-          style={{
-            transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`,
-            cursor: zoom > 1 ? 'grab' : 'zoom-in',
-          }}
-        />
+        {current.is_video ? (
+          <video
+            src={current.image_url || '/placeholder.svg'}
+            controls
+            autoPlay
+            className="max-h-full max-w-full object-contain"
+            style={{
+              transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`,
+            }}
+          />
+        ) : (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+            src={current.image_url || '/placeholder.svg'}
+            alt={current.caption || `Ảnh ${index + 1}`}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onDoubleClick={() => (zoom > 1 ? resetZoom() : setZoom(2))}
+            draggable={false}
+            className="max-h-full max-w-full object-contain transition-transform duration-100"
+            style={{
+              transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`,
+              cursor: zoom > 1 ? 'grab' : 'zoom-in',
+            }}
+          />
+        )}
 
         {photos.length > 1 && (
           <button

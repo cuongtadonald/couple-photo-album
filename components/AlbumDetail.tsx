@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ChangeEvent, DragEvent } from 'react';
 import type { StickerItem } from './StickerOverlay';
-import { ArrowLeft, Star, Pencil, Trash2, Check, X, Lock, Globe, Download, MoreHorizontal, Calendar } from 'lucide-react';
+import { ArrowLeft, Star, Pencil, Trash2, Check, X, Lock, Globe, Download, MoreHorizontal, Calendar, Mic, MicOff, Play, Pause } from 'lucide-react';
 import PhotoViewer from './PhotoViewer';
 import { formatDateVN } from '@/lib/datetime';
 import LocationPicker from './LocationPicker';
@@ -68,6 +68,7 @@ interface Photo {
   location_name?: string | null;
   location_url?: string | null;
   created_at: string;
+  is_video?: boolean;
 }
 
 interface PreviewItem {
@@ -75,6 +76,7 @@ interface PreviewItem {
   file: File;
   url: string;
   name: string;
+  isVideo: boolean;
 }
 
 interface AlbumDetailProps {
@@ -113,6 +115,17 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
   const [customDateFrom, setCustomDateFrom] = useState('');
   const [customDateTo, setCustomDateTo] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Voice recording states
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [audioPreview, setAudioPreview] = useState<string | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -168,6 +181,126 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
     fetchPhotos(true);
   }, [fetchPhotos]);
 
+  // Voice recording functions
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        setAudioBlob(blob);
+        const url = URL.createObjectURL(blob);
+        setAudioPreview(url);
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+      setRecordingTime(0);
+
+      recordingIntervalRef.current = setInterval(() => {
+        setRecordingTime(prev => prev + 1);
+      }, 1000);
+    } catch (error) {
+      console.error('Error starting recording:', error);
+      alert('Không thể truy cập microphone. Vui lòng cấp quyền.');
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      if (recordingIntervalRef.current) {
+        clearInterval(recordingIntervalRef.current);
+        recordingIntervalRef.current = null;
+      }
+    }
+  };
+
+  const playRecording = () => {
+    if (audioPlayerRef.current) {
+      if (isPlaying) {
+        audioPlayerRef.current.pause();
+        setIsPlaying(false);
+      } else {
+        audioPlayerRef.current.play();
+        setIsPlaying(true);
+      }
+    }
+  };
+
+  const discardRecording = () => {
+    stopRecording();
+    if (audioPreview) {
+      URL.revokeObjectURL(audioPreview);
+    }
+    setAudioBlob(null);
+    setAudioPreview(null);
+    setRecordingTime(0);
+    setIsPlaying(false);
+  };
+
+  const uploadRecording = async () => {
+    if (!audioBlob) return;
+
+    try {
+      setAddingPhoto(true);
+      const formData = new FormData();
+      const file = new File([audioBlob], `recording-${Date.now()}.webm`, { type: 'audio/webm' });
+      formData.append('files', file);
+
+      const { urls } = await uploadFilesWithProgress(formData);
+
+      if (urls.length > 0) {
+        const response = await fetch(`/api/albums/${album.id}/photos`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({
+            imageUrl: urls[0],
+            caption: 'Ghi âm giọng nói',
+            locationName: '',
+            locationUrl: '',
+            isVideo: false,
+          }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.photo) {
+            setPhotos((prev) => [data.photo, ...prev]);
+            setTotal((t) => t + 1);
+            offsetRef.current += 1;
+            onAlbumUpdate();
+          }
+        }
+      }
+
+      discardRecording();
+      setShowAddPhoto(false);
+    } catch (error) {
+      console.error('Error uploading recording:', error);
+      alert('Lỗi tải ghi âm');
+    } finally {
+      setAddingPhoto(false);
+    }
+  };
+
+  const formatRecordingTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
   // Dọn các object URL khi unmount
   useEffect(() => {
     return () => {
@@ -196,12 +329,13 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
     const newPreviews: PreviewItem[] = [];
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-      if (file.type.startsWith('image/')) {
+      if (file.type.startsWith('image/') || file.type.startsWith('video/')) {
         newPreviews.push({
           id: `${Date.now()}-${i}-${file.name}`,
           file,
           url: URL.createObjectURL(file),
           name: file.name,
+          isVideo: file.type.startsWith('video/'),
         });
       }
     }
@@ -273,10 +407,11 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
         const caption = captions[previews[i].id] || '';
         const locationName = locationNames[previews[i].id] || '';
         const locationUrl = locationUrls[previews[i].id] || '';
+        const isVideo = previews[i].isVideo;
         const response = await fetch(`/api/albums/${album.id}/photos`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ imageUrl, caption, locationName, locationUrl }),
+          body: JSON.stringify({ imageUrl, caption, locationName, locationUrl, isVideo }),
         });
         if (response.ok) {
           const data = await response.json();
@@ -287,6 +422,7 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
               caption,
               location_name: locationName || null,
               location_url: locationUrl || null,
+              is_video: isVideo,
               created_at: new Date().toISOString(),
             });
           }
@@ -409,6 +545,8 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
     }
   };
 
+  const [shareCopied, setShareCopied] = useState(false);
+
   const shareAlbum = async () => {
     try {
       // Create share link with 72h expiration
@@ -421,36 +559,26 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
       });
 
       if (!response.ok) {
-        throw new Error('Không thể tạo link chia sẻ');
+        const errorData = await response.json();
+        console.error('Share API error:', errorData);
+        throw new Error(errorData.error || 'Không thể tạo link chia sẻ');
       }
 
       const data = await response.json();
       const shareUrl = data.shareLink;
-      const shareText = `Xem album "${album.title}" của chúng mình nhé!`;
 
-      if (navigator.share) {
-        try {
-          await navigator.share({
-            title: album.title,
-            text: shareText,
-            url: shareUrl,
-          });
-        } catch (error) {
-          console.error('Error sharing:', error);
-        }
-      } else {
-        // Fallback: copy to clipboard
-        try {
-          await navigator.clipboard.writeText(shareUrl);
-          alert('Đã sao chép link vào clipboard!\nLink sẽ hết hạn sau 72 giờ.');
-        } catch (error) {
-          console.error('Error copying to clipboard:', error);
-          alert(`Link: ${shareUrl}`);
-        }
-      }
+      // Tự động copy vào clipboard
+      await navigator.clipboard.writeText(shareUrl);
+      
+      // Đổi icon thành đã copy
+      setShareCopied(true);
+      
+      // Sau 3 giây thì đổi lại icon ban đầu
+      setTimeout(() => {
+        setShareCopied(false);
+      }, 3000);
     } catch (error) {
       console.error('Error creating share link:', error);
-      alert('Không thể tạo link chia sẻ. Vui lòng thử lại.');
     }
   };
 
@@ -578,10 +706,14 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
             onClick={shareAlbum}
             className="flex items-center gap-2 px-4 py-2 bg-white border border-rose-300 text-rose-600 rounded-full text-sm font-semibold hover:bg-rose-50 transition-colors shadow-sm"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-            </svg>
-            Chia sẻ
+            {shareCopied ? (
+              <Check size={16} className="text-green-500" />
+            ) : (
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+              </svg>
+            )}
+            {shareCopied ? 'Đã sao chép' : 'Chia sẻ'}
           </button>
           <button
             onClick={downloadAllPhotos}
@@ -693,13 +825,27 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
                     {previews.map((preview, idx) => (
                       <div key={preview.id} className="flex gap-3 bg-white rounded-lg p-3 border border-rose-100">
                         <div className="relative h-24 w-24 flex-shrink-0 bg-gray-100 rounded-lg overflow-hidden">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={preview.url || '/placeholder.svg'} alt={`Xem trước ${idx + 1}`} className="w-full h-full object-cover" />
+                          {preview.isVideo ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <video src={preview.url} className="w-full h-full object-cover" muted />
+                          ) : (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={preview.url || '/placeholder.svg'} alt={`Xem trước ${idx + 1}`} className="w-full h-full object-cover" />
+                          )}
+                          {preview.isVideo && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                              <div className="w-10 h-10 rounded-full bg-white/80 flex items-center justify-center">
+                                <svg className="w-5 h-5 text-rose-500 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                                  <path d="M8 5v14l11-7z" />
+                                </svg>
+                              </div>
+                            </div>
+                          )}
                           <button
                             type="button"
                             onClick={() => removePreview(preview.id)}
                             className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold transition-colors"
-                            aria-label="Xóa ảnh"
+                            aria-label="Xóa"
                           >
                             <X size={12} />
                           </button>
@@ -777,17 +923,85 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept="image/*"
+                  accept="image/*,video/*"
                   multiple
                   onChange={handleFileInputChange}
                   className="hidden"
                 />
                 <p className="text-gray-700 font-semibold mb-1 font-cute">
-                  Kéo thả ảnh vào đây hoặc nhấp để chọn
+                  Kéo thả ảnh hoặc video vào đây hoặc nhấp để chọn
                 </p>
                 <p className="text-sm text-gray-500">
-                  Hỗ trợ: JPG, PNG, GIF, WebP (có thể chọn nhiều ảnh)
+                  Hỗ trợ: JPG, PNG, GIF, WebP, MP4, MOV (có thể chọn nhiều file)
                 </p>
+              </div>
+
+              {/* Voice Recording Section */}
+              <div className="mt-6 p-4 bg-rose-50 rounded-xl border-2 border-rose-200">
+                <h4 className="font-semibold text-rose-700 mb-3 font-cute flex items-center gap-2">
+                  <Mic size={18} />
+                  Ghi Âm Giọng Nói
+                </h4>
+
+                {!audioPreview ? (
+                  <div className="flex flex-col items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={isRecording ? stopRecording : startRecording}
+                      className={`w-16 h-16 rounded-full flex items-center justify-center transition-all ${
+                        isRecording
+                          ? 'bg-red-500 hover:bg-red-600 animate-pulse'
+                          : 'bg-rose-500 hover:bg-rose-600'
+                      }`}
+                    >
+                      {isRecording ? (
+                        <MicOff size={28} className="text-white" />
+                      ) : (
+                        <Mic size={28} className="text-white" />
+                      )}
+                    </button>
+                    <p className="text-sm text-gray-600 font-cute">
+                      {isRecording ? `Đang ghi âm... ${formatRecordingTime(recordingTime)}` : 'Nhấn để bắt đầu ghi âm'}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <audio
+                      ref={audioPlayerRef}
+                      src={audioPreview}
+                      onEnded={() => setIsPlaying(false)}
+                      className="w-full"
+                      controls
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={playRecording}
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-white border-2 border-rose-300 text-rose-600 rounded-lg font-cute text-sm hover:bg-rose-50 transition-colors"
+                      >
+                        {isPlaying ? <Pause size={16} /> : <Play size={16} />}
+                        {isPlaying ? 'Tạm dừng' : 'Phát lại'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={discardRecording}
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg font-cute text-sm transition-colors"
+                      >
+                        <X size={16} />
+                        Hủy
+                      </button>
+                      <button
+                        type="button"
+                        onClick={uploadRecording}
+                        disabled={addingPhoto}
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-rose-500 hover:bg-rose-600 disabled:opacity-50 text-white rounded-lg font-cute text-sm transition-colors"
+                      >
+                        <Check size={16} />
+                        Lưu
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -836,13 +1050,33 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
                     onClick={() => setViewerIndex(idx)}
                     className="h-36 sm:h-44 bg-gradient-to-br from-rose-100 via-pink-50 to-rose-50 flex items-center justify-center overflow-hidden relative cursor-pointer rounded-t-2xl"
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={photo.image_url || '/placeholder.svg'}
-                      alt={photo.caption || 'Ảnh'}
-                      loading="lazy"
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
+                    {photo.is_video ? (
+                      <>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <video
+                          src={photo.image_url || '/placeholder.svg'}
+                          loading="lazy"
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          muted
+                        />
+                        {/* Play icon overlay */}
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition-colors">
+                          <div className="w-12 h-12 rounded-full bg-white/80 flex items-center justify-center shadow-lg">
+                            <svg className="w-6 h-6 text-rose-500 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M8 5v14l11-7z" />
+                            </svg>
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img
+                        src={photo.image_url || '/placeholder.svg'}
+                        alt={photo.caption || 'Ảnh'}
+                        loading="lazy"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    )}
                     
                     {/* Cover badge */}
                     {coverPhotoId === photo.id && (

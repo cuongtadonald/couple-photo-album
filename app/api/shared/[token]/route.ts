@@ -3,10 +3,10 @@ import { getConnection } from '@/lib/db';
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { token: string } }
+  { params }: { params: Promise<{ token: string }> }
 ) {
   try {
-    const { token } = params;
+    const { token } = await params;
     const conn = await getConnection();
 
     // Find share record
@@ -41,10 +41,36 @@ export async function GET(
 
     const album = (albums as any[])[0];
 
-    // Get photos
+    // Get photos with location info
     const [photos] = await conn.execute(
-      'SELECT id, image_url, caption, created_at FROM photos WHERE album_id = ? ORDER BY created_at DESC',
+      'SELECT id, image_url, caption, created_at, location_name, location_url FROM photos WHERE album_id = ? ORDER BY created_at DESC',
       [share.album_id]
+    );
+
+    // Get stickers for each photo
+    const photosWithStickers = await Promise.all(
+      (photos as any[]).map(async (photo) => {
+        const [stickers] = await conn.execute(
+          'SELECT id, emoji, position_x, position_y, user_id FROM photo_stickers WHERE photo_id = ?',
+          [photo.id]
+        );
+
+        return {
+          id: photo.id,
+          imageUrl: photo.image_url,
+          caption: photo.caption,
+          createdAt: photo.created_at,
+          locationName: photo.location_name,
+          locationUrl: photo.location_url,
+          stickers: (stickers as any[]).map((s) => ({
+            id: s.id,
+            emoji: s.emoji,
+            positionX: s.position_x,
+            positionY: s.position_y,
+            userId: s.user_id,
+          })),
+        };
+      })
     );
 
     conn.release();
@@ -54,12 +80,8 @@ export async function GET(
       id: album.id,
       title: album.title,
       description: album.description,
-      photos: (photos as any[]).map((photo) => ({
-        id: photo.id,
-        imageUrl: photo.image_url,
-        caption: photo.caption,
-        createdAt: photo.created_at,
-      })),
+      expiresAt: share.expires_at,
+      photos: photosWithStickers,
     };
 
     return NextResponse.json({ album: albumData });

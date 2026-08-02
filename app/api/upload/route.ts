@@ -30,7 +30,8 @@ export async function POST(request: NextRequest) {
     const urls: string[] = [];
 
     for (const file of files) {
-      if (!file.type.startsWith('image/')) {
+      // Accept both images and videos
+      if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
         continue;
       }
 
@@ -46,7 +47,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (urls.length === 0) {
-      return NextResponse.json({ error: 'No valid image files' }, { status: 400 });
+      return NextResponse.json({ error: 'No valid image or video files' }, { status: 400 });
     }
 
     return NextResponse.json({ success: true, urls }, { status: 201 });

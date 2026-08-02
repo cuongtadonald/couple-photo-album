@@ -60,7 +60,7 @@ export async function POST(
     }
 
     const { albumId } = await params;
-    const { imageUrl, caption, locationName, locationUrl } = await request.json();
+    const { imageUrl, caption, locationName, locationUrl, isVideo } = await request.json();
 
     if (!imageUrl) {
       return NextResponse.json({ error: 'Image URL is required' }, { status: 400 });
@@ -78,11 +78,18 @@ export async function POST(
       return NextResponse.json({ error: 'Album not found' }, { status: 404 });
     }
 
+    // Ensure is_video column exists
+    try {
+      await connection.execute('ALTER TABLE photos ADD COLUMN is_video BOOLEAN DEFAULT FALSE');
+    } catch {
+      // Column already exists
+    }
+
     let result: any;
     try {
       [result] = await connection.execute(
-        'INSERT INTO photos (album_id, image_url, caption, location_name, location_url) VALUES (?, ?, ?, ?, ?)',
-        [albumId, imageUrl, caption || null, locationName || null, locationUrl || null]
+        'INSERT INTO photos (album_id, image_url, caption, location_name, location_url, is_video) VALUES (?, ?, ?, ?, ?, ?)',
+        [albumId, imageUrl, caption || null, locationName || null, locationUrl || null, isVideo || false]
       );
     } catch (insertErr: any) {
       // Fallback: columns may not exist yet on older DB — insert without location fields
@@ -108,6 +115,7 @@ export async function POST(
           caption: caption || '',
           location_name: locationName || null,
           location_url: locationUrl || null,
+          is_video: isVideo || false,
           created_at: new Date().toISOString(),
         },
       },

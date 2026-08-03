@@ -561,24 +561,44 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
       if (!response.ok) {
         const errorData = await response.json();
         console.error('Share API error:', errorData);
-        throw new Error(errorData.error || 'Không thể tạo link chia sẻ');
+        alert(`Lỗi: ${errorData.error || 'Không thể tạo link chia sẻ'}`);
+        return;
       }
 
       const data = await response.json();
       const shareUrl = data.shareLink;
 
-      // Tự động copy vào clipboard
-      await navigator.clipboard.writeText(shareUrl);
-      
-      // Đổi icon thành đã copy
-      setShareCopied(true);
-      
-      // Sau 3 giây thì đổi lại icon ban đầu
-      setTimeout(() => {
-        setShareCopied(false);
-      }, 3000);
+      // Tự động copy vào clipboard với fallback
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(shareUrl);
+        } else {
+          // Fallback cho trình duyệt cũ hoặc không có HTTPS
+          const textArea = document.createElement('textarea');
+          textArea.value = shareUrl;
+          textArea.style.position = 'fixed';
+          textArea.style.left = '-999999px';
+          document.body.appendChild(textArea);
+          textArea.select();
+          document.execCommand('copy');
+          document.body.removeChild(textArea);
+        }
+        
+        // Đổi icon thành đã copy
+        setShareCopied(true);
+        
+        // Sau 3 giây thì đổi lại icon ban đầu
+        setTimeout(() => {
+          setShareCopied(false);
+        }, 3000);
+      } catch (clipboardError) {
+        console.error('Clipboard error:', clipboardError);
+        // Vẫn hiển thị link nếu không copy được
+        alert(`Link chia sẻ: ${shareUrl}`);
+      }
     } catch (error) {
       console.error('Error creating share link:', error);
+      alert(`Lỗi: ${error instanceof Error ? error.message : 'Không thể tạo link chia sẻ'}`);
     }
   };
 

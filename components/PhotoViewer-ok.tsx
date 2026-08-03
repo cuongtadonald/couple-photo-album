@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCcw, MapPin, ExternalLink, Sticker, Download } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCcw, MapPin, ExternalLink, Sticker } from 'lucide-react';
 import StickerOverlay, { StickerItem } from './StickerOverlay';
 
 interface ViewerPhoto {
@@ -175,22 +175,6 @@ export default function PhotoViewer({ photos, startIndex, onClose, albumId, toke
             className="grid place-items-center w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
           >
             <RotateCcw size={18} />
-          </button>
-          <button
-            onClick={() => {
-              if (!current) return;
-              const link = document.createElement('a');
-              link.href = current.image_url;
-              link.download = `photo-${current.id}`;
-              link.target = '_blank';
-              document.body.appendChild(link);
-              link.click();
-              document.body.removeChild(link);
-            }}
-            aria-label="Tải ảnh"
-            className="grid place-items-center w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
-          >
-            <Download size={18} />
           </button>
           {albumId != null && (
             <button

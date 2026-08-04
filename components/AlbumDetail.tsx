@@ -39,7 +39,7 @@ function DropdownMenu({ children, trigger }: { children: React.ReactNode; trigge
         {trigger}
       </div>
       {isOpen && (
-        <div className="absolute right-0 top-8 bg-white rounded-xl shadow-lg border border-pink-100 p-2 z-50 min-w-[180px]">
+        <div className="absolute right-0 top-8 bg-white rounded-xl shadow-lg border border-pink-100 p-2 z-50 min-w-[180px] max-w-[calc(100vw-2rem)]">
           <div className="grid grid-cols-2 gap-2">
             {children}
           </div>

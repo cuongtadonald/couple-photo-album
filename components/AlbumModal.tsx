@@ -113,12 +113,12 @@ export default function AlbumModal({ isOpen, onClose, onSubmit, initial, draftKe
       <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto border-2 border-rose-100">
         <div className="flex justify-between items-center p-6 border-b border-rose-100">
           <h2 className="text-xl font-bold bg-gradient-to-r from-rose-500 to-pink-500 bg-clip-text text-transparent font-cute">
-            {isEdit ? 'Sua Album' : 'Tao Album Moi'}
+            {isEdit ? 'Sửa Album' : 'Tạo Album Mới'}
           </h2>
           <button
             onClick={handleClose}
             className="text-gray-500 hover:text-rose-500 transition-colors"
-            aria-label="Dong"
+            aria-label="Đóng"
           >
             <X size={24} />
           </button>
@@ -127,27 +127,27 @@ export default function AlbumModal({ isOpen, onClose, onSubmit, initial, draftKe
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2 font-cute">
-              Ten Album
+              Tên Album
             </label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 font-cute text-gray-700"
-              placeholder="Vi du: Ky niem ngay gap nhau"
+              placeholder="Ví dụ: Kỷ niệm ngày gặp nhau"
               required
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2 font-cute">
-              Mo Ta (Tuy Chon)
+              Mô Tả (Tùy Chọn)
             </label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 font-cute text-gray-700"
-              placeholder="Mo ta chi tiet ve album..."
+              placeholder="Mô tả chi tiết về album..."
               rows={3}
             />
           </div>
@@ -161,7 +161,7 @@ export default function AlbumModal({ isOpen, onClose, onSubmit, initial, draftKe
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2 font-cute">
-              Che Do Hien Thi
+              Chế Độ Hiển Thị
             </label>
             <div className="grid grid-cols-2 gap-3">
               <button
@@ -174,7 +174,7 @@ export default function AlbumModal({ isOpen, onClose, onSubmit, initial, draftKe
                 }`}
               >
                 <Lock size={16} />
-                Rieng tu
+                Riêng tư
               </button>
               <button
                 type="button"
@@ -186,13 +186,13 @@ export default function AlbumModal({ isOpen, onClose, onSubmit, initial, draftKe
                 }`}
               >
                 <Globe size={16} />
-                Cong khai
+                Công khai
               </button>
             </div>
             <p className="text-xs text-gray-500 mt-2">
               {visibility === 'private'
-                ? 'Chi minh ban nhin thay album nay.'
-                : 'Ca hai dua deu nhin thay trong tab Cong khai.'}
+                ? 'Chỉ mình bạn nhìn thấy album này.'
+                : 'Cả hai đứa đều nhìn thấy trong tab Công khai.'}
             </p>
           </div>
 
@@ -202,14 +202,14 @@ export default function AlbumModal({ isOpen, onClose, onSubmit, initial, draftKe
               onClick={handleClose}
               className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-cute"
             >
-              Huy
+              Hủy
             </Button>
             <Button
               type="submit"
               disabled={loading}
               className="flex-1 bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white font-cute shadow-lg"
             >
-              {loading ? 'Dang luu...' : isEdit ? 'Luu' : 'Tao'}
+              {loading ? 'Đang lưu...' : isEdit ? 'Lưu' : 'Tạo'}
             </Button>
           </div>
         </form>

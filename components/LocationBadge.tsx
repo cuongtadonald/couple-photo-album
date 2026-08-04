@@ -19,7 +19,7 @@ interface LocationBadgeProps {
 export default function LocationBadge({
   locationName,
   locationUrl,
-  fallbackLabel = 'Xem ban do',
+  fallbackLabel = 'Xem bản đồ',
   className = '',
 }: LocationBadgeProps) {
   if (!locationName && !locationUrl) return null;
@@ -43,9 +43,9 @@ export default function LocationBadge({
         target="_blank"
         rel="noopener noreferrer"
         onClick={(e) => e.stopPropagation()}
-        className={base + ' bg-primary/10 text-primary hover:bg-primary/20 transition-colors cursor-pointer'}
-        title="Mo Google Maps"
-        aria-label={`Mo Google Maps: ${label}`}
+        className={base + ' bg-rose-100 text-rose-600 hover:bg-rose-200 transition-colors cursor-pointer'}
+        title="Mở Google Maps"
+        aria-label={`Mở Google Maps: ${label}`}
       >
         {inner}
       </a>
@@ -53,7 +53,7 @@ export default function LocationBadge({
   }
 
   return (
-    <span className={base + ' bg-muted text-muted-foreground'}>
+    <span className={base + ' bg-gray-100 text-gray-700'}>
       {inner}
     </span>
   );

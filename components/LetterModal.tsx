@@ -217,43 +217,43 @@ export default function LetterModal({ isOpen, onClose, onSubmit, initial, draftK
       <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto border-2 border-rose-100">
         <div className="p-6 sticky top-0 bg-white/80 backdrop-blur-sm border-b border-rose-100 flex justify-between items-center">
           <h2 className="text-xl font-bold bg-gradient-to-r from-rose-500 to-pink-500 bg-clip-text text-transparent font-cute">
-            {isEdit ? 'Sua Thu Tay' : 'Viet Thu Tay'}
+            {isEdit ? 'Sửa Thư Tay' : 'Viết Thư Tay'}
           </h2>
-          <button onClick={handleClose} className="text-gray-500 hover:text-rose-500 transition-colors" aria-label="Dong">
+          <button onClick={handleClose} className="text-gray-500 hover:text-rose-500 transition-colors" aria-label="Đóng">
             <X size={24} />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2 font-cute">Tieu De</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2 font-cute">Tiêu Đề</label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 font-cute text-gray-700"
-              placeholder="Vi du: Tang em nhan ngay sinh nhat"
+              placeholder="Ví dụ: Tặng em nhân ngày sinh nhật"
               required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2 font-cute">Noi Dung Thu</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2 font-cute">Nội Dung Thư</label>
             <textarea
               value={textContent}
               onChange={(e) => setTextContent(e.target.value)}
               className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 font-cute text-gray-700"
-              placeholder="Viet noi dung thu tay tai day..."
+              placeholder="Viết nội dung thư tay tại đây..."
               rows={6}
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2 font-cute">
-              Hen Ngay Mo Thu (Tuy Chon)
+              Hẹn Ngày Mở Thư (Tùy Chọn)
             </label>
             <p className="text-xs text-gray-500 mb-2">
-              Neu de trong, thu se mo ngay. Chi can chon ngay, gio de trong mac dinh 00:00
+              Nếu để trống, thư sẽ mở ngay. Chỉ cần chọn ngày, giờ để trống mặc định 00:00
             </p>
             <div className="flex gap-2">
               <input
@@ -358,14 +358,14 @@ export default function LetterModal({ isOpen, onClose, onSubmit, initial, draftK
               onClick={handleClose}
               className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-cute"
             >
-              Huy
+              Hủy
             </Button>
             <Button
               type="submit"
               disabled={loading}
               className="flex-1 bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white font-cute shadow-lg"
             >
-              {loading ? 'Dang luu...' : isEdit ? 'Luu' : 'Gui Thu'}
+              {loading ? 'Đang lưu...' : isEdit ? 'Lưu' : 'Gửi Thư'}
             </Button>
           </div>
         </form>

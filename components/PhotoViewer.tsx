@@ -11,6 +11,8 @@ interface ViewerPhoto {
   location_name?: string | null;
   location_url?: string | null;
   is_video?: boolean;
+  video_url?: string | null;
+  video_type?: string | null;
 }
 
 interface PhotoViewerProps {
@@ -234,15 +236,47 @@ export default function PhotoViewer({ photos, startIndex, onClose, albumId, toke
         )}
 
         {current.is_video ? (
-          <video
-            src={current.image_url || '/placeholder.svg'}
-            controls
-            autoPlay
-            className="max-h-full max-w-full object-contain"
-            style={{
-              transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`,
-            }}
-          />
+          current.video_url ? (
+            // Video from link (YouTube, Google Drive, Vimeo, etc.)
+            <div className="w-full h-full max-w-4xl max-h-[80vh] flex items-center justify-center">
+              {current.video_type === 'youtube' || current.video_type === 'vimeo' || current.video_type === 'dailymotion' || current.video_type === 'gdrive' ? (
+                <iframe
+                  src={current.video_url.includes('youtube') 
+                    ? `https://www.youtube.com/embed/${current.video_url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|v\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/)?.[1]}`
+                    : current.video_url.includes('vimeo')
+                    ? `https://player.vimeo.com/video/${current.video_url.match(/vimeo\.com\/(\d+)/)?.[1]}`
+                    : current.video_url.includes('dailymotion')
+                    ? `https://www.dailymotion.com/embed/video/${current.video_url.match(/dailymotion\.com\/video\/([a-zA-Z0-9]+)/)?.[1]}`
+                    : current.video_url.includes('drive.google')
+                    ? `https://drive.google.com/file/d/${current.video_url.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/)?.[1]}/preview`
+                    : current.video_url}
+                  className="w-full h-full rounded-lg"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              ) : (
+                // Direct video link
+                // eslint-disable-next-line @next/next/no-img-element
+                <video
+                  src={current.video_url}
+                  controls
+                  autoPlay
+                  className="max-h-full max-w-full rounded-lg"
+                />
+              )}
+            </div>
+          ) : (
+            // Uploaded video file
+            <video
+              src={current.image_url || '/placeholder.svg'}
+              controls
+              autoPlay
+              className="max-h-full max-w-full object-contain"
+              style={{
+                transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`,
+              }}
+            />
+          )
         ) : (
           /* eslint-disable-next-line @next/next/no-img-element */
           <img

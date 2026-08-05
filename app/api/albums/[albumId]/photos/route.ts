@@ -60,10 +60,10 @@ export async function POST(
     }
 
     const { albumId } = await params;
-    const { imageUrl, caption, locationName, locationUrl, isVideo } = await request.json();
+    const { imageUrl, caption, locationName, locationUrl, isVideo, videoUrl, videoType } = await request.json();
 
-    if (!imageUrl) {
-      return NextResponse.json({ error: 'Image URL is required' }, { status: 400 });
+    if (!imageUrl && !videoUrl) {
+      return NextResponse.json({ error: 'Image URL or Video URL is required' }, { status: 400 });
     }
 
     const connection = await pool.getConnection();
@@ -78,25 +78,46 @@ export async function POST(
       return NextResponse.json({ error: 'Album not found' }, { status: 404 });
     }
 
-    // Ensure is_video column exists
+    // Ensure columns exist
     try {
       await connection.execute('ALTER TABLE photos ADD COLUMN is_video BOOLEAN DEFAULT FALSE');
     } catch {
       // Column already exists
     }
 
+    try {
+      await connection.execute('ALTER TABLE photos ADD COLUMN video_url TEXT NULL');
+    } catch {
+      // Column already exists
+    }
+
+    try {
+      await connection.execute('ALTER TABLE photos ADD COLUMN video_type VARCHAR(50) NULL');
+    } catch {
+      // Column already exists
+    }
+
     let result: any;
     try {
-      [result] = await connection.execute(
-        'INSERT INTO photos (album_id, image_url, caption, location_name, location_url, is_video) VALUES (?, ?, ?, ?, ?, ?)',
-        [albumId, imageUrl, caption || null, locationName || null, locationUrl || null, isVideo || false]
-      );
+      if (videoUrl) {
+        // Insert video link
+        [result] = await connection.execute(
+          'INSERT INTO photos (album_id, image_url, caption, location_name, location_url, is_video, video_url, video_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+          [albumId, imageUrl || null, caption || null, locationName || null, locationUrl || null, true, videoUrl, videoType || null]
+        );
+      } else {
+        // Insert image
+        [result] = await connection.execute(
+          'INSERT INTO photos (album_id, image_url, caption, location_name, location_url, is_video) VALUES (?, ?, ?, ?, ?, ?)',
+          [albumId, imageUrl, caption || null, locationName || null, locationUrl || null, isVideo || false]
+        );
+      }
     } catch (insertErr: any) {
       // Fallback: columns may not exist yet on older DB — insert without location fields
       if (insertErr?.code === 'ER_BAD_FIELD_ERROR') {
         [result] = await connection.execute(
           'INSERT INTO photos (album_id, image_url, caption) VALUES (?, ?, ?)',
-          [albumId, imageUrl, caption || null]
+          [albumId, imageUrl || videoUrl, caption || null]
         );
       } else {
         connection.release();
@@ -111,11 +132,13 @@ export async function POST(
         photo: {
           id: (result as any).insertId,
           album_id: Number(albumId),
-          image_url: imageUrl,
+          image_url: imageUrl || null,
           caption: caption || '',
           location_name: locationName || null,
           location_url: locationUrl || null,
-          is_video: isVideo || false,
+          is_video: isVideo || !!videoUrl,
+          video_url: videoUrl || null,
+          video_type: videoType || null,
           created_at: new Date().toISOString(),
         },
       },

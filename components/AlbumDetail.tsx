@@ -3,12 +3,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ChangeEvent, DragEvent } from 'react';
 import type { StickerItem } from './StickerOverlay';
-import { ArrowLeft, Star, Pencil, Trash2, Check, X, Lock, Globe, Download, MoreHorizontal, Calendar, Mic, MicOff, Play, Pause } from 'lucide-react';
+import { ArrowLeft, Star, Pencil, Trash2, Check, X, Lock, Globe, Download, MoreHorizontal, Calendar, Mic, MicOff, Play, Pause, Link as LinkIcon } from 'lucide-react';
 import PhotoViewer from './PhotoViewer';
+import VideoLinkModal from './VideoLinkModal';
 import { formatDateVN } from '@/lib/datetime';
 import LocationPicker from './LocationPicker';
 import LocationBadge from './LocationBadge';
 import Image from 'next/image';
+import { detectVideoType } from '@/lib/video-utils';
 
 type TimeFilter = 'all' | 'week' | 'month' | 'year' | 'custom';
 
@@ -69,6 +71,8 @@ interface Photo {
   location_url?: string | null;
   created_at: string;
   is_video?: boolean;
+  video_url?: string | null;
+  video_type?: string | null;
 }
 
 interface PreviewItem {
@@ -104,6 +108,7 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
   const [locationUrls, setLocationUrls] = useState<Record<string, string>>({});
 
   const [showAddPhoto, setShowAddPhoto] = useState(false);
+  const [showVideoLinkModal, setShowVideoLinkModal] = useState(false);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
   const [coverPhotoId, setCoverPhotoId] = useState<number | null>(album.cover_photo_id ?? null);
   const [photoStickers, setPhotoStickers] = useState<Map<number, StickerItem[]>>(new Map());
@@ -818,6 +823,49 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
         />
       </button>
 
+      {/* Floating button to add video from link */}
+      <button
+        onClick={() => setShowVideoLinkModal(true)}
+        aria-label="Thêm video từ link"
+        title="Thêm video từ link"
+        className="fixed bottom-6 left-6 z-40 w-14 h-14 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-2xl hover:scale-110 active:scale-95 transition-all flex items-center justify-center"
+      >
+        <LinkIcon size={24} />
+      </button>
+
+      {/* Video Link Modal */}
+      <VideoLinkModal
+        isOpen={showVideoLinkModal}
+        onClose={() => setShowVideoLinkModal(false)}
+        onSubmit={async (videoUrl, caption) => {
+          const videoInfo = detectVideoType(videoUrl);
+          const response = await fetch(`/api/albums/${album.id}/photos`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              videoUrl,
+              videoType: videoInfo.type,
+              caption,
+            }),
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to add video');
+          }
+
+          const data = await response.json();
+          if (data.photo) {
+            setPhotos((prev) => [data.photo, ...prev]);
+            setTotal((t) => t + 1);
+            offsetRef.current += 1;
+            onAlbumUpdate();
+          }
+        }}
+      />
+
       {/* Add Photo Popup */}
       {showAddPhoto && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm p-0 sm:p-4">
@@ -1072,13 +1120,44 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
                   >
                     {photo.is_video ? (
                       <>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <video
-                          src={photo.image_url || '/placeholder.svg'}
-                          loading="lazy"
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                          muted
-                        />
+                        {photo.video_url ? (
+                          // Video from link (YouTube, Google Drive, etc.)
+                          <>
+                            {photo.video_type === 'youtube' && (
+                              <Image
+                                src={`https://img.youtube.com/vi/${detectVideoType(photo.video_url).id}/mqdefault.jpg`}
+                                alt={photo.caption || 'Video thumbnail'}
+                                width={400}
+                                height={225}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                unoptimized
+                              />
+                            )}
+                            {photo.video_type === 'direct' && (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <video
+                                src={photo.video_url}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                muted
+                              />
+                            )}
+                            {!['youtube', 'direct'].includes(photo.video_type || '') && (
+                              // Other video types (Google Drive, Vimeo, etc.)
+                              <div className="w-full h-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                                <LinkIcon size={48} className="text-white/80" />
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          // Uploaded video file
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <video
+                            src={photo.image_url || '/placeholder.svg'}
+                            loading="lazy"
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            muted
+                          />
+                        )}
                         {/* Play icon overlay */}
                         <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition-colors">
                           <div className="w-12 h-12 rounded-full bg-white/80 flex items-center justify-center shadow-lg">
@@ -1087,6 +1166,16 @@ export default function AlbumDetail({ album, token, onBack, onAlbumUpdate }: Alb
                             </svg>
                           </div>
                         </div>
+                        {/* Video source badge */}
+                        {photo.video_url && photo.video_type && (
+                          <span className="absolute top-2 right-2 flex items-center gap-1 text-[10px] font-bold text-white bg-purple-500/90 backdrop-blur-sm px-2 py-1 rounded-full shadow-sm z-10">
+                            <LinkIcon size={10} />
+                            {photo.video_type === 'youtube' ? 'YouTube' :
+                             photo.video_type === 'gdrive' ? 'Drive' :
+                             photo.video_type === 'vimeo' ? 'Vimeo' :
+                             photo.video_type === 'dailymotion' ? 'Dailymotion' : 'Video'}
+                          </span>
+                        )}
                       </>
                     ) : (
                       /* eslint-disable-next-line @next/next/no-img-element */

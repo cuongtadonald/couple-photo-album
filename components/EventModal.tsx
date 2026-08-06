@@ -1,13 +1,21 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { X, Lock, Globe } from 'lucide-react';
+import { X, Lock, Globe, Upload, Image as ImageIcon, Trash2 } from 'lucide-react';
 import { parseDate } from '@/lib/datetime';
 import LocationPicker from './LocationPicker';
 import { clearSessionKey } from '@/lib/use-session-state';
+import { uploadFilesWithProgress } from '@/lib/upload';
 
 type Visibility = 'private' | 'public';
+
+interface Attachment {
+  id?: number;
+  fileUrl: string;
+  fileName: string;
+  fileType: string;
+}
 
 interface EventInitial {
   title: string;
@@ -16,6 +24,8 @@ interface EventInitial {
   location: string;
   location_url?: string;
   visibility: Visibility;
+  cover_image_url?: string | null;
+  attachments?: Attachment[];
 }
 
 interface EventModalProps {
@@ -27,7 +37,9 @@ interface EventModalProps {
     eventDate: string,
     location: string,
     visibility: Visibility,
-    locationUrl: string
+    locationUrl: string,
+    coverImageUrl: string | null,
+    attachments: Attachment[]
   ) => Promise<void> | void;
   initial?: EventInitial | null;
   /** sessionStorage prefix used to persist create-mode draft (e.g. "events:draft") */
@@ -60,7 +72,12 @@ export default function EventModal({ isOpen, onClose, onSubmit, initial, draftKe
   const [location, setLocation] = useState('');
   const [locationUrl, setLocationUrl] = useState('');
   const [visibility, setVisibility] = useState<Visibility>('private');
+  const [coverImage, setCoverImage] = useState<string | null>(null);
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const coverInputRef = useRef<HTMLInputElement>(null);
+  const attachmentInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -71,6 +88,8 @@ export default function EventModal({ isOpen, onClose, onSubmit, initial, draftKe
       setLocation(initial.location || '');
       setLocationUrl(initial.location_url || '');
       setVisibility(initial.visibility);
+      setCoverImage(initial.cover_image_url || null);
+      setAttachments(initial.attachments || []);
       const d = parseDate(initial.event_date);
       if (d) {
         setEventDate(`${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`);
@@ -88,6 +107,7 @@ export default function EventModal({ isOpen, onClose, onSubmit, initial, draftKe
       setLocation(readDraft(draftKey, 'location'));
       setLocationUrl(readDraft(draftKey, 'locationUrl'));
       setVisibility((readDraft(draftKey, 'visibility', 'private') as Visibility) || 'private');
+      setCoverImage(readDraft(draftKey, 'coverImage') || null);
     } else {
       setTitle('');
       setDescription('');
@@ -96,6 +116,8 @@ export default function EventModal({ isOpen, onClose, onSubmit, initial, draftKe
       setLocation('');
       setLocationUrl('');
       setVisibility('private');
+      setCoverImage(null);
+      setAttachments([]);
     }
   }, [isOpen, initial, draftKey]);
 
@@ -107,12 +129,76 @@ export default function EventModal({ isOpen, onClose, onSubmit, initial, draftKe
   useEffect(() => { if (isOpen && !isEdit && draftKey) saveDraft(draftKey, 'location', location); }, [location, isOpen, isEdit, draftKey]);
   useEffect(() => { if (isOpen && !isEdit && draftKey) saveDraft(draftKey, 'locationUrl', locationUrl); }, [locationUrl, isOpen, isEdit, draftKey]);
   useEffect(() => { if (isOpen && !isEdit && draftKey) saveDraft(draftKey, 'visibility', visibility); }, [visibility, isOpen, isEdit, draftKey]);
+  useEffect(() => { if (isOpen && !isEdit && draftKey) saveDraft(draftKey, 'coverImage', coverImage || ''); }, [coverImage, isOpen, isEdit, draftKey]);
 
   const clearDraft = () => {
     if (!draftKey) return;
-    ['title', 'desc', 'date', 'time', 'location', 'locationUrl', 'visibility'].forEach((f) =>
+    ['title', 'desc', 'date', 'time', 'location', 'locationUrl', 'visibility', 'coverImage'].forEach((f) =>
       clearSessionKey(`${draftKey}:${f}`)
     );
+  };
+
+  const handleCoverImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const file = files[0];
+    if (!file.type.startsWith('image/')) {
+      alert('Vui lòng chọn file ảnh');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('files', file);
+      const { urls } = await uploadFilesWithProgress(formData);
+      if (urls.length > 0) {
+        setCoverImage(urls[0]);
+      }
+    } catch (error) {
+      console.error('Error uploading cover image:', error);
+      alert('Không thể tải ảnh bìa lên');
+    } finally {
+      setUploading(false);
+      if (coverInputRef.current) {
+        coverInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleAttachmentsUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      for (let i = 0; i < files.length; i++) {
+        formData.append('files', files[i]);
+      }
+      const { urls } = await uploadFilesWithProgress(formData);
+      
+      const newAttachments: Attachment[] = urls.map((url, idx) => ({
+        fileUrl: url,
+        fileName: files[idx].name,
+        fileType: files[idx].type.startsWith('image/') ? 'image' : files[idx].type.startsWith('video/') ? 'video' : 'other',
+      }));
+      
+      setAttachments((prev) => [...prev, ...newAttachments]);
+    } catch (error) {
+      console.error('Error uploading attachments:', error);
+      alert('Không thể tải tệp đính kèm lên');
+    } finally {
+      setUploading(false);
+      if (attachmentInputRef.current) {
+        attachmentInputRef.current.value = '';
+      }
+    }
+  };
+
+  const removeAttachment = (index: number) => {
+    setAttachments((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -132,7 +218,7 @@ export default function EventModal({ isOpen, onClose, onSubmit, initial, draftKe
     try {
       const time = eventTime || '00:00';
       const fullDateTime = `${eventDate}T${time}`;
-      await onSubmit(title, description, fullDateTime, location, visibility, locationUrl);
+      await onSubmit(title, description, fullDateTime, location, visibility, locationUrl, coverImage, attachments);
       clearDraft();
     } finally {
       setLoading(false);
@@ -211,6 +297,83 @@ export default function EventModal({ isOpen, onClose, onSubmit, initial, draftKe
             onLocationNameChange={setLocation}
             onLocationUrlChange={setLocationUrl}
           />
+
+          {/* Cover Image Upload */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2 font-cute">Ảnh Bìa (Tùy Chọn)</label>
+            <div className="space-y-2">
+              {coverImage ? (
+                <div className="relative">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={coverImage} alt="Cover" className="w-full h-40 object-cover rounded-lg border-2 border-rose-200" />
+                  <button
+                    type="button"
+                    onClick={() => setCoverImage(null)}
+                    className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 transition-colors"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => coverInputRef.current?.click()}
+                  disabled={uploading}
+                  className="w-full px-4 py-8 border-2 border-dashed border-rose-200 rounded-lg hover:border-rose-400 transition-colors flex flex-col items-center gap-2 text-rose-500 disabled:opacity-50"
+                >
+                  <ImageIcon size={32} />
+                  <span className="text-sm font-cute">{uploading ? 'Đang tải...' : 'Chọn ảnh bìa'}</span>
+                </button>
+              )}
+              <input
+                ref={coverInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleCoverImageUpload}
+                className="hidden"
+              />
+            </div>
+          </div>
+
+          {/* Attachments Upload */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2 font-cute">Tệp Đính Kèm (Tùy Chọn)</label>
+            <div className="space-y-2">
+              {attachments.length > 0 && (
+                <div className="space-y-2 max-h-40 overflow-y-auto">
+                  {attachments.map((att, idx) => (
+                    <div key={idx} className="flex items-center gap-2 p-2 bg-rose-50 rounded-lg">
+                      <span className="flex-1 text-sm text-gray-700 truncate">{att.fileName}</span>
+                      <button
+                        type="button"
+                        onClick={() => removeAttachment(idx)}
+                        className="text-red-500 hover:text-red-700 transition-colors"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={() => attachmentInputRef.current?.click()}
+                disabled={uploading}
+                className="w-full px-4 py-3 border-2 border-dashed border-rose-200 rounded-lg hover:border-rose-400 transition-colors flex items-center justify-center gap-2 text-rose-500 disabled:opacity-50"
+              >
+                <Upload size={20} />
+                <span className="text-sm font-cute">{uploading ? 'Đang tải...' : 'Thêm tệp đính kèm'}</span>
+              </button>
+              <input
+                ref={attachmentInputRef}
+                type="file"
+                accept="image/*,video/*,.pdf,.doc,.docx"
+                multiple
+                onChange={handleAttachmentsUpload}
+                className="hidden"
+              />
+            </div>
+          </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2 font-cute">Chế Độ Hiển Thị</label>

@@ -12,6 +12,13 @@ import { useSessionState, clearSessionKey } from '@/lib/use-session-state';
 
 type Visibility = 'private' | 'public';
 
+interface Attachment {
+  id?: number;
+  fileUrl: string;
+  fileName: string;
+  fileType: string;
+}
+
 interface Event {
   id: number;
   title: string;
@@ -23,6 +30,8 @@ interface Event {
   created_by_user_id: number;
   created_by_name: string;
   created_at: string;
+  cover_image_url?: string | null;
+  attachments?: Attachment[];
 }
 
 export default function EventList({ token }: { token: string | null }) {
@@ -63,16 +72,35 @@ export default function EventList({ token }: { token: string | null }) {
     eventDate: string,
     location: string,
     visibility: Visibility,
-    locationUrl: string
+    locationUrl: string,
+    coverImageUrl: string | null,
+    attachments: Attachment[]
   ) => {
     try {
       if (editing) {
         const response = await fetch(`/api/events/${editing.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ title, description, eventDate, location, locationUrl, visibility }),
+          body: JSON.stringify({ title, description, eventDate, location, locationUrl, visibility, coverImageUrl }),
         });
         if (response.ok) {
+          // Handle attachments updates
+          if (attachments.length > 0) {
+            for (const att of attachments) {
+              if (!att.id) {
+                // New attachment - upload it
+                await fetch(`/api/events/${editing.id}/attachments`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                  body: JSON.stringify({
+                    fileUrl: att.fileUrl,
+                    fileName: att.fileName,
+                    fileType: att.fileType,
+                  }),
+                });
+              }
+            }
+          }
           setTab(visibility);
           await fetchEvents();
         }
@@ -80,10 +108,24 @@ export default function EventList({ token }: { token: string | null }) {
         const response = await fetch('/api/events', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ title, description, eventDate, location, locationUrl, visibility }),
+          body: JSON.stringify({ title, description, eventDate, location, locationUrl, visibility, coverImageUrl }),
         });
         const data = await response.json();
         if (data.event) {
+          // Upload attachments if any
+          if (attachments.length > 0) {
+            for (const att of attachments) {
+              await fetch(`/api/events/${data.event.id}/attachments`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify({
+                  fileUrl: att.fileUrl,
+                  fileName: att.fileName,
+                  fileType: att.fileType,
+                }),
+              });
+            }
+          }
           setEvents((prev) => [...prev, data.event]);
           setTab(visibility);
         }
@@ -96,6 +138,7 @@ export default function EventList({ token }: { token: string | null }) {
       clearSessionKey('events:draft:location');
       clearSessionKey('events:draft:locationUrl');
       clearSessionKey('events:draft:visibility');
+      clearSessionKey('events:draft:coverImage');
       closeModal();
     } catch (error) {
       console.error('Error saving event:', error);
@@ -138,6 +181,7 @@ export default function EventList({ token }: { token: string | null }) {
     clearSessionKey('events:draft:location');
     clearSessionKey('events:draft:locationUrl');
     clearSessionKey('events:draft:visibility');
+    clearSessionKey('events:draft:coverImage');
   };
 
   const isUpcoming = (eventDate: string): boolean => {

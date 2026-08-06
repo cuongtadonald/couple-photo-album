@@ -36,7 +36,7 @@ export default function LocationPicker({
   const handleUrlChange = (value: string) => {
     onLocationUrlChange(value);
     if (value && !validateGoogleMapsUrl(value)) {
-      setUrlError('Vui long dan link Google Maps hop le');
+      setUrlError('Vui lòng dán link Google Maps hợp lệ');
     } else {
       setUrlError('');
     }
@@ -52,21 +52,21 @@ export default function LocationPicker({
 
   return (
     <div className="space-y-2">
-      <label className="flex items-center gap-1.5 text-sm font-medium text-foreground">
-        <MapPin size={14} className="text-muted-foreground" />
-        <span>Dia diem</span>
-        <span className="text-muted-foreground font-normal">(tuy chon)</span>
+      <label className="flex items-center gap-1.5 text-sm font-medium text-gray-500">
+        <MapPin size={14} className="text-gray-400" />
+        <span>Địa điểm</span>
+        <span className="text-gray-400 font-normal">(tùy chọn)</span>
       </label>
 
-      <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-2.5">
+      <div className="rounded-lg border border-gray-200 bg-gray-50/50 p-3 space-y-2.5">
         {/* Location name */}
         <div>
           <input
             type="text"
             value={locationName}
             onChange={(e) => onLocationNameChange(e.target.value)}
-            placeholder="Ten dia diem (vd: Cafe Trung Nguyen, Ho Hoan Kiem...)"
-            className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+            placeholder="Tên địa điểm (vd: Cafe Trung Nguyên, Hồ Hoàn Kiếm...)"
+            className="w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-rose-500/30 focus:border-rose-500 transition-colors"
           />
         </div>
 
@@ -77,54 +77,54 @@ export default function LocationPicker({
               type="url"
               value={locationUrl}
               onChange={(e) => handleUrlChange(e.target.value)}
-              placeholder="Dan link Google Maps vao day..."
-              className={`w-full rounded-md border bg-background px-3 py-2 pr-8 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-colors ${
-                urlError ? 'border-destructive focus:border-destructive focus:ring-destructive/30' : 'border-border focus:border-primary'
+              placeholder="Dán link Google Maps vào đây..."
+              className={`w-full rounded-md border bg-white px-3 py-2 pr-8 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-rose-500/30 transition-colors ${
+                urlError ? 'border-red-500 focus:border-red-500 focus:ring-red-500/30' : 'border-gray-200 focus:border-rose-500'
               }`}
             />
             {locationUrl && (
               <button
                 type="button"
                 onClick={() => handleUrlChange('')}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                aria-label="Xoa link"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                aria-label="Xóa link"
               >
                 <X size={14} />
               </button>
             )}
           </div>
           {urlError && (
-            <p className="mt-1 text-xs text-destructive">{urlError}</p>
+            <p className="mt-1 text-xs text-red-500">{urlError}</p>
           )}
-          <p className="mt-1 text-xs text-muted-foreground">
-            Mo Google Maps &rarr; chia se dia diem &rarr; sao chep link dan vao day
+          <p className="mt-1 text-xs text-gray-400">
+            Mở Google Maps &rarr; chia sẻ địa điểm &rarr; sao chép link dán vào đây
           </p>
         </div>
 
         {/* Preview */}
         {hasLocation && !urlError && (
-          <div className="flex items-center gap-2 rounded-md bg-primary/5 border border-primary/20 px-3 py-2">
-            <MapPin size={13} className="text-primary shrink-0" />
-            <span className="text-xs text-foreground flex-1 truncate">
-              {locationName || 'Dia diem da luu'}
+          <div className="flex items-center gap-2 rounded-md bg-rose-50 border border-rose-200 px-3 py-2">
+            <MapPin size={13} className="text-rose-500 shrink-0" />
+            <span className="text-xs text-gray-700 flex-1 truncate">
+              {locationName || 'Địa điểm đã lưu'}
             </span>
             {locationUrl && (
               <a
                 href={locationUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1 text-xs text-primary hover:underline shrink-0"
+                className="flex items-center gap-1 text-xs text-rose-600 hover:underline shrink-0"
                 onClick={(e) => e.stopPropagation()}
               >
                 <ExternalLink size={12} />
-                <span>Xem ban do</span>
+                <span>Xem bản đồ</span>
               </a>
             )}
             <button
               type="button"
               onClick={handleClear}
-              className="text-muted-foreground hover:text-destructive transition-colors shrink-0"
-              aria-label="Xoa dia diem"
+              className="text-gray-400 hover:text-red-500 transition-colors shrink-0"
+              aria-label="Xóa địa điểm"
             >
               <X size={13} />
             </button>

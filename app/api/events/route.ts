@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    const { title, description, eventDate, location, locationUrl, visibility } = await request.json();
+    const { title, description, eventDate, location, locationUrl, visibility, coverImageUrl } = await request.json();
 
     if (!title || !eventDate) {
       return NextResponse.json({ error: 'Title and event date are required' }, { status: 400 });
@@ -63,10 +63,18 @@ export async function POST(request: NextRequest) {
     const dbDate = toMysqlDateTime(eventDate);
 
     const connection = await pool.getConnection();
+    
+    // Ensure cover_image_url column exists
+    try {
+      await connection.execute('ALTER TABLE events ADD COLUMN cover_image_url TEXT NULL');
+    } catch {
+      // Column already exists
+    }
+    
     const [result] = await connection.execute(
-      `INSERT INTO events (title, description, event_date, location, location_url, visibility, created_by_user_id) 
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [title, description || null, dbDate, location || null, locationUrl || null, vis, decoded.userId]
+      `INSERT INTO events (title, description, event_date, location, location_url, visibility, created_by_user_id, cover_image_url) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [title, description || null, dbDate, location || null, locationUrl || null, vis, decoded.userId, coverImageUrl || null]
     );
     connection.release();
 
@@ -83,6 +91,7 @@ export async function POST(request: NextRequest) {
           visibility: vis,
           created_by_user_id: decoded.userId,
           created_by_name: null,
+          cover_image_url: coverImageUrl || null,
           created_at: new Date().toISOString(),
         },
       },

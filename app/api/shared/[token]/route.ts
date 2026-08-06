@@ -73,15 +73,23 @@ export async function GET(
     let photos: any[];
     try {
       [photos] = await conn.execute(
-        'SELECT id, image_url, caption, created_at, location_name, location_url FROM photos WHERE album_id = ? ORDER BY created_at DESC',
+        'SELECT id, image_url, caption, created_at, location_name, location_url, is_video, video_url, video_type FROM photos WHERE album_id = ? ORDER BY created_at DESC',
         [share.album_id]
       );
     } catch {
       // Fallback: columns location_name, location_url có thể chưa tồn tại
-      [photos] = await conn.execute(
-        'SELECT id, image_url, caption, created_at FROM photos WHERE album_id = ? ORDER BY created_at DESC',
-        [share.album_id]
-      );
+      try {
+        [photos] = await conn.execute(
+          'SELECT id, image_url, caption, created_at, is_video, video_url, video_type FROM photos WHERE album_id = ? ORDER BY created_at DESC',
+          [share.album_id]
+        );
+      } catch {
+        // Fallback: columns video_url, video_type có thể chưa tồn tại
+        [photos] = await conn.execute(
+          'SELECT id, image_url, caption, created_at, is_video FROM photos WHERE album_id = ? ORDER BY created_at DESC',
+          [share.album_id]
+        );
+      }
     }
 
     // Get stickers for each photo (skip if table doesn't exist or error)
@@ -106,6 +114,8 @@ export async function GET(
           locationName: photo.location_name || null,
           locationUrl: photo.location_url || null,
           isVideo: !!photo.is_video,
+          videoUrl: photo.video_url || null,
+          videoType: photo.video_type || null,
           stickers: stickers.map((s) => ({
             id: s.id,
             emoji: s.emoji,

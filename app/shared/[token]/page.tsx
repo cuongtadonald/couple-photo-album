@@ -5,7 +5,8 @@ import { useParams } from 'next/navigation';
 import Image from 'next/image';
 import PhotoViewer from '@/components/PhotoViewer';
 import { formatDateVN } from '@/lib/datetime';
-import { MapPin } from 'lucide-react';
+import { MapPin, Link as LinkIcon } from 'lucide-react';
+import { detectVideoType } from '@/lib/video-utils';
 
 interface StickerItem {
   id: number;
@@ -22,6 +23,9 @@ interface Photo {
   createdAt: string;
   locationName?: string | null;
   locationUrl?: string | null;
+  isVideo?: boolean;
+  videoUrl?: string | null;
+  videoType?: string | null;
   stickers?: StickerItem[];
 }
 
@@ -185,7 +189,7 @@ export default function SharedAlbumPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-rose-50 to-pink-50">
       {/* Header */}
-      <div className="bg-white/80 backdrop-blur-sm border-b border-pink-100 sticky top-0 z-50">
+      <div className="bg-white/80 backdrop-blur-sm border-b border-pink-100 sticky top-0 z-20">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <h1 className="text-2xl font-bold text-rose-600">{album.title}</h1>
           {album.description && (
@@ -236,13 +240,73 @@ export default function SharedAlbumPage() {
                     onClick={() => setViewerIndex(idx)}
                     className="h-36 sm:h-44 bg-gradient-to-br from-rose-100 via-pink-50 to-rose-50 flex items-center justify-center overflow-hidden relative cursor-pointer rounded-t-2xl"
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={photo.imageUrl}
-                      alt={photo.caption || 'Ảnh'}
-                      loading="lazy"
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
+                    {photo.isVideo ? (
+                      <>
+                        {photo.videoUrl ? (
+                          // Video from link (YouTube, Google Drive, etc.)
+                          <>
+                            {photo.videoType === 'youtube' && (
+                              <Image
+                                src={`https://img.youtube.com/vi/${detectVideoType(photo.videoUrl).id}/mqdefault.jpg`}
+                                alt={photo.caption || 'Video thumbnail'}
+                                width={400}
+                                height={225}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                unoptimized
+                              />
+                            )}
+                            {photo.videoType === 'direct' && (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <video
+                                src={photo.videoUrl}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                muted
+                              />
+                            )}
+                            {!['youtube', 'direct'].includes(photo.videoType || '') && (
+                              // Other video types (Google Drive, Vimeo, etc.)
+                              <div className="w-full h-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                                <LinkIcon size={48} className="text-white/80" />
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          // Uploaded video file
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <video
+                            src={photo.imageUrl}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            muted
+                          />
+                        )}
+                        {/* Play icon overlay */}
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition-colors">
+                          <div className="w-12 h-12 rounded-full bg-white/80 flex items-center justify-center shadow-lg">
+                            <svg className="w-6 h-6 text-rose-500 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M8 5v14l11-7z" />
+                            </svg>
+                          </div>
+                        </div>
+                        {/* Video source badge */}
+                        {photo.videoUrl && photo.videoType && (
+                          <span className="absolute top-2 right-2 flex items-center gap-1 text-[10px] font-bold text-white bg-purple-500/90 backdrop-blur-sm px-2 py-1 rounded-full shadow-sm z-10">
+                            <LinkIcon size={10} />
+                            {photo.videoType === 'youtube' ? 'YouTube' :
+                             photo.videoType === 'gdrive' ? 'Drive' :
+                             photo.videoType === 'vimeo' ? 'Vimeo' :
+                             photo.videoType === 'dailymotion' ? 'Dailymotion' : 'Video'}
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={photo.imageUrl}
+                        alt={photo.caption || 'Ảnh'}
+                        loading="lazy"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    )}
 
                     {/* Corner sticker on image */}
                     {decoration.stickerConfig.location === 'image' && (
@@ -344,6 +408,9 @@ export default function SharedAlbumPage() {
             image_url: p.imageUrl,
             caption: p.caption,
             created_at: p.createdAt,
+            is_video: p.isVideo,
+            video_url: p.videoUrl,
+            video_type: p.videoType,
           }))}
           startIndex={viewerIndex}
           onClose={() => setViewerIndex(null)}

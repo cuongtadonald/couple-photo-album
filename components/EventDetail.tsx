@@ -392,6 +392,7 @@ export default function EventDetail({ event, token, onBack, onEdit, onDelete }: 
             </div>
           )}
         </div>
+        </div>
       </div>
 
       {/* Footer decoration */}

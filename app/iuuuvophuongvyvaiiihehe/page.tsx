@@ -301,7 +301,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Mobile footer bear */}
-        <div className="flex justify-center pb-8 pointer-events-none relative" style={{ zIndex: 10 }}>
+        <div className="flex justify-center pb-8 pointer-events-none relative">
           <Image src="/assets-new-design/footer_bear_love_forever.png" alt="Love bear" width={200} height={170} className="object-contain opacity-90" />
         </div>
       </div>

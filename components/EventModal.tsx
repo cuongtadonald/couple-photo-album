@@ -44,6 +44,8 @@ interface EventModalProps {
   initial?: EventInitial | null;
   /** sessionStorage prefix used to persist create-mode draft (e.g. "events:draft") */
   draftKey?: string;
+  /** Token for file upload authentication */
+  token?: string | null;
 }
 
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -62,7 +64,7 @@ function saveDraft(key: string, field: string, value: string) {
   try { sessionStorage.setItem(`${key}:${field}`, value); } catch { /* ignore */ }
 }
 
-export default function EventModal({ isOpen, onClose, onSubmit, initial, draftKey }: EventModalProps) {
+export default function EventModal({ isOpen, onClose, onSubmit, initial, draftKey, token }: EventModalProps) {
   const isEdit = !!initial;
 
   const [title, setTitle] = useState('');
@@ -152,7 +154,7 @@ export default function EventModal({ isOpen, onClose, onSubmit, initial, draftKe
     try {
       const formData = new FormData();
       formData.append('files', file);
-      const { urls } = await uploadFilesWithProgress(formData);
+      const { urls } = await uploadFilesWithProgress(formData, token);
       if (urls.length > 0) {
         setCoverImage(urls[0]);
       }
@@ -177,7 +179,7 @@ export default function EventModal({ isOpen, onClose, onSubmit, initial, draftKe
       for (let i = 0; i < files.length; i++) {
         formData.append('files', files[i]);
       }
-      const { urls } = await uploadFilesWithProgress(formData);
+      const { urls } = await uploadFilesWithProgress(formData, token);
       
       const newAttachments: Attachment[] = urls.map((url, idx) => ({
         fileUrl: url,

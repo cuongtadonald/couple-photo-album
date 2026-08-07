@@ -1,9 +1,15 @@
 export async function uploadFilesWithProgress(
   formData: FormData,
+  token?: string | null,
   onProgress?: (progress: number) => void
 ): Promise<{ urls: string[] }> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
+
+    // Set Authorization header if token is provided
+    if (token) {
+      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+    }
 
     xhr.upload.addEventListener('progress', (e) => {
       if (e.lengthComputable && onProgress) {

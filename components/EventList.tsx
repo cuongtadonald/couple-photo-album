@@ -412,6 +412,7 @@ export default function EventList({ token }: { token: string | null }) {
             : null
         }
         draftKey="events:draft"
+        token={token}
       />
     </div>
   );

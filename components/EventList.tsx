@@ -189,24 +189,13 @@ export default function EventList({ token }: { token: string | null }) {
     return d ? d > new Date() : false;
   };
 
-  /** Sự kiện quá 7 ngày kể từ ngày tạo thì không cho sửa (nhưng vẫn xóa được) */
-  const isEditLocked = (event: Event): boolean => {
-    const created = parseDate(event.created_at);
-    if (!created) return false;
-    return Date.now() - created.getTime() > 7 * 24 * 60 * 60 * 1000;
-  };
-
   if (selectedEvent) {
     return (
       <EventDetail
         event={selectedEvent}
         token={token}
         onBack={() => setSelectedEventId(null)}
-        onEdit={
-          !isEditLocked(selectedEvent)
-            ? () => { setSelectedEventId(null); openEdit(selectedEvent); }
-            : undefined
-        }
+        onEdit={() => { setSelectedEventId(null); openEdit(selectedEvent); }}
         onDelete={async () => {
           await handleDelete(selectedEvent);
           setSelectedEventId(null);
@@ -263,15 +252,13 @@ export default function EventList({ token }: { token: string | null }) {
             })()}
           </div>
           <div className="flex gap-1 shrink-0">
-            {!isEditLocked(event) && (
-              <button
-                onClick={() => openEdit(event)}
-                aria-label="Sửa sự kiện"
-                className="grid place-items-center w-8 h-8 rounded-full text-gray-400 hover:text-rose-500 hover:bg-rose-50 transition-colors"
-              >
-                <Pencil size={16} />
-              </button>
-            )}
+            <button
+              onClick={() => openEdit(event)}
+              aria-label="Sửa sự kiện"
+              className="grid place-items-center w-8 h-8 rounded-full text-gray-400 hover:text-rose-500 hover:bg-rose-50 transition-colors"
+            >
+              <Pencil size={16} />
+            </button>
             <button
               onClick={() => handleDelete(event)}
               aria-label="Xóa sự kiện"

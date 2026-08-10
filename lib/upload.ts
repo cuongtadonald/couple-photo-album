@@ -6,6 +6,8 @@ export async function uploadFilesWithProgress(
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
 
+    xhr.open('POST', '/api/upload');
+    
     // Set Authorization header if token is provided
     if (token) {
       xhr.setRequestHeader('Authorization', `Bearer ${token}`);
@@ -27,14 +29,18 @@ export async function uploadFilesWithProgress(
           reject(new Error('Invalid response'));
         }
       } else {
-        reject(new Error(`Upload failed with status ${xhr.status}`));
+        try {
+          const errorData = JSON.parse(xhr.responseText);
+          reject(new Error(errorData.error || `Upload failed with status ${xhr.status}`));
+        } catch {
+          reject(new Error(`Upload failed with status ${xhr.status}`));
+        }
       }
     });
 
     xhr.addEventListener('error', () => reject(new Error('Upload failed')));
     xhr.addEventListener('abort', () => reject(new Error('Upload aborted')));
 
-    xhr.open('POST', '/api/upload');
     xhr.send(formData);
   });
 }

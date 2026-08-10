@@ -155,12 +155,15 @@ export default function EventModal({ isOpen, onClose, onSubmit, initial, draftKe
       const formData = new FormData();
       formData.append('files', file);
       const { urls } = await uploadFilesWithProgress(formData, token);
-      if (urls.length > 0) {
+      if (urls && urls.length > 0) {
         setCoverImage(urls[0]);
+      } else {
+        throw new Error('Không nhận được URL ảnh');
       }
     } catch (error) {
       console.error('Error uploading cover image:', error);
-      alert('Không thể tải ảnh bìa lên');
+      const errorMessage = error instanceof Error ? error.message : 'Lỗi không xác định';
+      alert(`Không thể tải ảnh bìa lên: ${errorMessage}`);
     } finally {
       setUploading(false);
       if (coverInputRef.current) {

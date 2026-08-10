@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Upload, MapPin, Calendar as CalendarIcon, Pencil, Trash2, Lock, Globe, ExternalLink, Download, Eye, X } from 'lucide-react';
+import { ArrowLeft, Upload, MapPin, Calendar as CalendarIcon, Pencil, Trash2, Lock, Globe, ExternalLink, Download, Eye, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import LocationBadge from './LocationBadge';
 import { parseDate, formatDateVN, formatTimeVN } from '@/lib/datetime';
 import Image from 'next/image';
@@ -75,7 +75,7 @@ export default function EventDetail({ event, token, onBack, onEdit, onDelete }: 
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
-  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [viewerIndex, setViewerIndex] = useState<number | null>(null);
 
   useEffect(() => {
     fetchAttachments();
@@ -96,55 +96,60 @@ export default function EventDetail({ event, token, onBack, onEdit, onDelete }: 
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const fileType = file.type.startsWith('image/') ? 'image' : 'document';
-      await uploadAttachment(file, fileType, file.name);
-    }
-  };
-
-  const uploadAttachment = async (file: Blob, fileType: string, fileName: string) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    
     setUploading(true);
     try {
-      // Upload file first
-      const formData = new FormData();
-      formData.append('files', file, fileName);
-      
-      const uploadResponse = await fetch('/api/upload', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
-      });
-      const uploadData = await uploadResponse.json();
-      
-      if (uploadData.urls && uploadData.urls.length > 0) {
-        // Then create attachment record
-        const response = await fetch(`/api/events/${event.id}/attachments`, {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}` 
-          },
-          body: JSON.stringify({
-            fileUrl: uploadData.urls[0],
-            fileName: fileName,
-            fileType: fileType,
-          }),
-        });
-        const data = await response.json();
-        if (data.attachment) {
-          setAttachments([...attachments, data.attachment]);
-        }
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const fileType = file.type.startsWith('image/') ? 'image' : file.type.startsWith('video/') ? 'video' : 'document';
+        await uploadAttachment(file, fileType, file.name);
       }
     } catch (error) {
       console.error('Error uploading attachment:', error);
     } finally {
       setUploading(false);
+      e.target.value = '';
+    }
+  };
+
+  const uploadAttachment = async (file: Blob, fileType: string, fileName: string) => {
+    const formData = new FormData();
+    formData.append('files', file, fileName);
+    
+    const uploadResponse = await fetch('/api/upload', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
+    });
+    const uploadData = await uploadResponse.json();
+    
+    if (uploadData.urls && uploadData.urls.length > 0) {
+      const response = await fetch(`/api/events/${event.id}/attachments`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}` 
+        },
+        body: JSON.stringify({
+          fileUrl: uploadData.urls[0],
+          fileName: fileName,
+          fileType: fileType,
+        }),
+      });
+      const data = await response.json();
+      if (data.attachment) {
+        setAttachments((prev) => [...prev, data.attachment]);
+      }
     }
   };
 
   const eventDateTime = parseDate(event.event_date);
   const isUpcoming = eventDateTime ? eventDateTime > new Date() : false;
+
+  // Filter only image attachments for viewer
+  const imageAttachments = attachments.filter(a => a.file_type === 'image');
 
   // Random stickers for decoration
   const randomStickers = Array.from({ length: 6 }, (_, i) => ({
@@ -174,33 +179,30 @@ export default function EventDetail({ event, token, onBack, onEdit, onDelete }: 
       </button>
 
       <div className="relative z-10 bg-white rounded-3xl shadow-2xl max-w-3xl overflow-hidden border-4 border-rose-100">
-        {/* Washi tape decorations on cover */}
+        {/* Cover Image - Always at top */}
         {event.cover_image_url && (
           <>
-            <div className="absolute top-4 left-4 z-30 pointer-events-none" style={{ transform: 'rotate(-25deg)' }}>
-              <Image src={WASHI_TAPES[0]} alt="" width={80} height={14} className="opacity-85" />
-            </div>
-            <div className="absolute top-4 right-4 z-30 pointer-events-none" style={{ transform: 'rotate(20deg)' }}>
-              <Image src={WASHI_TAPES[1]} alt="" width={80} height={14} className="opacity-85" />
+            <div className="relative w-full h-64 sm:h-80 bg-gradient-to-br from-rose-100 to-pink-100">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img 
+                src={event.cover_image_url} 
+                alt={event.title}
+                className="w-full h-full object-cover"
+              />
+              {/* Overlay gradient */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+              {/* Washi tape decorations */}
+              <div className="absolute top-4 left-4 z-30 pointer-events-none" style={{ transform: 'rotate(-25deg)' }}>
+                <Image src={WASHI_TAPES[0]} alt="" width={80} height={14} className="opacity-85" />
+              </div>
+              <div className="absolute top-4 right-4 z-30 pointer-events-none" style={{ transform: 'rotate(20deg)' }}>
+                <Image src={WASHI_TAPES[1]} alt="" width={80} height={14} className="opacity-85" />
+              </div>
             </div>
           </>
         )}
-
-        {/* Cover Image */}
-        {event.cover_image_url && (
-          <div className="relative w-full h-64 bg-gradient-to-br from-rose-100 to-pink-100">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img 
-              src={event.cover_image_url} 
-              alt={event.title}
-              className="w-full h-full object-cover"
-            />
-            {/* Overlay gradient */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
-          </div>
-        )}
         
-        <div className="p-8 relative">
+        <div className="p-6 sm:p-8 relative">
           {/* Decorative stickers */}
           {randomStickers.map((sticker, idx) => (
             <div
@@ -221,7 +223,7 @@ export default function EventDetail({ event, token, onBack, onEdit, onDelete }: 
             <div className="flex items-start justify-between mb-4 gap-3">
               <div className="flex-1">
                 <div className="flex items-center gap-3 flex-wrap mb-2">
-                  <h1 className="text-4xl font-bold bg-gradient-to-r from-rose-600 to-pink-600 bg-clip-text text-transparent font-[family-name:var(--font-corinthia)]">
+                  <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-rose-600 to-pink-600 bg-clip-text text-transparent font-[family-name:var(--font-corinthia)]">
                     {event.title}
                   </h1>
                   {event.visibility && (
@@ -260,8 +262,8 @@ export default function EventDetail({ event, token, onBack, onEdit, onDelete }: 
             </div>
 
             {event.description && (
-              <div className="relative bg-rose-50/50 rounded-2xl p-5 mb-6 border-2 border-rose-100">
-                <p className="text-gray-700 text-lg leading-relaxed whitespace-pre-wrap font-[family-name:var(--font-corinthia)]">
+              <div className="relative bg-rose-50/50 rounded-2xl p-5 sm:p-6 mb-6 border-2 border-rose-100">
+                <p className="text-gray-700 text-lg sm:text-xl leading-relaxed whitespace-pre-wrap font-[family-name:var(--font-corinthia)]">
                   {event.description}
                 </p>
                 {/* Corner sticker */}
@@ -278,7 +280,7 @@ export default function EventDetail({ event, token, onBack, onEdit, onDelete }: 
                 </div>
                 <div>
                   <p className="text-xs text-gray-500 font-semibold mb-0.5">Thời gian</p>
-                  <span className="text-gray-900 font-medium">
+                  <span className="text-gray-900 font-medium text-sm sm:text-base">
                     {formatDateVN(event.event_date, {
                       weekday: 'long',
                       year: 'numeric',
@@ -286,7 +288,7 @@ export default function EventDetail({ event, token, onBack, onEdit, onDelete }: 
                       day: 'numeric',
                     })}
                   </span>
-                  <span className="text-rose-600 font-semibold ml-2">
+                  <span className="text-rose-600 font-semibold ml-2 text-sm sm:text-base">
                     lúc {formatTimeVN(event.event_date)}
                   </span>
                 </div>
@@ -304,13 +306,13 @@ export default function EventDetail({ event, token, onBack, onEdit, onDelete }: 
                         href={event.location_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-1.5 text-gray-600 hover:text-rose-600 hover:underline font-medium transition-colors"
+                        className="flex items-center gap-1.5 text-gray-600 hover:text-rose-600 hover:underline font-medium transition-colors text-sm sm:text-base"
                       >
                         <span>{event.location || 'Xem bản đồ'}</span>
                         <ExternalLink size={14} />
                       </a>
                     ) : (
-                      <span className="text-gray-600 font-medium">{event.location}</span>
+                      <span className="text-gray-600 font-medium text-sm sm:text-base">{event.location}</span>
                     )}
                   </div>
                 </div>
@@ -350,6 +352,7 @@ export default function EventDetail({ event, token, onBack, onEdit, onDelete }: 
             <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-5">
               {attachments.map((attachment, idx) => {
                 const decoration = getCardDecoration(idx);
+                const imageIndex = attachment.file_type === 'image' ? imageAttachments.indexOf(attachment) : -1;
                 return (
                   <div
                     key={attachment.id}
@@ -375,7 +378,13 @@ export default function EventDetail({ event, token, onBack, onEdit, onDelete }: 
 
                     {/* Thumbnail */}
                     <div
-                      onClick={() => attachment.file_type === 'image' ? setPreviewImage(attachment.file_url) : window.open(attachment.file_url, '_blank')}
+                      onClick={() => {
+                        if (attachment.file_type === 'image' && imageIndex >= 0) {
+                          setViewerIndex(imageIndex);
+                        } else if (attachment.file_type === 'video') {
+                          window.open(attachment.file_url, '_blank');
+                        }
+                      }}
                       className="h-36 sm:h-44 bg-gradient-to-br from-rose-100 via-pink-50 to-rose-50 flex items-center justify-center overflow-hidden relative cursor-pointer rounded-t-2xl"
                     >
                       {attachment.file_type === 'image' ? (
@@ -434,11 +443,16 @@ export default function EventDetail({ event, token, onBack, onEdit, onDelete }: 
                       </p>
                       <div className="flex gap-2 mt-2">
                         <button
-                          onClick={() => attachment.file_type === 'image' ? setPreviewImage(attachment.file_url) : window.open(attachment.file_url, '_blank')}
+                          onClick={() => {
+                            if (attachment.file_type === 'image' && imageIndex >= 0) {
+                              setViewerIndex(imageIndex);
+                            } else {
+                              window.open(attachment.file_url, '_blank');
+                            }
+                          }}
                           className="flex-1 flex items-center justify-center gap-1 px-2 py-1 bg-white hover:bg-rose-100 text-rose-600 rounded-lg text-xs font-semibold transition-colors border border-rose-200"
                         >
                           <Eye size={12} />
-                          Xem
                         </button>
                         <a
                           href={attachment.file_url}
@@ -446,7 +460,6 @@ export default function EventDetail({ event, token, onBack, onEdit, onDelete }: 
                           className="flex-1 flex items-center justify-center gap-1 px-2 py-1 bg-white hover:bg-rose-100 text-rose-600 rounded-lg text-xs font-semibold transition-colors border border-rose-200"
                         >
                           <Download size={12} />
-                          Tải
                         </a>
                       </div>
                       
@@ -479,12 +492,19 @@ export default function EventDetail({ event, token, onBack, onEdit, onDelete }: 
             Thêm Tệp Đính Kèm
           </h3>
           <label className="cursor-pointer">
-            <div className="flex items-center justify-center gap-3 px-6 py-8 bg-gradient-to-r from-rose-50 to-pink-50 hover:from-rose-100 hover:to-pink-100 border-2 border-dashed border-rose-300 rounded-2xl transition-all hover:border-rose-400 hover:shadow-md">
-              <Upload size={24} className="text-rose-500" />
-              <span className="text-rose-600 font-semibold">Tải Lên Tệp</span>
+            <div className="flex flex-col items-center justify-center gap-3 px-6 py-8 bg-gradient-to-r from-rose-50 to-pink-50 hover:from-rose-100 hover:to-pink-100 border-2 border-dashed border-rose-300 rounded-2xl transition-all hover:border-rose-400 hover:shadow-md">
+              <Upload size={32} className="text-rose-500" />
+              <div className="text-center">
+                <span className="text-rose-600 font-semibold block">Tải Lên Tệp</span>
+                <span className="text-xs text-gray-500 mt-1 block">
+                  Chọn một hoặc nhiều tệp: Ảnh (JPG, PNG, GIF), Video (MP4, MOV), PDF, Word...
+                </span>
+              </div>
             </div>
             <input
               type="file"
+              multiple
+              accept="image/*,video/*,.pdf,.doc,.docx,.txt"
               onChange={handleFileUpload}
               className="hidden"
             />
@@ -510,23 +530,63 @@ export default function EventDetail({ event, token, onBack, onEdit, onDelete }: 
         />
       </div>
 
-      {/* Image Preview Modal */}
-      {previewImage && (
-        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4" onClick={() => setPreviewImage(null)}>
-          <div className="relative max-w-4xl max-h-[90vh]">
-            <button
-              onClick={() => setPreviewImage(null)}
-              className="absolute -top-12 right-0 text-white hover:text-rose-300 transition-colors"
-            >
-              <X size={32} />
-            </button>
+      {/* Photo Viewer Modal */}
+      {viewerIndex !== null && imageAttachments.length > 0 && (
+        <div className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center">
+          {/* Top bar */}
+          <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-4 py-3 text-white/90 z-10">
+            <span className="text-sm font-medium">
+              {viewerIndex + 1} / {imageAttachments.length}
+            </span>
+            <div className="flex items-center gap-2">
+              <a
+                href={imageAttachments[viewerIndex]?.file_url}
+                download
+                className="grid place-items-center w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+              >
+                <Download size={18} />
+              </a>
+              <button
+                onClick={() => setViewerIndex(null)}
+                className="grid place-items-center w-10 h-10 rounded-full bg-white/10 hover:bg-rose-500 transition-colors"
+              >
+                <X size={22} />
+              </button>
+            </div>
+          </div>
+
+          {/* Navigation buttons */}
+          {imageAttachments.length > 1 && (
+            <>
+              <button
+                onClick={() => setViewerIndex((viewerIndex - 1 + imageAttachments.length) % imageAttachments.length)}
+                className="absolute left-4 top-1/2 -translate-y-1/2 z-10 grid place-items-center w-12 h-12 rounded-full bg-white/10 hover:bg-white/25 text-white transition-colors"
+              >
+                <ChevronLeft size={28} />
+              </button>
+              <button
+                onClick={() => setViewerIndex((viewerIndex + 1) % imageAttachments.length)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 z-10 grid place-items-center w-12 h-12 rounded-full bg-white/10 hover:bg-white/25 text-white transition-colors"
+              >
+                <ChevronRight size={28} />
+              </button>
+            </>
+          )}
+
+          {/* Image */}
+          <div className="relative max-w-7xl max-h-[90vh] p-4">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={previewImage}
-              alt="Preview"
-              className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
-              onClick={(e) => e.stopPropagation()}
+              src={imageAttachments[viewerIndex]?.file_url}
+              alt={imageAttachments[viewerIndex]?.file_name}
+              className="max-w-full max-h-[85vh] object-contain rounded-lg"
             />
+            {/* Caption */}
+            {imageAttachments[viewerIndex]?.file_name && (
+              <p className="text-center text-white/80 text-sm mt-3">
+                {imageAttachments[viewerIndex]?.file_name}
+              </p>
+            )}
           </div>
         </div>
       )}

@@ -216,11 +216,10 @@ export default function EventList({ token }: { token: string | null }) {
   const renderCard = (event: Event, past: boolean) => (
     <div
       key={event.id}
-      className={`group bg-white/80 backdrop-blur-sm rounded-2xl shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden border-l-4 transform hover:-translate-y-1 ${
-        past ? 'border-gray-300' : 'border-rose-400'
-      }`}
+      className={`group bg-white/80 backdrop-blur-sm rounded-2xl shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden border-l-4 transform hover:-translate-y-1 ${past ? 'border-gray-300' : 'border-rose-400'
+        }`}
     >
-      <div
+      {/* <div
         onClick={() => { setSelectedEventId(event.id); markSeen(event.id); }}
         className={`h-20 flex items-center justify-center relative overflow-hidden cursor-pointer ${
           past ? 'bg-gradient-to-r from-gray-100 to-gray-50' : 'bg-gradient-to-r from-rose-200 via-pink-100 to-rose-100'
@@ -229,15 +228,38 @@ export default function EventList({ token }: { token: string | null }) {
         <div className="text-4xl group-hover:scale-110 transition-transform duration-300">
           {past ? '📸' : '🎉'}
         </div>
+      </div> */}
+      <div
+        onClick={() => { setSelectedEventId(event.id); markSeen(event.id); }}
+        className="h-40 relative overflow-hidden cursor-pointer"
+      >
+        {event.cover_image_url ? (
+          <img
+            src={event.cover_image_url}
+            alt={event.title}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          />
+        ) : (
+          <div className={`w-full h-full flex items-center justify-center ${past
+            ? 'bg-gradient-to-r from-gray-100 to-gray-50'
+            : 'bg-gradient-to-r from-rose-200 via-pink-100 to-rose-100'
+            }`}>
+            <div className="text-4xl">
+              {past ? '📸' : '🎉'}
+            </div>
+          </div>
+        )}
+
+        {/* lớp phủ nhẹ để ảnh đẹp hơn */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
       </div>
       <div className="p-5">
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0 flex-1">
             <h4
               onClick={() => { setSelectedEventId(event.id); markSeen(event.id); }}
-              className={`text-lg font-bold cursor-pointer line-clamp-1 ${
-                past ? 'text-gray-700' : 'bg-gradient-to-r from-rose-500 to-pink-500 bg-clip-text text-transparent'
-              }`}
+              className={`text-lg font-bold cursor-pointer line-clamp-1 ${past ? 'text-gray-700' : 'bg-gradient-to-r from-rose-500 to-pink-500 bg-clip-text text-transparent'
+                }`}
             >
               {event.title}
             </h4>
@@ -313,18 +335,16 @@ export default function EventList({ token }: { token: string | null }) {
             <button
               key={key}
               onClick={() => setTab(key)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-cute text-sm font-semibold border-2 transition-all ${
-                tab === key
-                  ? 'bg-gradient-to-r from-rose-500 to-pink-500 text-white border-transparent shadow-md'
-                  : 'bg-white/70 text-gray-600 border-rose-100 hover:border-rose-300 hover:text-rose-600'
-              }`}
+              className={`flex items-center gap-2 px-4 py-2 rounded-cute text-sm font-semibold border-2 transition-all ${tab === key
+                ? 'bg-gradient-to-r from-rose-500 to-pink-500 text-white border-transparent shadow-md'
+                : 'bg-white/70 text-gray-600 border-rose-100 hover:border-rose-300 hover:text-rose-600'
+                }`}
             >
               <Icon size={16} />
               {label}
               <span
-                className={`text-xs px-2 py-0.5 rounded-full ${
-                  tab === key ? 'bg-white/25' : 'bg-rose-50 text-rose-500'
-                }`}
+                className={`text-xs px-2 py-0.5 rounded-full ${tab === key ? 'bg-white/25' : 'bg-rose-50 text-rose-500'
+                  }`}
               >
                 {count}
               </span>
@@ -389,13 +409,13 @@ export default function EventList({ token }: { token: string | null }) {
         initial={
           editing
             ? {
-                title: editing.title,
-                description: editing.description || '',
-                event_date: editing.event_date,
-                location: editing.location || '',
-                location_url: editing.location_url || '',
-                visibility: editing.visibility,
-              }
+              title: editing.title,
+              description: editing.description || '',
+              event_date: editing.event_date,
+              location: editing.location || '',
+              location_url: editing.location_url || '',
+              visibility: editing.visibility,
+            }
             : null
         }
         draftKey="events:draft"

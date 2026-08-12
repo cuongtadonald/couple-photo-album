@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { formatDateVN, formatTimeVN } from '@/lib/datetime';
 import { useSeen } from '@/lib/use-seen';
+import AttachmentGrid from './AttachmentGrid';
 
 interface Letter {
   id: number;
@@ -332,110 +333,11 @@ export default function LetterDetail({
                 ) : attachments.length === 0 ? (
                   <p className="text-sm text-gray-400 italic">Chưa có tệp đính kèm nào.</p>
                 ) : (
-                  <div className="space-y-3">
-                    {attachments.map((att) => (
-                      <div
-                        key={att.id}
-                        className="rounded-xl border border-gray-100 bg-gray-50 overflow-hidden"
-                      >
-                        {att.file_type === 'image' ? (
-                          <div className="relative group">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={att.file_url}
-                              alt={att.file_name}
-                              className="w-full max-h-72 object-cover cursor-pointer sm:cursor-zoom-in"
-                              onClick={() => window.open(att.file_url, '_blank')}
-                            />
-                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
-                            {/* Always visible on mobile, hover on desktop */}
-                            <div className="absolute top-2 right-2 flex gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                              <button
-                                onClick={() => window.open(att.file_url, '_blank')}
-                                aria-label="Xem ảnh"
-                                className="grid place-items-center w-8 h-8 rounded-full bg-black/50 text-white hover:bg-rose-600 transition-colors"
-                              >
-                                <Eye size={14} />
-                              </button>
-                              <button
-                                onClick={() => handleDownload(att.file_url, att.file_name)}
-                                aria-label="Tải về ảnh"
-                                className="grid place-items-center w-8 h-8 rounded-full bg-black/50 text-white hover:bg-rose-600 transition-colors"
-                              >
-                                <Download size={14} />
-                              </button>
-                              {isOwner && (
-                                <button
-                                  onClick={() => handleDeleteAttachment(att.id)}
-                                  aria-label="Xóa ảnh"
-                                  className="grid place-items-center w-8 h-8 rounded-full bg-black/50 text-white hover:bg-red-600 transition-colors"
-                                >
-                                  <X size={14} />
-                                </button>
-                              )}
-                            </div>
-                            <p className="px-3 py-1.5 text-xs text-gray-500">{att.file_name}</p>
-                          </div>
-                        ) : att.file_type === 'audio' ? (
-                          <div className="flex items-center gap-3 px-4 py-3">
-                            <Music size={18} className="text-rose-400 shrink-0" />
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm text-gray-700 truncate mb-1">{att.file_name}</p>
-                              <audio
-                                controls
-                                src={att.file_url}
-                                className="w-full h-8"
-                                style={{ accentColor: '#f43f5e' }}
-                              />
-                            </div>
-                            <div className="flex gap-1 shrink-0">
-                              <button
-                                onClick={() => handleDownload(att.file_url, att.file_name)}
-                                aria-label="Tải về ghi âm"
-                                className="grid place-items-center w-8 h-8 rounded-full text-gray-400 hover:text-rose-500 hover:bg-rose-50 transition-colors"
-                              >
-                                <Download size={14} />
-                              </button>
-                              {isOwner && (
-                                <button
-                                  onClick={() => handleDeleteAttachment(att.id)}
-                                  aria-label="Xóa ghi âm"
-                                  className="grid place-items-center w-8 h-8 rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-                                >
-                                  <X size={14} />
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="flex items-center justify-between px-4 py-3">
-                            <div className="flex items-center gap-3 min-w-0">
-                              <Upload size={18} className="text-gray-400 shrink-0" />
-                              <span className="text-sm text-gray-700 truncate">{att.file_name}</span>
-                            </div>
-                            <div className="flex items-center gap-1 shrink-0 ml-3">
-                              <button
-                                onClick={() => handleDownload(att.file_url, att.file_name)}
-                                aria-label="Tải về tệp"
-                                className="grid place-items-center w-8 h-8 rounded-full text-gray-400 hover:text-rose-500 hover:bg-rose-50 transition-colors"
-                              >
-                                <Download size={14} />
-                              </button>
-                              {isOwner && (
-                                <button
-                                  onClick={() => handleDeleteAttachment(att.id)}
-                                  aria-label="Xóa tệp"
-                                  className="grid place-items-center w-7 h-7 rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-                                >
-                                  <X size={13} />
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+                  <AttachmentGrid
+                    attachments={attachments}
+                    onDelete={isOwner ? handleDeleteAttachment : undefined}
+                    showDelete={isOwner}
+                  />
                 )}
               </div>
 

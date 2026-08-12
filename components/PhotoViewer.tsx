@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCcw, MapPin, ExternalLink, Sticker, Download } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCw, MapPin, ExternalLink, Sticker, Download } from 'lucide-react';
 import StickerOverlay, { StickerItem } from './StickerOverlay';
 
 interface ViewerPhoto {
@@ -31,6 +31,7 @@ export default function PhotoViewer({ photos, startIndex, onClose, albumId, toke
   const [index, setIndex] = useState(startIndex);
   const [zoom, setZoom] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [rotation, setRotation] = useState(0);
   const [stickerMode, setStickerMode] = useState(false);
   const [displayStickers, setDisplayStickers] = useState<StickerItem[]>([]);
   const stageRef = useRef<HTMLDivElement>(null);
@@ -75,15 +76,21 @@ export default function PhotoViewer({ photos, startIndex, onClose, albumId, toke
     setOffset({ x: 0, y: 0 });
   }, []);
 
+  const rotateImage = useCallback(() => {
+    setRotation((r) => (r + 90) % 360);
+  }, []);
+
   const goPrev = useCallback(() => {
     setIndex((i) => (i - 1 + photos.length) % photos.length);
     resetZoom();
+    setRotation(0);
     setStickerMode(false);
   }, [photos.length, resetZoom]);
 
   const goNext = useCallback(() => {
     setIndex((i) => (i + 1) % photos.length);
     resetZoom();
+    setRotation(0);
     setStickerMode(false);
   }, [photos.length, resetZoom]);
 
@@ -172,11 +179,11 @@ export default function PhotoViewer({ photos, startIndex, onClose, albumId, toke
             <ZoomIn size={20} />
           </button>
           <button
-            onClick={resetZoom}
-            aria-label="Đặt lại"
+            onClick={rotateImage}
+            aria-label="Xoay 90 độ"
             className="grid place-items-center w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
           >
-            <RotateCcw size={18} />
+            <RotateCw size={18} />
           </button>
           <button
             onClick={() => {
@@ -273,7 +280,7 @@ export default function PhotoViewer({ photos, startIndex, onClose, albumId, toke
               autoPlay
               className="max-h-full max-w-full object-contain"
               style={{
-                transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`,
+                transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom}) rotate(${rotation}deg)`,
               }}
             />
           )
@@ -289,7 +296,7 @@ export default function PhotoViewer({ photos, startIndex, onClose, albumId, toke
             draggable={false}
             className="max-h-full max-w-full object-contain transition-transform duration-100"
             style={{
-              transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`,
+              transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom}) rotate(${rotation}deg)`,
               cursor: zoom > 1 ? 'grab' : 'zoom-in',
             }}
           />

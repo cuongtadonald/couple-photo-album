@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Upload, MapPin, Calendar as CalendarIcon, Pencil, Trash2, Lock, Globe, ExternalLink, Download, Eye, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Upload, MapPin, Calendar as CalendarIcon, Pencil, Trash2, Lock, Globe, ExternalLink } from 'lucide-react';
 import LocationBadge from './LocationBadge';
 import { parseDate, formatDateVN, formatTimeVN } from '@/lib/datetime';
 import Image from 'next/image';
+import AttachmentGrid from './AttachmentGrid';
 
 interface Event {
   id: number;
@@ -51,31 +52,10 @@ const WASHI_TAPES = [
   '/assets-new-design/tape_washi_blue.png',
 ];
 
-const TAPE_CONFIGS = [
-  { top: '-15px', left: '-24px', rotate: -35, width: 80, height: 14 },
-  { top: '-15px', right: '-24px', rotate: 30, width: 80, height: 14 },
-];
-
-const STICKER_CONFIGS = [
-  { location: 'image' as const, rotate: 12 },
-  { location: 'text' as const, rotate: -8 },
-  { location: 'image' as const, rotate: 15 },
-  { location: 'text' as const, rotate: -12 },
-];
-
-function getCardDecoration(index: number) {
-  const tapeConfig = TAPE_CONFIGS[index % 2];
-  const stickerConfig = STICKER_CONFIGS[index % STICKER_CONFIGS.length];
-  const tapeImage = WASHI_TAPES[index % WASHI_TAPES.length];
-  const sticker = STICKERS[index % STICKERS.length];
-  return { tapeConfig, stickerConfig, tapeImage, sticker };
-}
-
 export default function EventDetail({ event, token, onBack, onEdit, onDelete }: EventDetailProps) {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
-  const [viewerIndex, setViewerIndex] = useState<number | null>(null);
 
   useEffect(() => {
     fetchAttachments();
@@ -92,6 +72,26 @@ export default function EventDetail({ event, token, onBack, onEdit, onDelete }: 
       console.error('Error fetching attachments:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteAttachment = async (attachmentId: number) => {
+    if (!confirm('Bạn có chắc chắn muốn xóa tệp đính kèm này?')) return;
+    
+    try {
+      const response = await fetch(`/api/events/${event.id}/attachments/${attachmentId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      
+      if (response.ok) {
+        setAttachments((prev) => prev.filter((att) => att.id !== attachmentId));
+      } else {
+        alert('Không thể xóa tệp đính kèm');
+      }
+    } catch (error) {
+      console.error('Error deleting attachment:', error);
+      alert('Lỗi khi xóa tệp đính kèm');
     }
   };
 
@@ -147,9 +147,6 @@ export default function EventDetail({ event, token, onBack, onEdit, onDelete }: 
 
   const eventDateTime = parseDate(event.event_date);
   const isUpcoming = eventDateTime ? eventDateTime > new Date() : false;
-
-  // Filter only image attachments for viewer
-  const imageAttachments = attachments.filter(a => a.file_type === 'image');
 
   // Random stickers for decoration
   const randomStickers = Array.from({ length: 6 }, (_, i) => ({
@@ -349,139 +346,11 @@ export default function EventDetail({ event, token, onBack, onEdit, onDelete }: 
               <p className="text-gray-500 italic">Chưa có tệp đính kèm</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-5">
-              {attachments.map((attachment, idx) => {
-                const decoration = getCardDecoration(idx);
-                const imageIndex = attachment.file_type === 'image' ? imageAttachments.indexOf(attachment) : -1;
-                return (
-                  <div
-                    key={attachment.id}
-                    className="group relative bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-visible border border-pink-50 hover:-translate-y-1"
-                  >
-                    {/* Washi tape */}
-                    <div
-                      className="absolute z-30 pointer-events-none"
-                      style={{
-                        top: decoration.tapeConfig.top,
-                        ...(decoration.tapeConfig.left ? { left: decoration.tapeConfig.left } : { right: decoration.tapeConfig.right }),
-                        transform: `rotate(${decoration.tapeConfig.rotate}deg)`,
-                      }}
-                    >
-                      <Image
-                        src={decoration.tapeImage}
-                        alt=""
-                        width={decoration.tapeConfig.width}
-                        height={decoration.tapeConfig.height}
-                        className="opacity-85"
-                      />
-                    </div>
-
-                    {/* Thumbnail */}
-                    <div
-                      onClick={() => {
-                        if (attachment.file_type === 'image' && imageIndex >= 0) {
-                          setViewerIndex(imageIndex);
-                        } else if (attachment.file_type === 'video') {
-                          window.open(attachment.file_url, '_blank');
-                        }
-                      }}
-                      className="h-36 sm:h-44 bg-gradient-to-br from-rose-100 via-pink-50 to-rose-50 flex items-center justify-center overflow-hidden relative cursor-pointer rounded-t-2xl"
-                    >
-                      {attachment.file_type === 'image' ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={attachment.file_url}
-                          alt={attachment.file_name}
-                          loading="lazy"
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
-                      ) : attachment.file_type === 'video' ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <video
-                          src={attachment.file_url}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                          muted
-                        />
-                      ) : (
-                        <div className="text-center">
-                          <span className="text-5xl">📄</span>
-                          <p className="text-xs text-gray-500 mt-2">{attachment.file_name.split('.').pop()?.toUpperCase()}</p>
-                        </div>
-                      )}
-                      
-                      {/* Video play icon overlay */}
-                      {attachment.file_type === 'video' && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition-colors">
-                          <div className="w-12 h-12 rounded-full bg-white/80 flex items-center justify-center shadow-lg">
-                            <svg className="w-6 h-6 text-rose-500 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
-                              <path d="M8 5v14l11-7z" />
-                            </svg>
-                          </div>
-                        </div>
-                      )}
-                      
-                      {/* Corner sticker on image */}
-                      {decoration.stickerConfig.location === 'image' && (
-                        <div
-                          className="absolute bottom-2 right-2 pointer-events-none z-10"
-                          style={{ transform: `rotate(${decoration.stickerConfig.rotate}deg)` }}
-                        >
-                          <Image
-                            src={decoration.sticker.src}
-                            alt=""
-                            width={decoration.sticker.w}
-                            height={decoration.sticker.h}
-                          />
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Card body */}
-                    <div className="p-3 sm:p-4 relative">
-                      <p className="text-gray-700 text-xs sm:text-sm line-clamp-2 min-h-[2.5rem]">
-                        {attachment.file_name}
-                      </p>
-                      <div className="flex gap-2 mt-2">
-                        <button
-                          onClick={() => {
-                            if (attachment.file_type === 'image' && imageIndex >= 0) {
-                              setViewerIndex(imageIndex);
-                            } else {
-                              window.open(attachment.file_url, '_blank');
-                            }
-                          }}
-                          className="flex-1 flex items-center justify-center gap-1 px-2 py-1 bg-white hover:bg-rose-100 text-rose-600 rounded-lg text-xs font-semibold transition-colors border border-rose-200"
-                        >
-                          <Eye size={12} />
-                        </button>
-                        <a
-                          href={attachment.file_url}
-                          download
-                          className="flex-1 flex items-center justify-center gap-1 px-2 py-1 bg-white hover:bg-rose-100 text-rose-600 rounded-lg text-xs font-semibold transition-colors border border-rose-200"
-                        >
-                          <Download size={12} />
-                        </a>
-                      </div>
-                      
-                      {/* Corner sticker in text area */}
-                      {decoration.stickerConfig.location === 'text' && (
-                        <div
-                          className="absolute bottom-2 right-2 pointer-events-none"
-                          style={{ transform: `rotate(${decoration.stickerConfig.rotate}deg)` }}
-                        >
-                          <Image
-                            src={decoration.sticker.src}
-                            alt=""
-                            width={decoration.sticker.w}
-                            height={decoration.sticker.h}
-                          />
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            <AttachmentGrid
+              attachments={attachments}
+              onDelete={handleDeleteAttachment}
+              showDelete={true}
+            />
           )}
         </div>
 
@@ -529,67 +398,6 @@ export default function EventDetail({ event, token, onBack, onEdit, onDelete }: 
           className="object-contain opacity-80"
         />
       </div>
-
-      {/* Photo Viewer Modal */}
-      {viewerIndex !== null && imageAttachments.length > 0 && (
-        <div className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center">
-          {/* Top bar */}
-          <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-4 py-3 text-white/90 z-10">
-            <span className="text-sm font-medium">
-              {viewerIndex + 1} / {imageAttachments.length}
-            </span>
-            <div className="flex items-center gap-2">
-              <a
-                href={imageAttachments[viewerIndex]?.file_url}
-                download
-                className="grid place-items-center w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
-              >
-                <Download size={18} />
-              </a>
-              <button
-                onClick={() => setViewerIndex(null)}
-                className="grid place-items-center w-10 h-10 rounded-full bg-white/10 hover:bg-rose-500 transition-colors"
-              >
-                <X size={22} />
-              </button>
-            </div>
-          </div>
-
-          {/* Navigation buttons */}
-          {imageAttachments.length > 1 && (
-            <>
-              <button
-                onClick={() => setViewerIndex((viewerIndex - 1 + imageAttachments.length) % imageAttachments.length)}
-                className="absolute left-4 top-1/2 -translate-y-1/2 z-10 grid place-items-center w-12 h-12 rounded-full bg-white/10 hover:bg-white/25 text-white transition-colors"
-              >
-                <ChevronLeft size={28} />
-              </button>
-              <button
-                onClick={() => setViewerIndex((viewerIndex + 1) % imageAttachments.length)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 z-10 grid place-items-center w-12 h-12 rounded-full bg-white/10 hover:bg-white/25 text-white transition-colors"
-              >
-                <ChevronRight size={28} />
-              </button>
-            </>
-          )}
-
-          {/* Image */}
-          <div className="relative max-w-7xl max-h-[90vh] p-4">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={imageAttachments[viewerIndex]?.file_url}
-              alt={imageAttachments[viewerIndex]?.file_name}
-              className="max-w-full max-h-[85vh] object-contain rounded-lg"
-            />
-            {/* Caption */}
-            {imageAttachments[viewerIndex]?.file_name && (
-              <p className="text-center text-white/80 text-sm mt-3">
-                {imageAttachments[viewerIndex]?.file_name}
-              </p>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

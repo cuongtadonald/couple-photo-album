@@ -122,6 +122,7 @@ export default function LetterDetail({
 
   // Multi-image upload
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('FILE CHANGE:', e.target.files);
     const files = e.target.files;
     if (!files || files.length === 0) return;
     e.target.value = '';
@@ -131,10 +132,10 @@ export default function LetterDetail({
       const fileType = file.type.startsWith('image/')
         ? 'image'
         : file.type.startsWith('video/')
-        ? 'video'
-        : file.type.startsWith('audio/')
-        ? 'audio'
-        : 'document';
+          ? 'video'
+          : file.type.startsWith('audio/')
+            ? 'audio'
+            : 'document';
       await uploadBlob(file, fileType, file.name);
     }
   };

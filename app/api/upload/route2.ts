@@ -1,19 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyToken } from '@/lib/auth';
 import { writeFile, mkdir } from 'fs/promises';
-import { join } from 'path';
-import { randomUUID } from 'crypto';
+import path from 'path';
+import { v4 as uuidv4 } from 'uuid';
+import { verifyToken } from '@/lib/auth';
 
+// POST /api/upload
+// Uploads one or more files to storage/uploads/
+// Returns array of file URLs
 export async function POST(request: NextRequest) {
   try {
     const token = request.headers.get('authorization')?.replace('Bearer ', '');
-
     if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const decoded = verifyToken(token);
-    if (!decoded) {
+    const user = await verifyToken(token);
+    if (!user) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
@@ -24,37 +26,33 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No files provided' }, { status: 400 });
     }
 
-    const uploadDir = join(process.cwd(), 'storage', 'uploads');
+    const uploadDir = path.join(process.cwd(), 'storage', 'uploads');
+    
+    // Ensure upload directory exists
     await mkdir(uploadDir, { recursive: true });
 
     const urls: string[] = [];
 
     for (const file of files) {
-      // Accept both images and videos
-      if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
-        continue;
-      }
+      // Generate unique filename preserving extension
+      const ext = path.extname(file.name);
+      const uniqueName = `${uuidv4()}${ext}`;
+      const filePath = path.join(uploadDir, uniqueName);
 
+      // Convert File to Buffer and write
       const bytes = await file.arrayBuffer();
       const buffer = Buffer.from(bytes);
-
-      const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
-      const fileName = `${randomUUID()}.${ext}`;
-      const filePath = join(uploadDir, fileName);
-
       await writeFile(filePath, buffer);
-      urls.push(`/api/files/${fileName}`);
+
+      // Return URL in the format /api/files/<uuid>.<ext>
+      urls.push(`/api/files/${uniqueName}`);
     }
 
-    if (urls.length === 0) {
-      return NextResponse.json({ error: 'No valid image or video files' }, { status: 400 });
-    }
-
-    return NextResponse.json({ success: true, urls }, { status: 201 });
+    return NextResponse.json({ urls }, { status: 200 });
   } catch (error) {
     console.error('Error uploading files:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Failed to upload files' },
       { status: 500 }
     );
   }

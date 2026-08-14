@@ -77,13 +77,13 @@ export default function EventDetail({ event, token, onBack, onEdit, onDelete }: 
 
   const handleDeleteAttachment = async (attachmentId: number) => {
     if (!confirm('Bạn có chắc chắn muốn xóa tệp đính kèm này?')) return;
-    
+
     try {
       const response = await fetch(`/api/events/${event.id}/attachments/${attachmentId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       if (response.ok) {
         setAttachments((prev) => prev.filter((att) => att.id !== attachmentId));
       } else {
@@ -98,7 +98,7 @@ export default function EventDetail({ event, token, onBack, onEdit, onDelete }: 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
-    
+
     setUploading(true);
     try {
       for (let i = 0; i < files.length; i++) {
@@ -117,20 +117,20 @@ export default function EventDetail({ event, token, onBack, onEdit, onDelete }: 
   const uploadAttachment = async (file: Blob, fileType: string, fileName: string) => {
     const formData = new FormData();
     formData.append('files', file, fileName);
-    
+
     const uploadResponse = await fetch('/api/upload', {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` },
       body: formData,
     });
     const uploadData = await uploadResponse.json();
-    
+
     if (uploadData.urls && uploadData.urls.length > 0) {
       const response = await fetch(`/api/events/${event.id}/attachments`, {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}` 
+          Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({
           fileUrl: uploadData.urls[0],
@@ -181,24 +181,24 @@ export default function EventDetail({ event, token, onBack, onEdit, onDelete }: 
           <>
             <div className="relative w-full h-64 sm:h-80 bg-gradient-to-br from-rose-100 to-pink-100">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img 
-                src={event.cover_image_url} 
+              <img
+                src={event.cover_image_url}
                 alt={event.title}
                 className="w-full h-full object-cover"
               />
               {/* Overlay gradient */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
               {/* Washi tape decorations */}
-              <div className="absolute top-4 left-4 z-30 pointer-events-none" style={{ transform: 'rotate(-25deg)' }}>
+              {/* <div className="absolute top-4 left-4 z-30 pointer-events-none" style={{ transform: 'rotate(-25deg)' }}>
                 <Image src={WASHI_TAPES[0]} alt="" width={80} height={14} className="opacity-85" />
               </div>
               <div className="absolute top-4 right-4 z-30 pointer-events-none" style={{ transform: 'rotate(20deg)' }}>
                 <Image src={WASHI_TAPES[1]} alt="" width={80} height={14} className="opacity-85" />
-              </div>
+              </div> */}
             </div>
           </>
         )}
-        
+
         <div className="p-6 sm:p-8 relative">
           {/* Decorative stickers */}
           {randomStickers.map((sticker, idx) => (
@@ -290,7 +290,7 @@ export default function EventDetail({ event, token, onBack, onEdit, onDelete }: 
                   </span>
                 </div>
               </div>
-              
+
               {(event.location || event.location_url) && (
                 <div className="flex items-center gap-3">
                   <div className="grid place-items-center w-10 h-10 rounded-full bg-white shadow-sm">
@@ -314,7 +314,7 @@ export default function EventDetail({ event, token, onBack, onEdit, onDelete }: 
                   </div>
                 </div>
               )}
-              
+
               <div className="pt-2 border-t border-rose-200">
                 <p className="text-xs text-gray-500">
                   <span className="font-semibold">Được tạo bởi:</span> {event.created_by_name}
@@ -326,65 +326,65 @@ export default function EventDetail({ event, token, onBack, onEdit, onDelete }: 
             </div>
           </div>
 
-        {/* Attachments */}
-        <div className="relative z-10 border-t-2 border-rose-100 pt-6 mb-6">
-          <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <span className="text-2xl">📎</span>
-            Tệp Đính Kèm
-            {attachments.length > 0 && (
-              <span className="text-sm font-normal text-gray-500">({attachments.length})</span>
-            )}
-          </h2>
+          {/* Attachments */}
+          <div className="relative z-10 border-t-2 border-rose-100 pt-6 mb-6">
+            <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <span className="text-2xl">📎</span>
+              Tệp Đính Kèm
+              {attachments.length > 0 && (
+                <span className="text-sm font-normal text-gray-500">({attachments.length})</span>
+              )}
+            </h2>
 
-          {loading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="w-8 h-8 border-4 border-rose-200 border-t-rose-500 rounded-full animate-spin" />
-            </div>
-          ) : attachments.length === 0 ? (
-            <div className="text-center py-8 bg-rose-50/50 rounded-2xl border-2 border-dashed border-rose-200">
-              <div className="text-5xl mb-3">📭</div>
-              <p className="text-gray-500 italic">Chưa có tệp đính kèm</p>
-            </div>
-          ) : (
-            <AttachmentGrid
-              attachments={attachments}
-              onDelete={handleDeleteAttachment}
-              showDelete={true}
-            />
-          )}
-        </div>
-
-        {/* Upload Section */}
-        <div className="relative z-10 border-t-2 border-rose-100 pt-6">
-          <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <span className="text-2xl">✨</span>
-            Thêm Tệp Đính Kèm
-          </h3>
-          <label className="cursor-pointer">
-            <div className="flex flex-col items-center justify-center gap-3 px-6 py-8 bg-gradient-to-r from-rose-50 to-pink-50 hover:from-rose-100 hover:to-pink-100 border-2 border-dashed border-rose-300 rounded-2xl transition-all hover:border-rose-400 hover:shadow-md">
-              <Upload size={32} className="text-rose-500" />
-              <div className="text-center">
-                <span className="text-rose-600 font-semibold block">Tải Lên Tệp</span>
-                <span className="text-xs text-gray-500 mt-1 block">
-                  Chọn một hoặc nhiều tệp: Ảnh (JPG, PNG, GIF), Video (MP4, MOV), PDF, Word...
-                </span>
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="w-8 h-8 border-4 border-rose-200 border-t-rose-500 rounded-full animate-spin" />
               </div>
-            </div>
-            <input
-              type="file"
-              multiple
-              accept="image/*,video/*,.pdf,.doc,.docx,.txt"
-              onChange={handleFileUpload}
-              className="hidden"
-            />
-          </label>
-          {uploading && (
-            <div className="flex items-center justify-center gap-2 mt-3 text-rose-600">
-              <div className="w-4 h-4 border-2 border-rose-200 border-t-rose-500 rounded-full animate-spin" />
-              <span className="text-sm font-medium">Đang tải...</span>
-            </div>
-          )}
-        </div>
+            ) : attachments.length === 0 ? (
+              <div className="text-center py-8 bg-rose-50/50 rounded-2xl border-2 border-dashed border-rose-200">
+                <div className="text-5xl mb-3">📭</div>
+                <p className="text-gray-500 italic">Chưa có tệp đính kèm</p>
+              </div>
+            ) : (
+              <AttachmentGrid
+                attachments={attachments}
+                onDelete={handleDeleteAttachment}
+                showDelete={true}
+              />
+            )}
+          </div>
+
+          {/* Upload Section */}
+          <div className="relative z-0 border-t-2 border-rose-100 pt-6">
+            <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <span className="text-2xl">✨</span>
+              Thêm Tệp Đính Kèm
+            </h3>
+            <label className="cursor-pointer">
+              <div className="flex flex-col items-center justify-center gap-3 px-6 py-8 bg-gradient-to-r from-rose-50 to-pink-50 hover:from-rose-100 hover:to-pink-100 border-2 border-dashed border-rose-300 rounded-2xl transition-all hover:border-rose-400 hover:shadow-md">
+                <Upload size={32} className="text-rose-500" />
+                <div className="text-center">
+                  <span className="text-rose-600 font-semibold block">Tải Lên Tệp</span>
+                  <span className="text-xs text-gray-500 mt-1 block">
+                    Chọn một hoặc nhiều tệp: Ảnh (JPG, PNG, GIF), Video (MP4, MOV), PDF, Word...
+                  </span>
+                </div>
+              </div>
+              <input
+                type="file"
+                multiple
+                accept="image/*,video/*,.pdf,.doc,.docx,.txt"
+                onChange={handleFileUpload}
+                className="hidden"
+              />
+            </label>
+            {uploading && (
+              <div className="flex items-center justify-center gap-2 mt-3 text-rose-600">
+                <div className="w-4 h-4 border-2 border-rose-200 border-t-rose-500 rounded-full animate-spin" />
+                <span className="text-sm font-medium">Đang tải...</span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

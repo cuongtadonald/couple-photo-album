@@ -121,14 +121,44 @@ export default function LetterDetail({
   };
 
   // Multi-image upload
+  // const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   console.log('FILE CHANGE:', e.target.files);
+  //   const files = e.target.files;
+  //   if (!files || files.length === 0) return;
+  //   e.target.value = '';
+  //   setUploadError(null);
+  //   for (let i = 0; i < files.length; i++) {
+  //     const file = files[i];
+  //     const fileType = file.type.startsWith('image/')
+  //       ? 'image'
+  //       : file.type.startsWith('video/')
+  //         ? 'video'
+  //         : file.type.startsWith('audio/')
+  //           ? 'audio'
+  //           : 'document';
+  //     await uploadBlob(file, fileType, file.name);
+  //   }
+  // };
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    console.log('FILE CHANGE:', e.target.files);
+    console.log('1. FILE CHANGE:', e.target.files);
+
     const files = e.target.files;
-    if (!files || files.length === 0) return;
+
+    if (!files || files.length === 0) {
+      console.log('2. NO FILE');
+      return;
+    }
+
+    console.log('3. FILE COUNT:', files.length);
+
     e.target.value = '';
     setUploadError(null);
+
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
+
+      console.log('4. BEFORE UPLOAD:', file.name, file.size, file.type);
+
       const fileType = file.type.startsWith('image/')
         ? 'image'
         : file.type.startsWith('video/')
@@ -136,7 +166,12 @@ export default function LetterDetail({
           : file.type.startsWith('audio/')
             ? 'audio'
             : 'document';
+
+      console.log('5. FILE TYPE:', fileType);
+
       await uploadBlob(file, fileType, file.name);
+
+      console.log('6. AFTER UPLOAD:', file.name);
     }
   };
 

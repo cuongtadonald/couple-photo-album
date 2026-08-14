@@ -2,9 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getConnection } from '@/lib/db';
 import { verifyToken } from '@/lib/auth';
 
-export async function DELETE(
+// GET /api/events/[eventId]/attachments
+// Lists all attachments for a given event
+export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ eventId: string; attachmentId: string }> }
+  { params }: { params: Promise<{ eventId: string }> }
 ) {
   let conn;
   try {
@@ -19,30 +21,85 @@ export async function DELETE(
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    const { eventId, attachmentId } = await params;
+    const { eventId } = await params;
     conn = await getConnection();
 
-    // Verify attachment exists and belongs to this event
     const [attachments] = await conn.execute(
-      'SELECT id FROM event_attachments WHERE id = ? AND event_id = ?',
-      [attachmentId, eventId]
+      `SELECT id, event_id, file_url, file_name, file_type, uploaded_by_user_id, created_at
+       FROM event_attachments
+       WHERE event_id = ?
+       ORDER BY created_at DESC`,
+      [eventId]
     );
 
-    if (!attachments || (attachments as any[]).length === 0) {
-      return NextResponse.json({ error: 'Attachment not found' }, { status: 404 });
+    return NextResponse.json({ attachments: attachments || [] });
+  } catch (error) {
+    console.error('Error fetching event attachments:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch attachments' },
+      { status: 500 }
+    );
+  } finally {
+    if (conn) conn.release();
+  }
+}
+
+// POST /api/events/[eventId]/attachments
+// Creates a new attachment record for an event
+// Body: { fileUrl: string; fileName: string; fileType: string }
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ eventId: string }> }
+) {
+  let conn;
+  try {
+    const token = request.headers.get('authorization')?.replace('Bearer ', '');
+
+    if (!token) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Delete attachment
-    await conn.execute(
-      'DELETE FROM event_attachments WHERE id = ?',
-      [attachmentId]
+    const decoded = verifyToken(token);
+    if (!decoded) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    }
+
+    const { eventId } = await params;
+    const body = await request.json();
+    const { fileUrl, fileName, fileType } = body;
+
+    if (!fileUrl || !fileName || !fileType) {
+      return NextResponse.json(
+        { error: 'Missing required fields: fileUrl, fileName, fileType' },
+        { status: 400 }
+      );
+    }
+
+    conn = await getConnection();
+
+    const [result] = await conn.execute(
+      `INSERT INTO event_attachments (event_id, file_url, file_name, file_type, uploaded_by_user_id)
+       VALUES (?, ?, ?, ?, ?)`,
+      [eventId, fileUrl, fileName, fileType, decoded.userId]
     );
 
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('Error deleting attachment:', error);
+    // Fetch the newly created record
+    const insertId = (result as any).insertId;
+    const [newAttachments] = await conn.execute(
+      `SELECT id, event_id, file_url, file_name, file_type, uploaded_by_user_id, created_at
+       FROM event_attachments
+       WHERE id = ?`,
+      [insertId]
+    );
+
     return NextResponse.json(
-      { error: 'Failed to delete attachment' },
+      { attachment: (newAttachments as any[])[0] },
+      { status: 201 }
+    );
+  } catch (error) {
+    console.error('Error creating event attachment:', error);
+    return NextResponse.json(
+      { error: 'Failed to create attachment' },
       { status: 500 }
     );
   } finally {

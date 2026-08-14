@@ -151,7 +151,6 @@ export default function LetterDetail({
 
     console.log('3. FILE COUNT:', files.length);
 
-    e.target.value = '';
     setUploadError(null);
 
     for (let i = 0; i < files.length; i++) {
@@ -173,6 +172,8 @@ export default function LetterDetail({
 
       console.log('6. AFTER UPLOAD:', file.name);
     }
+
+    e.target.value = '';
   };
 
   // Recording

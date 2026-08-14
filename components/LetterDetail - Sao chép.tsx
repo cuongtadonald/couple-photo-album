@@ -102,10 +102,6 @@ export default function LetterDetail({
       const res = await fetch(`/api/attachments?letterId=${letter.id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) {
-        console.error('Fetch attachments failed:', res.status, res.statusText);
-        return;
-      }
       const data = await res.json();
       setAttachments(data.attachments || []);
     } catch (err) {
@@ -125,16 +121,9 @@ export default function LetterDetail({
     const files = e.target.files;
     if (!files || files.length === 0) return;
     e.target.value = '';
-    setUploadError(null);
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-      const fileType = file.type.startsWith('image/')
-        ? 'image'
-        : file.type.startsWith('video/')
-        ? 'video'
-        : file.type.startsWith('audio/')
-        ? 'audio'
-        : 'document';
+      const fileType = file.type.startsWith('image/') ? 'image' : 'document';
       await uploadBlob(file, fileType, file.name);
     }
   };
@@ -209,18 +198,10 @@ export default function LetterDetail({
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
       });
-
-      if (!res.ok) {
-        console.error('Upload failed:', res.status, res.statusText);
-        setUploadError(`Tải lên thất bại (lỗi ${res.status}). Vui lòng thử lại.`);
-        return;
-      }
-
       const data = await res.json();
       if (data.attachment) {
         setAttachments((prev) => [...prev, data.attachment]);
       } else {
-        console.error('Upload response missing attachment field. Full response:', data);
         setUploadError('Tải lên thất bại. Vui lòng thử lại.');
       }
     } catch (err) {
@@ -234,14 +215,10 @@ export default function LetterDetail({
   const handleDeleteAttachment = async (id: number) => {
     if (!confirm('Xóa tệp đính kèm này?')) return;
     try {
-      const res = await fetch(`/api/attachments?id=${id}`, {
+      await fetch(`/api/attachments?id=${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) {
-        console.error('Delete attachment failed:', res.status, res.statusText);
-        return;
-      }
       setAttachments((prev) => prev.filter((a) => a.id !== id));
     } catch (err) {
       console.error('Delete error:', err);

@@ -56,22 +56,16 @@ export default function EventDetail({ event, token, onBack, onEdit, onDelete }: 
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchAttachments();
   }, [token, event.id]);
 
   const fetchAttachments = async () => {
-    setLoading(true);
     try {
       const response = await fetch(`/api/events/${event.id}/attachments`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!response.ok) {
-        console.error('Fetch attachments failed:', response.status, response.statusText);
-        return;
-      }
       const data = await response.json();
       setAttachments(data.attachments || []);
     } catch (error) {
@@ -106,22 +100,14 @@ export default function EventDetail({ event, token, onBack, onEdit, onDelete }: 
     if (!files || files.length === 0) return;
     
     setUploading(true);
-    setUploadError(null);
     try {
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        const fileType = file.type.startsWith('image/')
-          ? 'image'
-          : file.type.startsWith('video/')
-          ? 'video'
-          : file.type.startsWith('audio/')
-          ? 'audio'
-          : 'document';
+        const fileType = file.type.startsWith('image/') ? 'image' : file.type.startsWith('video/') ? 'video' : 'document';
         await uploadAttachment(file, fileType, file.name);
       }
     } catch (error) {
       console.error('Error uploading attachment:', error);
-      setUploadError('Lỗi khi tải lên tệp đính kèm. Vui lòng thử lại.');
     } finally {
       setUploading(false);
       e.target.value = '';
@@ -129,54 +115,33 @@ export default function EventDetail({ event, token, onBack, onEdit, onDelete }: 
   };
 
   const uploadAttachment = async (file: Blob, fileType: string, fileName: string) => {
-    // Step 1: Upload file to get URL
     const formData = new FormData();
     formData.append('files', file, fileName);
-
+    
     const uploadResponse = await fetch('/api/upload', {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` },
       body: formData,
     });
-
-    if (!uploadResponse.ok) {
-      console.error('File upload failed:', uploadResponse.status, uploadResponse.statusText);
-      throw new Error(`Upload failed: ${uploadResponse.status}`);
-    }
-
     const uploadData = await uploadResponse.json();
-    const fileUrl = uploadData.urls?.[0] ?? uploadData.url ?? null;
-
-    if (!fileUrl) {
-      console.error('Upload response missing URL. Full response:', uploadData);
-      throw new Error('Upload response missing file URL');
-    }
-
-    // Step 2: Create attachment record
-    const response = await fetch(`/api/events/${event.id}/attachments`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        fileUrl,
-        fileName,
-        fileType,
-      }),
-    });
-
-    if (!response.ok) {
-      console.error('Create attachment record failed:', response.status, response.statusText);
-      throw new Error(`Create attachment failed: ${response.status}`);
-    }
-
-    const data = await response.json();
-    if (data.attachment) {
-      setAttachments((prev) => [...prev, data.attachment]);
-    } else {
-      console.error('Create attachment response missing attachment field. Full response:', data);
-      throw new Error('Attachment record created but response missing attachment data');
+    
+    if (uploadData.urls && uploadData.urls.length > 0) {
+      const response = await fetch(`/api/events/${event.id}/attachments`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}` 
+        },
+        body: JSON.stringify({
+          fileUrl: uploadData.urls[0],
+          fileName: fileName,
+          fileType: fileType,
+        }),
+      });
+      const data = await response.json();
+      if (data.attachment) {
+        setAttachments((prev) => [...prev, data.attachment]);
+      }
     }
   };
 
@@ -418,11 +383,6 @@ export default function EventDetail({ event, token, onBack, onEdit, onDelete }: 
               <div className="w-4 h-4 border-2 border-rose-200 border-t-rose-500 rounded-full animate-spin" />
               <span className="text-sm font-medium">Đang tải...</span>
             </div>
-          )}
-          {uploadError && (
-            <p className="text-sm text-red-500 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mt-3">
-              {uploadError}
-            </p>
           )}
         </div>
         </div>

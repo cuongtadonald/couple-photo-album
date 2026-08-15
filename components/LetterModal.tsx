@@ -274,7 +274,7 @@ export default function LetterModal({ isOpen, onClose, onSubmit, initial, draftK
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2 font-cute">
-              Chọn Nền Thư
+              Chọn Nền Thư (Ra quân anh phát triển sau :D)
             </label>
             <div className="grid grid-cols-2 gap-3">
               <button

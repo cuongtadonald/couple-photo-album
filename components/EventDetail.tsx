@@ -260,7 +260,7 @@ export default function EventDetail({ event, token, onBack, onEdit, onDelete }: 
 
             {event.description && (
               <div className="relative bg-rose-50/50 rounded-2xl p-5 sm:p-6 mb-6 border-2 border-rose-100">
-                <p className="text-gray-700 text-lg sm:text-xl leading-relaxed whitespace-pre-wrap font-[family-name:var(--font-corinthia)]">
+                <p className="text-gray-700 text-2xl sm:text-2xl leading-relaxed whitespace-pre-wrap font-[family-name:var(--font-corinthia)]">
                   {event.description}
                 </p>
                 {/* Corner sticker */}
@@ -386,17 +386,6 @@ export default function EventDetail({ event, token, onBack, onEdit, onDelete }: 
             )}
           </div>
         </div>
-      </div>
-
-      {/* Footer decoration */}
-      <div className="flex justify-center mt-6 pointer-events-none">
-        <Image
-          src="/assets-new-design/footer_bear_love_forever.png"
-          alt="Love bear"
-          width={180}
-          height={150}
-          className="object-contain opacity-80"
-        />
       </div>
     </div>
   );

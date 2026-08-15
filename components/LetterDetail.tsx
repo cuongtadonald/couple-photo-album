@@ -378,7 +378,7 @@ export default function LetterDetail({
               {/* Content */}
               {letter.text_content && (
                 <div className="mb-8">
-                  <p className="whitespace-pre-wrap text-gray-900 leading-relaxed text-[20px] font-[family-name:var(--font-corinthia)]">
+                  <p className="whitespace-pre-wrap text-gray-900 leading-relaxed text-[25px] font-[family-name:var(--font-corinthia)]">
                     {letter.text_content}
                   </p>
                 </div>

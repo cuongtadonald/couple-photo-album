@@ -178,22 +178,6 @@ export default function DashboardPage() {
             <div className="mt-4">
               <MilestoneCard duration={duration} size="desktop" />
             </div>
-
-            {/* Couple photo collage */}
-            <div className="mt-4">
-              <p className="text-center text-xs text-gray-400 italic mb-2">
-                Chiếc ảnh siêu cute của vợ tuii làm &lt;333
-              </p>
-              <div className="mx-auto w-[200px]">
-                <Image
-                  src="/assets-new-design/cuongiuuvy.jpeg"
-                  alt="Ảnh couple Cuong & Vy"
-                  width={200}
-                  height={200}
-                  className="w-full h-auto rounded-2xl shadow-md object-cover"
-                />
-              </div>
-            </div>
           </div>
         </aside>
 
@@ -304,21 +288,6 @@ export default function DashboardPage() {
               </nav>
               <div className="mt-5">
                 <MilestoneCard duration={duration} size="mobile" />
-              </div>
-              {/* Couple photo collage */}
-              <div className="mt-4">
-                <p className="text-center text-[10px] text-gray-400 italic mb-2">
-                  Chiếc ảnh siêu cute của vợ tuii làm &lt;333
-                </p>
-                <div className="mx-auto w-[160px]">
-                  <Image
-                    src="/assets-new-design/cuongiuuvy.jpeg"
-                    alt="Ảnh couple Cuong & Vy"
-                    width={160}
-                    height={160}
-                    className="w-full h-auto rounded-2xl shadow-md object-cover"
-                  />
-                </div>
               </div>
             </div>
           </div>

@@ -191,77 +191,83 @@ export default function ReactionBar({
             <div
               key={reaction.id}
               className={`flex items-center gap-1.5 ${compact
+                ? 'bg-white/60 pl-2.5 pr-0 py-1 rounded-full'
+                : 'bg-white/70 pl-3 pr-0 py-1.5 rounded-full'
+                }`}
+            ><div
+              key={reaction.id}
+              className={`flex items-center gap-1.5 ${compact
                 ? 'bg-white/60 px-2.5 py-1 rounded-full'
                 : 'bg-white/70 px-3 py-1.5 rounded-full'
                 }`}
             >
-              <span className={`${compact ? 'text-sm' : 'text-base'} text-gray-700`}>
-                {reaction.user_name}
-              </span>
-              <span className={`${compact ? 'text-sm' : 'text-base'} text-gray-700 ml-[-3px]`}>đã</span>
-              <span className={`${compact ? 'text-lg' : 'text-xl'} ml-[-5px]`}>{reaction.emoji}</span>
-            </div>
+                <span className={`${compact ? 'text-sm' : 'text-base'} text-gray-700`}>
+                  {reaction.user_name}
+                </span>
+                <span className={`${compact ? 'text-sm' : 'text-base'} text-gray-700 ml-[-3px]`}>đã</span>
+                <span className={`${compact ? 'text-lg' : 'text-xl'} ml-[-5px]`}>{reaction.emoji}</span>
+              </div>
           ))}
-        </div>
-      )}
-
-      {/* Nút react */}
-      {canReact && (
-        <button
-          ref={buttonRef}
-          onMouseDown={handleMouseDown}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
-          onTouchStart={handleTouchStart}
-          onTouchEnd={handleTouchEnd}
-          onClick={() => {
-            if (showPicker) {
-              setShowPicker(false);
-              setPickerPos(null);
-            } else {
-              openPicker();
-            }
-          }}
-          className={`ml-2 ${compact ? 'w-8 h-8' : 'w-10 h-10'
-            } rounded-full flex items-center justify-center transition-all ${myReaction
-              ? 'bg-pink-100 text-pink-500'
-              : 'bg-white/60 text-gray-400 hover:bg-pink-50 hover:text-pink-400'
-            } ${loading ? 'opacity-50' : ''}`}
-          title={myReaction ? `Bạn đã react ${myReaction.emoji}` : 'Giữ để chọn emoji'}
-        >
-          {myReaction ? (
-            <span className={compact ? 'text-base' : 'text-lg'}>{myReaction.emoji}</span>
-          ) : (
-            <span className={`${compact ? 'text-base' : 'text-lg'} opacity-20 animate-pulse`}>❤️</span>
-          )}
-        </button>
-      )}
-
-      {/* Picker popup - render qua Portal để không bị clip */}
-      {showPicker && pickerPos && typeof document !== 'undefined' && createPortal(
-        <div
-          ref={pickerRef}
-          className="fixed z-[9999]"
-          style={{ top: pickerPos.top, left: pickerPos.left }}
-        >
-          <div className="bg-white rounded-2xl shadow-2xl border border-pink-200 p-3 w-[210px]">
-            <div className="grid grid-cols-4 gap-1">
-              {REACTION_EMOJIS.map((emoji) => (
-                <button
-                  key={emoji}
-                  onClick={() => handleReact(emoji)}
-                  className={`text-2xl sm:text-3xl hover:scale-125 active:scale-95 transition-transform p-2 rounded-xl ${myReaction?.emoji === emoji ? 'scale-110 bg-pink-50' : 'hover:bg-pink-50'
-                    }`}
-                  title={emoji}
-                >
-                  {emoji}
-                </button>
-              ))}
             </div>
-          </div>
-        </div>,
-        document.body
-      )}
-    </div>
-  );
+          )}
+
+          {/* Nút react */}
+          {canReact && (
+            <button
+              ref={buttonRef}
+              onMouseDown={handleMouseDown}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseUp}
+              onTouchStart={handleTouchStart}
+              onTouchEnd={handleTouchEnd}
+              onClick={() => {
+                if (showPicker) {
+                  setShowPicker(false);
+                  setPickerPos(null);
+                } else {
+                  openPicker();
+                }
+              }}
+              className={`ml-2 ${compact ? 'w-8 h-8' : 'w-10 h-10'
+                } rounded-full flex items-center justify-center transition-all ${myReaction
+                  ? 'bg-pink-100 text-pink-500'
+                  : 'bg-white/60 text-gray-400 hover:bg-pink-50 hover:text-pink-400'
+                } ${loading ? 'opacity-50' : ''}`}
+              title={myReaction ? `Bạn đã react ${myReaction.emoji}` : 'Giữ để chọn emoji'}
+            >
+              {myReaction ? (
+                <span className={compact ? 'text-base' : 'text-lg'}>{myReaction.emoji}</span>
+              ) : (
+                <span className={`${compact ? 'text-base' : 'text-lg'} opacity-20 animate-pulse`}>❤️</span>
+              )}
+            </button>
+          )}
+
+          {/* Picker popup - render qua Portal để không bị clip */}
+          {showPicker && pickerPos && typeof document !== 'undefined' && createPortal(
+            <div
+              ref={pickerRef}
+              className="fixed z-[9999]"
+              style={{ top: pickerPos.top, left: pickerPos.left }}
+            >
+              <div className="bg-white rounded-2xl shadow-2xl border border-pink-200 p-3 w-[210px]">
+                <div className="grid grid-cols-4 gap-1">
+                  {REACTION_EMOJIS.map((emoji) => (
+                    <button
+                      key={emoji}
+                      onClick={() => handleReact(emoji)}
+                      className={`text-2xl sm:text-3xl hover:scale-125 active:scale-95 transition-transform p-2 rounded-xl ${myReaction?.emoji === emoji ? 'scale-110 bg-pink-50' : 'hover:bg-pink-50'
+                        }`}
+                      title={emoji}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>,
+            document.body
+          )}
+        </div>
+      );
 }

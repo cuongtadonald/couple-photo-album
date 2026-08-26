@@ -18,6 +18,7 @@ import {
 import { formatDateVN, formatTimeVN } from '@/lib/datetime';
 import { useSeen } from '@/lib/use-seen';
 import AttachmentGrid from './AttachmentGrid';
+import ReactionBar from './ReactionBar';
 
 interface Letter {
   id: number;
@@ -405,6 +406,16 @@ export default function LetterDetail({
                     showDelete={isOwner}
                   />
                 )}
+              </div>
+
+              {/* Reaction bar */}
+              <div className="mb-6 flex justify-end">
+                <ReactionBar
+                  letterId={letter.id}
+                  token={token}
+                  currentUserId={currentUserId}
+                  letterOwnerId={letter.from_user_id}
+                />
               </div>
 
               {/* Upload section — only owner, only when not confirmed-locked */}

@@ -8,6 +8,7 @@ import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { parseDate, formatDateVN } from '@/lib/datetime';
 import { useSeen } from '@/lib/use-seen';
 import { useSessionState, clearSessionKey } from '@/lib/use-session-state';
+import ReactionBar from './ReactionBar';
 //import { formatDateVN, formatDateTimeVN } from '@/lib/datetime';
 
 interface Letter {
@@ -273,6 +274,18 @@ export default function LetterList({ token, currentUserId }: LetterListProps) {
                     </p>
                   </div>
                   <div className="text-right ml-2 shrink-0">
+                    {/* Reaction bar - góc phải trên */}
+                    {canOpen && (
+                      <div className="mb-2 flex justify-end">
+                        <ReactionBar
+                          letterId={letter.id}
+                          token={token}
+                          currentUserId={currentUserId}
+                          letterOwnerId={letter.from_user_id}
+                          compact
+                        />
+                      </div>
+                    )}
                     {/* Chỉ chính chủ mới có nút sửa/xóa — ẩn nếu đã quá 7 ngày */}
                     {owner && !locked && (
                       <div className="flex gap-1 justify-end mb-2">

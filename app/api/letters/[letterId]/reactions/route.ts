@@ -73,7 +73,7 @@ export async function POST(
     const { emoji } = await request.json();
 
     // Validate emoji
-    const validEmojis = ['👍', '❤️', '😆', '😮', '😢', '😡'];
+    const validEmojis = ['👍', '❤️', '😆', '😮', '😢', '🥺', '👸', '🤴', '🤗', '😘', '🥰'];
     if (!validEmojis.includes(emoji)) {
       return NextResponse.json({ error: 'Invalid emoji' }, { status: 400 });
     }

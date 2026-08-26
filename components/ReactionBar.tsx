@@ -19,7 +19,7 @@ interface ReactionBarProps {
   compact?: boolean; // true = hiển thị nhỏ gọn trong LetterList
 }
 
-const REACTION_EMOJIS = ['👍', '❤️', '😆', '😮', '😢', '😡'];
+const REACTION_EMOJIS = ['👍', '❤️', '😆', '😮', '😢', '🥺', '👸', '🤴', '🤗', '😘', '🥰'];
 
 export default function ReactionBar({
   letterId,

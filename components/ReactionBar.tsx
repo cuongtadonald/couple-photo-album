@@ -171,10 +171,10 @@ export default function ReactionBar({
                   : 'bg-white/70 px-3 py-1.5 rounded-full'
               }`}
             >
-              <span className={`${compact ? 'text-sm' : 'text-base'} font-medium text-gray-700`}>
+              <span className={`${compact ? 'text-sm' : 'text-base'} text-gray-700`}>
                 {reaction.user_name}
               </span>
-              <span className={compact ? 'text-base' : 'text-lg'}>đã</span>
+              <span className={`${compact ? 'text-sm' : 'text-base'} text-gray-700`}>đã</span>
               <span className={compact ? 'text-lg' : 'text-xl'}>{reaction.emoji}</span>
             </div>
           ))}
@@ -207,11 +207,11 @@ export default function ReactionBar({
             {myReaction ? (
               <span className={compact ? 'text-base' : 'text-lg'}>{myReaction.emoji}</span>
             ) : (
-              <span className={`${compact ? 'text-base' : 'text-lg'} opacity-20`}>❤️</span>
+              <span className={`${compact ? 'text-base' : 'text-lg'} opacity-20 animate-pulse`}>❤️</span>
             )}
           </button>
 
-          {/* Picker popup - responsive */}
+          {/* Picker popup - grid 4 cột */}
           {showPicker && (
             <div
               ref={pickerRef}
@@ -219,15 +219,15 @@ export default function ReactionBar({
                 pickerPosition === 'bottom' ? 'top-full mt-2' : 'bottom-full mb-2'
               }`}
             >
-              <div className="bg-white rounded-2xl shadow-xl border border-pink-100 p-2 max-w-[90vw] overflow-x-auto">
-                <div className="flex gap-1 sm:gap-2">
+              <div className="bg-white rounded-2xl shadow-xl border border-pink-100 p-3">
+                <div className="grid grid-cols-4 gap-2">
                   {REACTION_EMOJIS.map((emoji) => (
                     <button
                       key={emoji}
                       onClick={() => handleReact(emoji)}
                       className={`${
-                        compact ? 'text-xl sm:text-2xl' : 'text-2xl sm:text-3xl'
-                      } hover:scale-125 transition-transform p-1.5 sm:p-2 flex-shrink-0 ${
+                        compact ? 'text-2xl' : 'text-3xl'
+                      } hover:scale-125 transition-transform p-2 ${
                         myReaction?.emoji === emoji ? 'scale-110 bg-pink-50 rounded-full' : ''
                       }`}
                       title={emoji}

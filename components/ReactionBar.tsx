@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 
 interface Reaction {
   id: number;
@@ -31,7 +32,7 @@ export default function ReactionBar({
   const [reactions, setReactions] = useState<Reaction[]>([]);
   const [showPicker, setShowPicker] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [pickerPosition, setPickerPosition] = useState<'bottom' | 'top'>('bottom');
+  const [pickerPos, setPickerPos] = useState<{ top: number; left: number } | null>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pickerRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -43,7 +44,9 @@ export default function ReactionBar({
     fetchReactions();
   }, [letterId, token]);
 
+  // Đóng picker khi click bên ngoài
   useEffect(() => {
+    if (!showPicker) return;
     const handleClickOutside = (e: MouseEvent) => {
       if (
         pickerRef.current &&
@@ -54,10 +57,14 @@ export default function ReactionBar({
         setShowPicker(false);
       }
     };
-    if (showPicker) {
+    // Delay để tránh click hiện tại đóng picker ngay
+    const timer = setTimeout(() => {
       document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, 10);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
   }, [showPicker]);
 
   const fetchReactions = async () => {
@@ -78,6 +85,7 @@ export default function ReactionBar({
     if (!canReact || loading) return;
     setLoading(true);
     setShowPicker(false);
+    setPickerPos(null);
 
     try {
       if (myReaction && myReaction.emoji === emoji) {
@@ -112,25 +120,45 @@ export default function ReactionBar({
     }
   };
 
-  const calculatePickerPosition = () => {
+  const calculatePickerPosition = useCallback(() => {
     if (!buttonRef.current) return;
     const rect = buttonRef.current.getBoundingClientRect();
+    const pickerWidth = 220;
+    const pickerHeight = 200;
+    const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
-    const pickerHeight = 60;
-    
-    if (rect.bottom + pickerHeight > viewportHeight) {
-      setPickerPosition('top');
+
+    // Tính vị trí ngang: căn giữa nút, nhưng không tràn viewport
+    let left = rect.left + rect.width / 2 - pickerWidth / 2;
+    if (left < 8) left = 8;
+    if (left + pickerWidth > viewportWidth - 8) left = viewportWidth - pickerWidth - 8;
+
+    // Tính vị trí dọc: ưu tiên phía trên nút (vì nút thường ở dưới card)
+    let top: number;
+    if (rect.top - pickerHeight - 8 > 0) {
+      // Đủ chỗ phía trên
+      top = rect.top - pickerHeight - 8;
     } else {
-      setPickerPosition('bottom');
+      // Hiện phía dưới
+      top = rect.bottom + 8;
     }
-  };
+
+    // Nếu phía dưới cũng tràn, clamp
+    if (top + pickerHeight > viewportHeight - 8) {
+      top = viewportHeight - pickerHeight - 8;
+    }
+
+    setPickerPos({ top, left });
+  }, []);
+
+  const openPicker = useCallback(() => {
+    calculatePickerPosition();
+    setShowPicker(true);
+  }, [calculatePickerPosition]);
 
   const handleMouseDown = () => {
     if (!canReact) return;
-    calculatePickerPosition();
-    longPressTimer.current = setTimeout(() => {
-      setShowPicker(true);
-    }, 500);
+    longPressTimer.current = setTimeout(openPicker, 500);
   };
 
   const handleMouseUp = () => {
@@ -142,10 +170,7 @@ export default function ReactionBar({
 
   const handleTouchStart = () => {
     if (!canReact) return;
-    calculatePickerPosition();
-    longPressTimer.current = setTimeout(() => {
-      setShowPicker(true);
-    }, 500);
+    longPressTimer.current = setTimeout(openPicker, 500);
   };
 
   const handleTouchEnd = () => {
@@ -183,63 +208,63 @@ export default function ReactionBar({
 
       {/* Nút react */}
       {canReact && (
-        <>
-          <button
-            ref={buttonRef}
-            onMouseDown={handleMouseDown}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseUp}
-            onTouchStart={handleTouchStart}
-            onTouchEnd={handleTouchEnd}
-            onClick={() => {
-              calculatePickerPosition();
-              setShowPicker(!showPicker);
-            }}
-            className={`ml-2 ${
-              compact ? 'w-8 h-8' : 'w-10 h-10'
-            } rounded-full flex items-center justify-center transition-all ${
-              myReaction
-                ? 'bg-pink-100 text-pink-500'
-                : 'bg-white/60 text-gray-400 hover:bg-pink-50 hover:text-pink-400'
-            } ${loading ? 'opacity-50' : ''}`}
-            title={myReaction ? `Bạn đã react ${myReaction.emoji}` : 'Giữ để chọn emoji'}
-          >
-            {myReaction ? (
-              <span className={compact ? 'text-base' : 'text-lg'}>{myReaction.emoji}</span>
-            ) : (
-              <span className={`${compact ? 'text-base' : 'text-lg'} opacity-20 animate-pulse`}>❤️</span>
-            )}
-          </button>
-
-          {/* Picker popup - grid 4 cột */}
-          {showPicker && (
-            <div
-              ref={pickerRef}
-              className={`absolute left-1/2 -translate-x-1/2 z-50 ${
-                pickerPosition === 'bottom' ? 'top-full mt-2' : 'bottom-full mb-2'
-              }`}
-            >
-              <div className="bg-white rounded-2xl shadow-xl border border-pink-100 p-3">
-                <div className="grid grid-cols-4 gap-2">
-                  {REACTION_EMOJIS.map((emoji) => (
-                    <button
-                      key={emoji}
-                      onClick={() => handleReact(emoji)}
-                      className={`${
-                        compact ? 'text-2xl' : 'text-3xl'
-                      } hover:scale-125 transition-transform p-2 ${
-                        myReaction?.emoji === emoji ? 'scale-110 bg-pink-50 rounded-full' : ''
-                      }`}
-                      title={emoji}
-                    >
-                      {emoji}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
+        <button
+          ref={buttonRef}
+          onMouseDown={handleMouseDown}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          onClick={() => {
+            if (showPicker) {
+              setShowPicker(false);
+              setPickerPos(null);
+            } else {
+              openPicker();
+            }
+          }}
+          className={`ml-2 ${
+            compact ? 'w-8 h-8' : 'w-10 h-10'
+          } rounded-full flex items-center justify-center transition-all ${
+            myReaction
+              ? 'bg-pink-100 text-pink-500'
+              : 'bg-white/60 text-gray-400 hover:bg-pink-50 hover:text-pink-400'
+          } ${loading ? 'opacity-50' : ''}`}
+          title={myReaction ? `Bạn đã react ${myReaction.emoji}` : 'Giữ để chọn emoji'}
+        >
+          {myReaction ? (
+            <span className={compact ? 'text-base' : 'text-lg'}>{myReaction.emoji}</span>
+          ) : (
+            <span className={`${compact ? 'text-base' : 'text-lg'} opacity-20 animate-pulse`}>❤️</span>
           )}
-        </>
+        </button>
+      )}
+
+      {/* Picker popup - render qua Portal để không bị clip */}
+      {showPicker && pickerPos && typeof document !== 'undefined' && createPortal(
+        <div
+          ref={pickerRef}
+          className="fixed z-[9999]"
+          style={{ top: pickerPos.top, left: pickerPos.left }}
+        >
+          <div className="bg-white rounded-2xl shadow-2xl border border-pink-200 p-3 w-[210px]">
+            <div className="grid grid-cols-4 gap-1">
+              {REACTION_EMOJIS.map((emoji) => (
+                <button
+                  key={emoji}
+                  onClick={() => handleReact(emoji)}
+                  className={`text-2xl sm:text-3xl hover:scale-125 active:scale-95 transition-transform p-2 rounded-xl ${
+                    myReaction?.emoji === emoji ? 'scale-110 bg-pink-50' : 'hover:bg-pink-50'
+                  }`}
+                  title={emoji}
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
     </div>
   );

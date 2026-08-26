@@ -58,13 +58,6 @@ export default function LetterDetail({
 }: LetterDetailProps) {
   const isOwner = letter.from_user_id === currentUserId;
 
-  // Map paper_type to asset paths
-  const paperType = letter.paper_type || 'bg3';
-  const bgNum = paperType.replace('bg', '');
-  const headerImg = `/assets-new-design/background-letter-${bgNum}-header.png`;
-  const wrapContentImg = `/assets-new-design/background-letter-${bgNum}-wrap-content.png`;
-  const bottomImg = `/assets-new-design/background-letter-${bgNum}-bottom.png`;
-
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [loadingAttachments, setLoadingAttachments] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -321,7 +314,7 @@ export default function LetterDetail({
 
         {/* Ảnh đầu thư */}
         <img
-          src={headerImg}
+          src="/assets-new-design/background-letter-3-header.png"
           alt=""
           className="block w-full h-auto"
         />
@@ -330,7 +323,8 @@ export default function LetterDetail({
         <div
           className="relative bg-repeat-y"
           style={{
-            backgroundImage: `url('${wrapContentImg}')`,
+            backgroundImage:
+              "url('/assets-new-design/background-letter-3-wrap-content.png')",
             backgroundSize: "100% auto",
             backgroundPosition: "top center",
           }}
@@ -513,7 +507,7 @@ export default function LetterDetail({
 
         {/* Ảnh cuối thư */}
         <img
-          src={bottomImg}
+          src="/assets-new-design/background-letter-3-bottom.png"
           alt=""
           className="block w-full h-auto"
         />

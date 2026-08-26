@@ -3,7 +3,7 @@ import pool from '@/lib/db';
 import { verifyToken } from '@/lib/auth';
 import { toMysqlDateTime, isValidDate } from '@/lib/datetime';
 
-// Migration tự động: thêm is_confirmed và paper_type nếu chưa có
+// Migration tự động: thêm is_confirmed nếu chưa có
 let migrationDone = false;
 async function ensureMigration() {
   if (migrationDone) return;
@@ -13,9 +13,6 @@ async function ensureMigration() {
   } catch (_) { /* cột đã tồn tại */ }
   try {
     await conn.execute('ALTER TABLE letters ADD COLUMN confirmed_at DATETIME');
-  } catch (_) { /* cột đã tồn tại */ }
-  try {
-    await conn.execute("ALTER TABLE letters ADD COLUMN paper_type VARCHAR(20) DEFAULT 'bg3'");
   } catch (_) { /* cột đã tồn tại */ }
   conn.release();
   migrationDone = true;
@@ -68,7 +65,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    const { title, textContent, scheduledUnlockDate, paperType } = await request.json();
+    const { title, textContent, scheduledUnlockDate } = await request.json();
 
     if (!title) {
       return NextResponse.json({ error: 'Title is required' }, { status: 400 });
@@ -79,13 +76,12 @@ export async function POST(request: NextRequest) {
     }
 
     const unlockDate = toMysqlDateTime(scheduledUnlockDate);
-    const validPaperType = ['bg1', 'bg2', 'bg3', 'bg4'].includes(paperType) ? paperType : 'bg3';
 
     const connection = await pool.getConnection();
     const [result] = await connection.execute(
-      `INSERT INTO letters (from_user_id, title, text_content, scheduled_unlock_date, paper_type) 
-       VALUES (?, ?, ?, ?, ?)`,
-      [decoded.userId, title, textContent || null, unlockDate, validPaperType]
+      `INSERT INTO letters (from_user_id, title, text_content, scheduled_unlock_date) 
+       VALUES (?, ?, ?, ?)`,
+      [decoded.userId, title, textContent || null, unlockDate]
     );
     connection.release();
 
@@ -98,7 +94,6 @@ export async function POST(request: NextRequest) {
           title,
           text_content: textContent,
           scheduled_unlock_date: unlockDate,
-          paper_type: validPaperType,
           is_opened: false,
           is_confirmed: false,
           created_at: new Date().toISOString(),

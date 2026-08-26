@@ -326,7 +326,6 @@ export default function LetterList({ token, currentUserId }: LetterListProps) {
               title: editing.title,
               text_content: editing.text_content || '',
               scheduled_unlock_date: editing.scheduled_unlock_date,
-              paper_type: editing.paper_type,
             }
             : null
         }

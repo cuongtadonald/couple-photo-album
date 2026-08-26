@@ -23,7 +23,7 @@ export async function PUT(
     }
 
     const { letterId } = await params;
-    const { title, textContent, scheduledUnlockDate, paperType } = await request.json();
+    const { title, textContent, scheduledUnlockDate } = await request.json();
 
     if (!title) {
       return NextResponse.json({ error: 'Title is required' }, { status: 400 });
@@ -31,8 +31,6 @@ export async function PUT(
     if (scheduledUnlockDate && !isValidDate(scheduledUnlockDate)) {
       return NextResponse.json({ error: 'Invalid date format' }, { status: 400 });
     }
-
-    const validPaperType = ['bg1', 'bg2', 'bg3', 'bg4'].includes(paperType) ? paperType : 'bg3';
 
     const connection = await pool.getConnection();
 
@@ -61,8 +59,8 @@ export async function PUT(
     }
 
     await connection.execute(
-      `UPDATE letters SET title = ?, text_content = ?, scheduled_unlock_date = ?, paper_type = ? WHERE id = ?`,
-      [title, textContent || null, toMysqlDateTime(scheduledUnlockDate), validPaperType, letterId]
+      `UPDATE letters SET title = ?, text_content = ?, scheduled_unlock_date = ? WHERE id = ?`,
+      [title, textContent || null, toMysqlDateTime(scheduledUnlockDate), letterId]
     );
     connection.release();
 

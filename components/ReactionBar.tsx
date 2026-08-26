@@ -16,7 +16,7 @@ interface ReactionBarProps {
   token: string | null;
   currentUserId: number;
   letterOwnerId: number;
-  compact?: boolean; // true = hiển thị nhỏ gọn trong LetterList
+  compact?: boolean;
 }
 
 const REACTION_EMOJIS = ['👍', '❤️', '😆', '😮', '😢', '🥺', '👸', '🤴', '🤗', '😘', '🥰'];
@@ -31,11 +31,11 @@ export default function ReactionBar({
   const [reactions, setReactions] = useState<Reaction[]>([]);
   const [showPicker, setShowPicker] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [pickerPosition, setPickerPosition] = useState<'bottom' | 'top'>('bottom');
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pickerRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
-  // Chỉ người nhận mới có thể react
   const canReact = currentUserId !== letterOwnerId;
   const myReaction = reactions.find((r) => r.user_id === currentUserId);
 
@@ -43,7 +43,6 @@ export default function ReactionBar({
     fetchReactions();
   }, [letterId, token]);
 
-  // Đóng picker khi click bên ngoài
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (
@@ -81,7 +80,6 @@ export default function ReactionBar({
     setShowPicker(false);
 
     try {
-      // Nếu đã react emoji này rồi thì xóa
       if (myReaction && myReaction.emoji === emoji) {
         const res = await fetch(`/api/letters/${letterId}/reactions`, {
           method: 'DELETE',
@@ -91,7 +89,6 @@ export default function ReactionBar({
           setReactions((prev) => prev.filter((r) => r.user_id !== currentUserId));
         }
       } else {
-        // Thêm hoặc cập nhật reaction
         const res = await fetch(`/api/letters/${letterId}/reactions`, {
           method: 'POST',
           headers: {
@@ -115,11 +112,25 @@ export default function ReactionBar({
     }
   };
 
+  const calculatePickerPosition = () => {
+    if (!buttonRef.current) return;
+    const rect = buttonRef.current.getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+    const pickerHeight = 60;
+    
+    if (rect.bottom + pickerHeight > viewportHeight) {
+      setPickerPosition('top');
+    } else {
+      setPickerPosition('bottom');
+    }
+  };
+
   const handleMouseDown = () => {
     if (!canReact) return;
+    calculatePickerPosition();
     longPressTimer.current = setTimeout(() => {
       setShowPicker(true);
-    }, 500); // 500ms = long press
+    }, 500);
   };
 
   const handleMouseUp = () => {
@@ -131,6 +142,7 @@ export default function ReactionBar({
 
   const handleTouchStart = () => {
     if (!canReact) return;
+    calculatePickerPosition();
     longPressTimer.current = setTimeout(() => {
       setShowPicker(true);
     }, 500);
@@ -143,36 +155,27 @@ export default function ReactionBar({
     }
   };
 
-  // Nhóm reactions theo emoji
-  const reactionCounts = reactions.reduce((acc, r) => {
-    if (!acc[r.emoji]) {
-      acc[r.emoji] = { count: 0, users: [] };
-    }
-    acc[r.emoji].count++;
-    acc[r.emoji].users.push(r.user_name);
-    return acc;
-  }, {} as Record<string, { count: number; users: string[] }>);
-
-  // Không hiển thị gì nếu không có reaction và không thể react
   if (reactions.length === 0 && !canReact) return null;
 
   return (
-    <div className={`relative inline-flex items-center gap-2 ${compact ? 'text-xs' : 'text-sm'}`}>
-      {/* Hiển thị các reaction đã có */}
-      {Object.keys(reactionCounts).length > 0 && (
-        <div className="flex items-center gap-1 flex-wrap">
-          {Object.entries(reactionCounts).map(([emoji, data]) => (
+    <div className="relative inline-flex items-center">
+      {/* Hiển thị danh sách reactions */}
+      {reactions.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {reactions.map((reaction) => (
             <div
-              key={emoji}
-              className={`flex items-center gap-1 ${
+              key={reaction.id}
+              className={`flex items-center gap-1.5 ${
                 compact
-                  ? 'bg-white/60 px-2 py-0.5 rounded-full'
-                  : 'bg-white/70 px-2.5 py-1 rounded-full'
+                  ? 'bg-white/60 px-2.5 py-1 rounded-full'
+                  : 'bg-white/70 px-3 py-1.5 rounded-full'
               }`}
-              title={data.users.join(', ')}
             >
-              <span className={compact ? 'text-sm' : 'text-base'}>{emoji}</span>
-              <span className="text-gray-600 font-medium">{data.count}</span>
+              <span className={`${compact ? 'text-sm' : 'text-base'} font-medium text-gray-700`}>
+                {reaction.user_name}
+              </span>
+              <span className={compact ? 'text-base' : 'text-lg'}>đã</span>
+              <span className={compact ? 'text-lg' : 'text-xl'}>{reaction.emoji}</span>
             </div>
           ))}
         </div>
@@ -188,9 +191,12 @@ export default function ReactionBar({
             onMouseLeave={handleMouseUp}
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
-            onClick={() => setShowPicker(!showPicker)}
-            className={`${
-              compact ? 'w-7 h-7' : 'w-9 h-9'
+            onClick={() => {
+              calculatePickerPosition();
+              setShowPicker(!showPicker);
+            }}
+            className={`ml-2 ${
+              compact ? 'w-8 h-8' : 'w-10 h-10'
             } rounded-full flex items-center justify-center transition-all ${
               myReaction
                 ? 'bg-pink-100 text-pink-500'
@@ -199,34 +205,38 @@ export default function ReactionBar({
             title={myReaction ? `Bạn đã react ${myReaction.emoji}` : 'Giữ để chọn emoji'}
           >
             {myReaction ? (
-              <span className={compact ? 'text-sm' : 'text-base'}>{myReaction.emoji}</span>
+              <span className={compact ? 'text-base' : 'text-lg'}>{myReaction.emoji}</span>
             ) : (
-              <span className={compact ? 'text-sm' : 'text-lg'}>😊</span>
+              <span className={`${compact ? 'text-base' : 'text-lg'} opacity-20`}>❤️</span>
             )}
           </button>
 
-          {/* Picker popup */}
+          {/* Picker popup - responsive */}
           {showPicker && (
             <div
               ref={pickerRef}
-              className={`absolute ${
-                compact ? 'bottom-full mb-2' : 'bottom-full mb-3'
-              } left-1/2 -translate-x-1/2 bg-white rounded-full shadow-lg border border-pink-100 px-3 py-2 flex gap-2 z-50 animate-in fade-in slide-in-from-bottom-2 duration-200`}
+              className={`absolute left-1/2 -translate-x-1/2 z-50 ${
+                pickerPosition === 'bottom' ? 'top-full mt-2' : 'bottom-full mb-2'
+              }`}
             >
-              {REACTION_EMOJIS.map((emoji) => (
-                <button
-                  key={emoji}
-                  onClick={() => handleReact(emoji)}
-                  className={`${
-                    compact ? 'text-2xl' : 'text-3xl'
-                  } hover:scale-125 transition-transform p-1 ${
-                    myReaction?.emoji === emoji ? 'scale-110' : ''
-                  }`}
-                  title={emoji}
-                >
-                  {emoji}
-                </button>
-              ))}
+              <div className="bg-white rounded-2xl shadow-xl border border-pink-100 p-2 max-w-[90vw] overflow-x-auto">
+                <div className="flex gap-1 sm:gap-2">
+                  {REACTION_EMOJIS.map((emoji) => (
+                    <button
+                      key={emoji}
+                      onClick={() => handleReact(emoji)}
+                      className={`${
+                        compact ? 'text-xl sm:text-2xl' : 'text-2xl sm:text-3xl'
+                      } hover:scale-125 transition-transform p-1.5 sm:p-2 flex-shrink-0 ${
+                        myReaction?.emoji === emoji ? 'scale-110 bg-pink-50 rounded-full' : ''
+                      }`}
+                      title={emoji}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
         </>

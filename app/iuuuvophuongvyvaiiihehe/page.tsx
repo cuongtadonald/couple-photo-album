@@ -121,7 +121,7 @@ export default function DashboardPage() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      
+
       // Get filename from Content-Disposition header or use default
       const disposition = response.headers.get('Content-Disposition');
       let filename = `backup-cuongvy-${new Date().toISOString().split('T')[0]}.zip`;
@@ -129,7 +129,7 @@ export default function DashboardPage() {
         const match = disposition.match(/filename="?(.+)"?/);
         if (match) filename = match[1];
       }
-      
+
       a.download = filename;
       document.body.appendChild(a);
       a.click();
@@ -213,7 +213,7 @@ export default function DashboardPage() {
                   {label}
                 </button>
               ))}
-              
+
               {/* Backup button - only for anh */}
               {user?.role === 'anh' && (
                 <button
@@ -222,7 +222,19 @@ export default function DashboardPage() {
                   className="flex items-center gap-3 py-2.5 px-4 rounded-xl text-sm font-semibold transition-all text-left text-gray-500 hover:bg-pink-50 hover:text-rose-500 disabled:opacity-50 disabled:cursor-not-allowed mt-2 border-t border-pink-100 pt-4"
                   title="Sao lưu toàn bộ dữ liệu (database + ảnh)"
                 >
-                  <span>{backupLoading ? '⏳' : '💾'}</span>
+                  <span className="w-9 h-9 shrink-0 flex items-center justify-center">
+                    {backupLoading ? (
+                      <span className="text-xl animate-pulse">⏳</span>
+                    ) : (
+                      <Image
+                        src="/assets-new-design/saveTVC.png"
+                        alt="Backup"
+                        width={36}
+                        height={36}
+                        className="w-9 h-9 object-contain"
+                      />
+                    )}
+                  </span>
                   <span>{backupLoading ? 'Đang tạo backup...' : 'Backup dữ liệu'}</span>
                 </button>
               )}
@@ -355,7 +367,7 @@ export default function DashboardPage() {
                     {label}
                   </button>
                 ))}
-                
+
                 {/* Backup button - only for anh */}
                 {user?.role === 'anh' && (
                   <button
@@ -364,7 +376,19 @@ export default function DashboardPage() {
                     className="flex items-center gap-3 py-2.5 px-4 rounded-xl text-sm font-semibold text-left transition-all text-gray-500 hover:bg-pink-50 disabled:opacity-50 disabled:cursor-not-allowed mt-2 border-t border-pink-100 pt-4"
                     title="Sao lưu toàn bộ dữ liệu (database + ảnh)"
                   >
-                    <span>{backupLoading ? '⏳' : '💾'}</span>
+                    <span className="w-9 h-9 shrink-0 flex items-center justify-center">
+                      {backupLoading ? (
+                        <span className="text-xl animate-pulse">⏳</span>
+                      ) : (
+                        <Image
+                          src="/assets-new-design/saveTVC.png"
+                          alt="Backup"
+                          width={36}
+                          height={36}
+                          className="w-9 h-9 object-contain"
+                        />
+                      )}
+                    </span>
                     <span>{backupLoading ? 'Đang tạo backup...' : 'Backup dữ liệu'}</span>
                   </button>
                 )}

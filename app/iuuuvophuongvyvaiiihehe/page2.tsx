@@ -100,48 +100,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>('albums');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [backupLoading, setBackupLoading] = useState(false);
   const duration = useDurationCounter(RELATIONSHIP_START);
-
-  const handleBackup = async () => {
-    if (backupLoading) return;
-    setBackupLoading(true);
-    try {
-      const response = await fetch('/api/backup', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Backup failed');
-      }
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      
-      // Get filename from Content-Disposition header or use default
-      const disposition = response.headers.get('Content-Disposition');
-      let filename = `backup-cuongvy-${new Date().toISOString().split('T')[0]}.zip`;
-      if (disposition) {
-        const match = disposition.match(/filename="?(.+)"?/);
-        if (match) filename = match[1];
-      }
-      
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-    } catch (error) {
-      console.error('Backup error:', error);
-      alert('Lỗi khi tạo backup. Vui lòng thử lại.');
-    } finally {
-      setBackupLoading(false);
-    }
-  };
 
   useEffect(() => {
     if (!loading && !user) router.replace('/login');
@@ -213,17 +172,6 @@ export default function DashboardPage() {
                   {label}
                 </button>
               ))}
-              
-              {/* Backup button */}
-              <button
-                onClick={handleBackup}
-                disabled={backupLoading}
-                className="flex items-center gap-3 py-2.5 px-4 rounded-xl text-sm font-semibold transition-all text-left text-gray-500 hover:bg-pink-50 hover:text-rose-500 disabled:opacity-50 disabled:cursor-not-allowed mt-2 border-t border-pink-100 pt-4"
-                title="Sao lưu toàn bộ dữ liệu (database + ảnh)"
-              >
-                <span>{backupLoading ? '⏳' : '💾'}</span>
-                <span>{backupLoading ? 'Đang tạo backup...' : 'Backup dữ liệu'}</span>
-              </button>
             </nav>
 
             {/* Our special day card — right below tabs */}
@@ -353,17 +301,6 @@ export default function DashboardPage() {
                     {label}
                   </button>
                 ))}
-                
-                {/* Backup button */}
-                <button
-                  onClick={() => { handleBackup(); setMobileMenuOpen(false); }}
-                  disabled={backupLoading}
-                  className="flex items-center gap-3 py-2.5 px-4 rounded-xl text-sm font-semibold text-left transition-all text-gray-500 hover:bg-pink-50 disabled:opacity-50 disabled:cursor-not-allowed mt-2 border-t border-pink-100 pt-4"
-                  title="Sao lưu toàn bộ dữ liệu (database + ảnh)"
-                >
-                  <span>{backupLoading ? '⏳' : '💾'}</span>
-                  <span>{backupLoading ? 'Đang tạo backup...' : 'Backup dữ liệu'}</span>
-                </button>
               </nav>
               <div className="mt-5">
                 <MilestoneCard duration={duration} size="mobile" />
